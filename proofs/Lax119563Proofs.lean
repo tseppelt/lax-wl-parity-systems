@@ -102,5 +102,8 @@ import Lax119563Proofs.Reduction.OutCorr
 import Lax119563Proofs.Reduction.OutEdges
 import Lax119563Proofs.Reduction.OutEdgeList
 import Lax119563Proofs.Reduction.TernOrder
+import Lax119563Proofs.Reduction.HFrame
+import Lax119563Proofs.Reduction.SProg
+import Lax119563Proofs.Reduction.SStm
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
