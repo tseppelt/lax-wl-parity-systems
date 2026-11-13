@@ -23,3 +23,4 @@ import Lax119563Proofs.Circuits.Windows
 import Lax119563Proofs.Circuits.MoveProgram
 import Lax119563Proofs.Circuits.Verifier
 import Lax119563Proofs.Circuits.VerifierSem
+import Lax119563Proofs.Circuits.VerifierLemmas
