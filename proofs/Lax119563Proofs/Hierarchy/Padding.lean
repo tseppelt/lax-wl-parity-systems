@@ -295,4 +295,81 @@ theorem padLang_dt (ML : Machine) (C s : ℕ) (hs : 1 ≤ s) : DT (padLang ML C 
 
 end Spec
 
+/-! ## Unpadding -/
+
+section Unpad
+
+variable (MP : Machine) (r : ℕ)
+
+/-- Stack indices of the unpadding machine: scratch stacks after the tapes of `MP`. -/
+def d2 (k : ℕ) (hk : k < 5 := by omega) : Fin (MP.tapes + 5 + 1) := ⟨MP.tapes + 1 + k, by omega⟩
+
+/-- Write `x ++ [true] ++ 0^{|x|^r}` on stack `0`. -/
+def unpadPrep : Prog (MP.tapes + 5 + 1) MP.symbols :=
+  seq (moveCount 0 (d2 MP 0) (d2 MP 1))
+    (seq (power (d2 MP 2) (d2 MP 1) (d2 MP 3) (d2 MP 4) r)
+      (seq (moveAll (d2 MP 2) 0) (seq (push 0 1) (moveAll (d2 MP 0) 0))))
+
+/-- Stacks in the shape used by `unpadPrep`. -/
+def qst (a0 aA aN aP : List (Fin (MP.symbols + 2))) : Stacks (MP.tapes + 5 + 1) MP.symbols :=
+  fun i => if i.val = 0 then a0 else if i.val = MP.tapes + 1 then aA else
+    if i.val = MP.tapes + 2 then aN else if i.val = MP.tapes + 3 then aP else []
+
+/-- Prove equalities between `qst` stacks and their updates. -/
+macro "qst_eq" : tactic =>
+  `(tactic| (funext i; simp only [qst, update_apply, Fin.ext_iff, Fin.val_zero, d2]; split_ifs <;>
+    first | omega | rfl | simp_all))
+
+/-- The cost bound of `unpadPrep`. -/
+def unpadCost (m n r : ℕ) : ℕ :=
+  (m + 8) * n + 1 + (r * ((4 * m + 40) * (n + 1) ^ r) + 3 + ((m + 6) * n ^ r + 1 + (2 +
+    ((m + 6) * n + 1))))
+
+variable {MP r}
+
+lemma unpadPrep_runs (x : List Bool) :
+    ∃ s', (unpadPrep MP r).RunsLe (inputStacks _ _ x) s' (unpadCost MP.symbols x.length r) ∧
+      HandsOver MP s' (x ++ true :: List.replicate (x.length ^ r) false) := by
+  have ne : ∀ a b : Fin (MP.tapes + 5 + 1), a.val ≠ b.val → a ≠ b :=
+    fun a b h => Fin.ne_of_val_ne h
+  set m := MP.symbols
+  have hs0 : inputStacks (MP.tapes + 5) m x = qst MP (x.map (bitSym m)) [] [] [] := by
+    funext i
+    simp only [inputStacks, qst, Fin.ext_iff, Fin.val_zero]
+    split_ifs <;> first | omega | rfl
+  rw [hs0]
+  have h1 : (moveCount 0 (d2 MP 0) (d2 MP 1) : Prog _ m).RunsLe (qst MP (x.map (bitSym m)) [] [] [])
+      (qst MP [] (x.map (bitSym m)).reverse (unary m x.length) []) ((m + 8) * x.length + 1) :=
+    (moveCount_runs (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2]))
+      (x.map (bitSym m)) _ (by simp [qst])).of_eq (by simp only [List.length_map]; qst_eq)
+      (by simp)
+  have h2 := power_runs (p := d2 MP 2) (n := d2 MP 1) (q := d2 MP 3) (h := d2 MP 4) (b := x.length)
+    (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2]))
+    (ne _ _ (by simp [d2])) (ne _ _ (by simp [d2])) r
+    (s := qst MP [] (x.map (bitSym m)).reverse (unary m x.length) [])
+    (by simp [qst, d2]) (by simp [qst, d2]) (by simp [qst, d2]) (by simp [qst, d2])
+  have h2' := h2.of_eq (s₂ := qst MP [] (x.map (bitSym m)).reverse (unary m x.length) (unary m (x.length ^ r)))
+    (by qst_eq) le_rfl
+  have h3 : (moveAll (d2 MP 2) 0 : Prog _ m).RunsLe
+      (qst MP [] (x.map (bitSym m)).reverse (unary m x.length) (unary m (x.length ^ r)))
+      (qst MP (unary m (x.length ^ r)) (x.map (bitSym m)).reverse (unary m x.length) []) ((m + 6) * x.length ^ r + 1) :=
+    (moveAll_runs (ne _ _ (by simp [d2])) (unary m (x.length ^ r)) _ (by simp [qst, d2])).of_eq
+      (by simp only [List.reverse_replicate]; qst_eq) (by simp)
+  have h4 : (push 0 1 : Prog _ m).RunsLe
+      (qst MP (unary m (x.length ^ r)) (x.map (bitSym m)).reverse (unary m x.length) [])
+      (qst MP (1 :: unary m (x.length ^ r)) (x.map (bitSym m)).reverse (unary m x.length) []) 2 :=
+    (RunsLe.push _ _ _).of_eq (by qst_eq) le_rfl
+  have h5 : (moveAll (d2 MP 0) 0 : Prog _ m).RunsLe
+      (qst MP (1 :: unary m (x.length ^ r)) (x.map (bitSym m)).reverse (unary m x.length) [])
+      (qst MP ((x ++ true :: List.replicate (x.length ^ r) false).map (bitSym m)) [] (unary m x.length) [])
+      ((m + 6) * x.length + 1) :=
+    (moveAll_runs (ne _ _ (by simp [d2])) (x.map (bitSym m)).reverse _ (by simp [qst, d2])).of_eq
+      (by simp only [List.reverse_reverse, List.map_append, List.map_cons, List.map_replicate];
+          qst_eq) (by simp)
+  refine ⟨_, h1.seq (h2'.seq (h3.seq (h4.seq h5))), fun i => ⟨fun hi => ?_, fun hi1 hi2 => ?_⟩⟩
+  · simp only [qst]; split_ifs <;> first | omega | rfl
+  · simp only [qst]; split_ifs <;> first | omega | rfl
+
+end Unpad
+
 end Lax119563Proofs.Hierarchy
