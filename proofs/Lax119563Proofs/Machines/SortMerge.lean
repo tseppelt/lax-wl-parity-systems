@@ -223,6 +223,111 @@ theorem mergeRecs_spec (x y : List Bool) (rb rc : List (List Bool)) (PA PB PC re
     · rw [if_neg hle, hlen]; simp; omega
     · rw [if_neg hle]
 
+lemma mergeCond_rec_left (a b c : Tape Γ) (P : List Γ) (x : List Bool) (rest : List Γ)
+    (hb : b = Tape.ofWord P (bitsWord x ++ S.hash :: rest)) :
+    mergeCond S (readAll (tapes3 a b c)) = true := by
+  subst hb
+  have := read_rec_ne_bar S P x rest
+  simp [mergeCond, this]
+
+lemma mergeCond_rec_right (a b c : Tape Γ) (P : List Γ) (y : List Bool) (rest : List Γ)
+    (hc : c = Tape.ofWord P (bitsWord y ++ S.hash :: rest)) :
+    mergeCond S (readAll (tapes3 a b c)) = true := by
+  subst hc
+  have h₁ := read_rec_ne_bar S P y rest
+  have h₂ := read_rec_ne_blank S P y rest
+  simp [mergeCond, h₁, h₂]
+
+theorem mergeRuns_spec (rb : List (List Bool)) : ∀ (rc : List (List Bool))
+    (PA PB PC restB cT : List Γ),
+    inRec S (PB.getLast?.getD blank) = false →
+    inRec S (PC.getLast?.getD blank) = false →
+    (cT.headD blank = S.bar ∨ cT.headD blank = blank) →
+    (mergeRuns S).RunsWithin
+      (tapes3 (.ofWord PA []) (.ofWord PB (recWord S rb ++ S.bar :: restB))
+        (.ofWord PC (recWord S rc ++ cT)))
+      (9 * ((recWord S rb).length + (recWord S rc).length))
+      (tapes3 (.ofWord (PA ++ recWord S (List.merge rb rc recLE)) [])
+        (.ofWord (PB ++ recWord S rb) (S.bar :: restB)) (.ofWord (PC ++ recWord S rc) cT)) := by
+  induction rb with
+  | nil =>
+    intro rc
+    induction rc with
+    | nil =>
+      intro PA PB PC restB cT _ _ hcT
+      refine ((loop_runsWithin_exit ?_).mono (Nat.zero_le _)).congr_right (by simp)
+      rcases hcT with h | h <;> simp_all [mergeCond, Tape.read_ofWord]
+    | cons y rc ih =>
+      intro PA PB PC restB cT hPB hPC hcT
+      have hc := copyRec_ofWord S (show (2 : Fin 3) ≠ 0 by decide) y
+        (T := tapes3 (.ofWord PA []) (.ofWord PB (recWord S [] ++ S.bar :: restB))
+          (.ofWord PC (recWord S (y :: rc) ++ cT)))
+        (pre := PC) (rest := recWord S rc ++ cT) (dpre := PA) (by simp) (by simp)
+      simp only [update_tapes3_two, update_tapes3_zero] at hc
+      have hstep := ite_runsWithin_true (c := fun s => decide (s 1 = S.bar))
+        (M₂ := ite (fun s => decide (s 2 = S.bar ∨ s 2 = blank)) (copyRec S 1 0) (mergeRecs S))
+        (by simp) hc
+      have hrest := ih (PA ++ bitsWord y ++ [S.hash]) PB (PC ++ bitsWord y ++ [S.hash]) restB cT
+        ‹_› (inRec_last_rec S PC y) hcT
+      refine ((loop_runsWithin_iter (mergeCond_rec_right S _ _ _ PC y (recWord S rc ++ cT)
+        (by simp)) hstep hrest).mono ?_).congr_right ?_
+      · simp [bitsWord]; omega
+      · simp
+  | cons x rb ihB =>
+    intro rc
+    induction rc with
+    | nil =>
+      intro PA PB PC restB cT hPB hPC hcT
+      have hc := copyRec_ofWord S (show (1 : Fin 3) ≠ 0 by decide) x
+        (T := tapes3 (.ofWord PA []) (.ofWord PB (recWord S (x :: rb) ++ S.bar :: restB))
+          (.ofWord PC (recWord S [] ++ cT)))
+        (pre := PB) (rest := recWord S rb ++ S.bar :: restB) (dpre := PA) (by simp) (by simp)
+      simp only [update_tapes3_one, update_tapes3_zero] at hc
+      have hstep₁ := ite_runsWithin_true (c := fun s => decide (s 2 = S.bar ∨ s 2 = blank))
+        (M₂ := mergeRecs S) (by rcases hcT with h | h <;> simp_all [Tape.read_ofWord]) hc
+      have hstep := ite_runsWithin_false (c := fun s => decide (s 1 = S.bar))
+        (M₁ := copyRec S 2 0) (by simp [read_rec_ne_bar S PB x (recWord S rb ++ S.bar :: restB)])
+        hstep₁
+      have hrest := ihB [] (PA ++ bitsWord x ++ [S.hash]) (PB ++ bitsWord x ++ [S.hash]) PC restB cT
+        (inRec_last_rec S PB x) hPC hcT
+      refine ((loop_runsWithin_iter (mergeCond_rec_left S _ _ _ PB x
+        (recWord S rb ++ S.bar :: restB) (by simp)) hstep hrest).mono ?_).congr_right ?_
+      · simp [bitsWord]; omega
+      · simp
+    | cons y rc ihC =>
+      intro PA PB PC restB cT hPB hPC hcT
+      have hm := mergeRecs_spec S x y rb rc PA PB PC (recWord S rb ++ S.bar :: restB)
+        (recWord S rc ++ cT) hPB hPC
+      have hy₁ := read_rec_ne_bar S PC y (recWord S rc ++ cT)
+      have hy₂ := read_rec_ne_blank S PC y (recWord S rc ++ cT)
+      have hstep₁ := ite_runsWithin_false (c := fun s => decide (s 2 = S.bar ∨ s 2 = blank))
+        (M₁ := copyRec S 1 0) (by simp [hy₁, hy₂]) hm
+      have hstep := ite_runsWithin_false (c := fun s => decide (s 1 = S.bar))
+        (M₁ := copyRec S 2 0) (by simp [read_rec_ne_bar S PB x (recWord S rb ++ S.bar :: restB)])
+        hstep₁
+      have hcond := mergeCond_rec_left S (Tape.ofWord PA []) _
+        (Tape.ofWord PC (bitsWord y ++ S.hash :: (recWord S rc ++ cT))) PB x
+        (recWord S rb ++ S.bar :: restB) rfl
+      by_cases hle : recLE x y = true
+      · rw [if_pos hle, if_pos hle] at hstep
+        have hrest := ihB (y :: rc) (PA ++ bitsWord x ++ [S.hash]) (PB ++ bitsWord x ++ [S.hash])
+          PC restB cT (inRec_last_rec S PB x) hPC hcT
+        simp only [recWord_cons, List.append_assoc, List.cons_append, List.nil_append] at hrest hstep
+        have h := loop_runsWithin_iter hcond hstep hrest
+        simp only [recWord_cons, List.append_assoc, List.cons_append, List.nil_append] at h ⊢
+        refine (h.mono ?_).congr_right ?_
+        · simp [bitsWord]; omega
+        · rw [List.cons_merge_cons, if_pos hle]; simp
+      · rw [if_neg hle, if_neg hle] at hstep
+        have hrest := ihC (PA ++ bitsWord y ++ [S.hash]) PB (PC ++ bitsWord y ++ [S.hash]) restB cT
+          hPB (inRec_last_rec S PC y) hcT
+        simp only [recWord_cons, List.append_assoc, List.cons_append, List.nil_append] at hrest hstep
+        have h := loop_runsWithin_iter hcond hstep hrest
+        simp only [recWord_cons, List.append_assoc, List.cons_append, List.nil_append] at h ⊢
+        refine (h.mono ?_).congr_right ?_
+        · simp [bitsWord]; omega
+        · rw [List.cons_merge_cons, if_neg hle]; simp
+
 end TM
 
 end Lax119563Proofs.Machines
