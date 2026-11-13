@@ -5,3 +5,4 @@ import Lax119563Proofs.Hierarchy.Lax
 import Lax119563Proofs.Hierarchy.Stack
 import Lax119563Proofs.Hierarchy.Glue
 import Lax119563Proofs.Hierarchy.Chain
+import Lax119563Proofs.Hierarchy.Locality
