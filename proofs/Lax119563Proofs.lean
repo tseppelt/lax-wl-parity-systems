@@ -26,3 +26,5 @@ import Lax119563Proofs.Circuits.VerifierSem
 import Lax119563Proofs.Circuits.VerifierLemmas
 import Lax119563Proofs.Circuits.VerifierSound
 import Lax119563Proofs.Circuits.VerifierComplete
+import Lax119563Proofs.Circuits.LocCode
+import Lax119563Proofs.Circuits.TimeSimulation

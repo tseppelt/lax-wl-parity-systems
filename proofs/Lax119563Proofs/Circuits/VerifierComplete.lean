@@ -505,15 +505,15 @@ open Lax489179.TuringMachine
 variable {M : Machine} {x : List Bool} {s ℓ H : ℕ}
 
 /-- The verifier accepts exactly the configurations whose assertion is true. -/
-theorem verifier_accepts_iff (P : Params x s ℓ H) (L : Loc M H) {A : ℕ}
-    (hA : A < 2 ^ (s * ℓ)) :
-    AAccepts ℓ (verifierCmds M x s ℓ H) .accept .reject L A ↔ Sem M x H L A := by
+theorem verifier_accepts_iff (P : Params x s ℓ H) {locs : List (Loc M H)}
+    (hlocs : ∀ L, L ∈ locs) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (s * ℓ)) :
+    AAccepts ℓ (progCmds ℓ locs (moves M x s ℓ H)) .accept .reject L A ↔ Sem M x H L A := by
   constructor
   · intro h
     exact progCmds_sound P.hℓ (fun src _ => moves_wf P.hH src)
       (fun src _ => moves_sound P src) (fun A => show Sem M x H .accept A from trivial) h hA
   · intro hS
-    exact progCmds_complete P.hℓ (rank M H) (mem_allLocs M H)
+    exact progCmds_complete P.hℓ (rank M H) hlocs
       (fun src _ => moves_wf P.hH src) (fun _ h => h)
       (fun src _ hA hS => moves_complete P src hA hS) L A hA hS
 

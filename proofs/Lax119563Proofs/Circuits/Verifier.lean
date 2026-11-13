@@ -209,10 +209,6 @@ def allLocs : List (Loc M H) :=
 lemma mem_allLocs (L : Loc M H) : L ∈ allLocs M H := by
   cases L <;> simp [allLocs, List.mem_product]
 
-/-- The address commands of the verifier. -/
-def verifierCmds : List (ACmd (Loc M H) s) :=
-  progCmds ℓ (allLocs M H) (moves M x s ℓ H)
-
 end Defs
 
 end Lax119563Proofs.Circuits
