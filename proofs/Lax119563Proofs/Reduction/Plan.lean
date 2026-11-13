@@ -34,10 +34,28 @@ Own register program: `Circuits.compile` with an own injective bit-field locatio
 own location list (`verifier_accepts_iff` and `compile_accepts` allow this), commands
 indexed by `(location, move index)`.
 
+## Facts about the compiled system used by the numbering (to prove)
+
+* No moves at `accept`/`reject`, so every command is executable: the last block of every
+  schema domain is full, hence every step row is nonzero on every schema (`coef` classes
+  exist for all `σ < N`) and every column has a nonzero entry (`k ≥ 3`).
+* Block domains `i < s` come from `fieldGuard` (bit pattern of at most three bits),
+  `hitGuard` (register `0`: the initial cell at offset `regVal b`, i.e. `x[b]`; other
+  registers: the single value `field (2^H) (iℓ) ℓ`) and `missGuard`.
+* Permutations: only the first two binary schemas of an assignment gadget carry
+  `updatePerm (toUpdate mask)`: `(i, b) ↦ (i, b + δᵢ)` with `δᵢ` the `i`-th register of the
+  mask and `δ_s = Σ δᵢ`; all other permutations are identities.
+* Singleton classes: `prog accept` (init `0`) and `det out` (init `1`); in `G_ε` the
+  effective label of a block-`0` coordinate of `det out` is `ε`.
+* `prevStep` by linear search; `trackAt` of a link is never the start class.
+
 ## Machine (to do, largest part)
 
 Stack programs (`Hierarchy.Stack`, big-step semantics with exact costs) extended by head
-tracking of tape `0` for the output layout. Structure: for each family `F`, for each `b`
+tracking of tape `0` for the output layout (`StackOut`, done: `Prog.RunsH`,
+`Prog.compile_endsH`, `Prog.computesWithin`). To put the output at cell `0`: first move `x`
+off stack `0` (head at `|x|`), build the reversed output elsewhere, pop the empty stack `0`
+`|y| - |x|` times, then push the output. Structure: for each family `F`, for each `b`
 (streaming `x` for the membership tables of `hitGuard`), for each label: decide validity,
 emit the color; then the same loop for the hub edges into a scratch stack while counting;
 emit the count and the edges. Per-slot work is polylogarithmic (recomputing the move of a
