@@ -87,3 +87,4 @@ import Lax119563Proofs.Matrix.Size
 import Lax119563Proofs.Reduction.Plan
 import Lax119563Proofs.Reduction.Assembly
 import Lax119563Proofs.Reduction.Transfer
+import Lax119563Proofs.Reduction.StackOut
