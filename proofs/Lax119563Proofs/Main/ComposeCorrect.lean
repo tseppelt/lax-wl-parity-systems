@@ -178,8 +178,6 @@ theorem rew_run {tp : ℤ → Fin (S R D + 3)} :
     have hp0 : p ≠ 0 := by omega
     exact ih _ _ (by split_ifs <;> omega) (rew_step h hp0)
 
-theorem embD_zero : embD R D 0 = 0 := rfl
-
 /-- At the origin, the rewinding phase hands over to the simulation of `D` on `y`. -/
 theorem simD_of_rew {c : Cfg R D} {y : List Bool}
     (h : Rew c (fun z => embD R D ((init D y).tape 0 z)) 0) :
@@ -205,7 +203,7 @@ theorem simD_of_rew {c : Cfg R D} {y : List Bool}
     · refine (write_back _ _).trans ?_
       rw [dT_succ, (hfr j).2]
       funext z
-      simp [Lax489179.TuringMachine.init, Fin.succ_ne_zero, embD_zero]
+      simp [Lax489179.TuringMachine.init, Fin.succ_ne_zero]; rfl
 
 theorem scan_D {c : Cfg R D} {e : Config D}
     (hD : ∀ j, c.head (dT R D j) = e.head j ∧ c.tape (dT R D j) = fun z => embD R D (e.tape j z)) :

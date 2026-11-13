@@ -70,8 +70,6 @@ def run (A : AMachine σ ι S) : ℕ → AConfig σ ι S → AConfig σ ι S
   | 0, c => c
   | t + 1, c => run A t (A.step c)
 
-theorem run_zero (A : AMachine σ ι S) (c : AConfig σ ι S) : A.run 0 c = c := rfl
-
 theorem run_succ (A : AMachine σ ι S) (t : ℕ) (c : AConfig σ ι S) :
     A.run (t + 1) c = A.step (A.run t c) := by
   induction t generalizing c with
@@ -88,12 +86,6 @@ theorem step_of_halted (A : AMachine σ ι S) (c : AConfig σ ι S) (h : c.answe
     A.step c = c := by
   obtain ⟨b, hb⟩ := Option.isSome_iff_exists.mp h
   simp [step, hb]
-
-theorem run_of_halted (A : AMachine σ ι S) (t : ℕ) (c : AConfig σ ι S)
-    (h : c.answer.isSome) : A.run t c = c := by
-  induction t with
-  | zero => rfl
-  | succ t ih => rw [run_succ, ih, step_of_halted A c h]
 
 theorem step_eq_next (A : AMachine σ ι S) {c : AConfig σ ι S} (hc : c.answer = none)
     {q : Option σ} {w : Option ι → Fin (S + 3)} {m : Option ι → Move}
@@ -128,8 +120,6 @@ noncomputable def eS (σ : Type) [Fintype σ] : Option σ ≃ Fin (Fintype.card 
 /-- Numbering of the tapes, with `none ↦ 0`. -/
 noncomputable def eT (ι : Type) [Fintype ι] : Option ι ≃ Fin (Fintype.card ι + 1) :=
   (Equiv.optionCongr (Fintype.equivFin ι)).trans (finSuccEquiv _).symm
-
-theorem eS_none : eS σ none = 0 := by simp [eS]
 
 theorem eT_none : eT ι none = 0 := by simp [eT]
 
