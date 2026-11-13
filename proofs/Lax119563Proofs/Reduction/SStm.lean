@@ -123,6 +123,7 @@ inductive Stm (R : ℕ) where
   | ite (c : Ex R) (p q : Stm R)
   | loop (i lim : Fin R) (body : Stm R)
   | loopX (i lim xb : Fin R) (body : Stm R)
+  | len (r : Fin R)
 
 /-- The first `k` iterations of a loop whose iteration `j` maps the valuation `e` to
 `f j e` (final valuation, emitted list). -/
@@ -153,6 +154,7 @@ def exec (x : List Bool) : Stm R → (Fin R → ℕ) → (Fin R → ℕ) × List
     let a := runLoop (fun k e => exec x body
       (Function.update (Function.update e i k) xb (inBit x k))) (env lim) env
     (Function.update a.1 i (env lim), a.2)
+  | len r, env => (Function.update env r x.length, [])
 
 /-- A cost bound. -/
 def cost (x : List Bool) (w : ℕ) : Stm R → (Fin R → ℕ) → ℕ
@@ -172,6 +174,8 @@ def cost (x : List Bool) (w : ℕ) : Stm R → (Fin R → ℕ) → ℕ
         (Function.update (Function.update e i k) xb (inBit x k))) k env).1 i k) xb
           (inBit x k)) + 4 * unitCost w + 1) + 2 * unitCost w + 1) +
       unitCost w * (x.length + 1)
+  | len _, _ =>
+    3 * unitCost w + x.length * (4 * unitCost w + 1) + 1 + unitCost w * (x.length + 1)
 
 /-- All values stay below `2 ^ w`. -/
 def Fits (x : List Bool) (w : ℕ) : Stm R → (Fin R → ℕ) → Prop
@@ -185,6 +189,7 @@ def Fits (x : List Bool) (w : ℕ) : Stm R → (Fin R → ℕ) → Prop
   | loopX i lim xb body, env => env lim + 1 < 2 ^ w ∧ ∀ k < env lim, Fits x w body
       (Function.update (Function.update (runLoop (fun k e => exec x body
         (Function.update (Function.update e i k) xb (inBit x k))) k env).1 i k) xb (inBit x k))
+  | len _, _ => x.length + 1 < 2 ^ w
 
 /-- The registers a statement may write. -/
 def wr : Stm R → Fin R → Bool
@@ -195,6 +200,7 @@ def wr : Stm R → Fin R → Bool
   | ite _ p p', q => wr p q || wr p' q
   | loop i _ body, q => decide (q = i) || wr body q
   | loopX i _ xb body, q => decide (q = i) || decide (q = xb) || wr body q
+  | len r, q => decide (q = r)
 
 /-- The statement contains no `loopX`. -/
 def noX : Stm R → Bool
@@ -202,6 +208,7 @@ def noX : Stm R → Bool
   | ite _ p q => noX p && noX q
   | loop _ _ body => noX body
   | loopX .. => false
+  | len _ => false
   | _ => true
 
 /-- Well-formedness: loops keep their counter and bound. -/
@@ -222,6 +229,7 @@ def depth : Stm R → ℕ
   | ite c p q => max c.depth (max (depth p) (depth q))
   | loop _ _ body => max 2 (depth body)
   | loopX _ _ _ body => max 2 (depth body)
+  | len _ => 2
 
 /-- Compilation to `HProg` with scratch registers `R, …, R + D`. -/
 def code (R D : ℕ) : Stm R → HProg (R + D + 1)
@@ -234,6 +242,9 @@ def code (R D : ℕ) : Stm R → HProg (R + D + 1)
   | loop i lim body => HProg.forUp (ur D i) (ur D lim) (sc R D 0) (sc R D 1) (code R D body)
   | loopX i lim xb body => .seq .rst (.seq (HProg.forUp (ur D i) (ur D lim) (sc R D 0)
       (sc R D 1) (.seq (.rd (ur D xb)) (code R D body))) .rst)
+  | len r => .seq .rst (.seq (.clr (ur D r)) (.seq (.rd (sc R D 0))
+      (.seq (.loop (fun v => (v (sc R D 0)).isSome)
+      (.seq (HProg.inc (ur D r) (sc R D 1)) (.rd (sc R D 0)))) .rst)))
 
 lemma code_wr_ur : ∀ (c : Stm R) (r : Fin R), wr c r = false →
     (code R D c).wr (ur D r) = false
@@ -257,6 +268,10 @@ lemma code_wr_ur : ∀ (c : Stm R) (r : Fin R), wr c r = false →
     simp [code, HProg.forUp, HProg.inc, HProg.wr, ur_inj, ur_ne_sc, h.1.1, h.1.2,
       code_wr_ur body r h.2]
 
+  | len r', r, h => by
+    simp only [wr, decide_eq_false_iff_not] at h
+    simp [code, HProg.inc, HProg.wr, ur_inj, ur_ne_sc, h]
+
 lemma code_mv : ∀ c : Stm R, noX c = true → (code R D c).mv = false
   | skip, _ => rfl
   | set _ e, _ => by simp [code, HProg.mv, Ex.code_mv]
@@ -271,6 +286,7 @@ lemma code_mv : ∀ c : Stm R, noX c = true → (code R D c).mv = false
     simp only [noX] at h
     simp [code, HProg.forUp, HProg.inc, HProg.mv, code_mv body h]
   | loopX .., h => by simp [noX] at h
+  | len _, h => by simp [noX] at h
 
 end Stm
 
@@ -440,7 +456,78 @@ theorem code_spec (hw : 2 ≤ w) : ∀ (c : Stm R) (env : Fin R → ℕ) (st : H
       refine (HLe.of_runs (HRuns.rst (x := x) (w := w) ?_)).mono ?_
       · rw [hI.2.2]; exact min_le_right _ _
       · rw [hI.2.2]; exact Nat.mul_le_mul_left _ (by omega)
-    refine ⟨{ σ with pos := 0 }, (hr₁.seq (hσ.seq hr₂)).mono (by simp only [cost, F]; omega), hI.1, hI.2.1, hp0.symm⟩
+    refine ⟨{ σ with pos := 0 }, (hr₁.seq (hσ.seq hr₂)).mono (by simp only [cost, F]; omega),
+      hI.1, hI.2.1, hp0.symm⟩
+  | len r, env, st, _, hd, hf, he, hb, hp, hx => by
+    have hp0 : st.pos = 0 := by simpa [noX] using hx
+    simp only [Fits] at hf
+    simp only [depth] at hd
+    have h4 : (4 : ℕ) ≤ 2 ^ w := by
+      calc (4 : ℕ) = 2 ^ 2 := by norm_num
+        _ ≤ 2 ^ w := Nat.pow_le_pow_right (by norm_num) hw
+    have h01 : sc R D 0 ≠ sc R D 1 := sc_ne (by omega) (by omega)
+    have hr₁ : HLe x w .rst st st (unitCost w) :=
+      (HLe.of_runs (HRuns.rst (x := x) (w := w) hp)).of_eq (by ext <;> simp [hp0]) (by simp [hp0])
+    have hc : HLe x w (.clr (ur D r)) st (st.set (ur D r) 0) (unitCost w) :=
+      HLe.of_runs (HRuns.clr (hb _))
+    set S : ℕ → HSt (R + D + 1) := fun k =>
+      { (((st.set (sc R D 1) (if k = 0 then st.env (sc R D 1) else 1)).set (ur D r) k).set
+          (sc R D 0) (inBit x k)) with pos := min (k + 1) x.length }
+    have hrd : HLe x w (.rd (sc R D 0)) (st.set (ur D r) 0) (S 0) (unitCost w) := by
+      refine (HLe.of_runs (HRuns.rd
+        (by simp only [HSt.set_env_ne _ (sc_ne_ur r 0)]; exact hb _) (by simp [hp0]))).of_eq ?_ le_rfl
+      ext q
+      · simp only [S, HSt.set, Function.update_apply, if_true]
+        split_ifs <;> simp_all
+      · simp [S, hp0]
+      · simp [S]
+    have hpos : ∀ k, k < x.length → inBit x k ≠ 0 := by
+      intro k hk
+      unfold inBit
+      rw [List.drop_eq_getElem_cons hk]
+      simp [rdVal]
+    have hend : inBit x x.length = 0 := by simp [inBit, rdVal]
+    have hloop := HLe.loop_seq_const (x := x) (w := w)
+      (c := fun v => (v (sc R D 0)).isSome)
+      (p := .seq (HProg.inc (ur D r) (sc R D 1)) (.rd (sc R D 0))) x.length S
+      (3 * unitCost w + unitCost w)
+      (fun k hk => by
+        show ((S k).view (sc R D 0)).isSome = true
+        rw [HSt.view_isSome_iff]; simpa [S] using hpos k hk)
+      (by
+        show ((S x.length).view (sc R D 0)).isSome = false
+        rw [← Bool.not_eq_true, HSt.view_isSome_iff]; simp [S, hend])
+      (fun k hk => by
+        have hb₁ : (S k).env (sc R D 1) < 2 ^ w := by
+          simp only [S, HSt.set_env_ne _ (Ne.symm h01), HSt.set_env_ne _ (sc_ne_ur r 1)]
+          simp only [HSt.set_env_self]; split_ifs
+          · exact hb _
+          · omega
+        have hinc := inc_spec (x := x) (ur_ne_sc r 1) (st := S k) hb₁
+          (by simp only [S, HSt.set_env_ne _ (ur_ne_sc r 0), HSt.set_env_self]; omega)
+        refine (hinc.seq (HLe.of_runs (HRuns.rd ?_ ?_))).of_eq ?_ le_rfl
+        · simp only [HSt.set_env_ne _ (sc_ne_ur r 0), HSt.set_env_ne _ h01]
+          simp only [S, HSt.set_env_self]; have := inBit_le x k; omega
+        · simp [S]
+        · have hk1 : min (k + 1) x.length = k + 1 := by omega
+          ext q
+          · simp only [S, HSt.set, Function.update_apply, hk1]
+            split_ifs <;> simp_all
+          · simp [S]; omega
+          · simp [S])
+    have hr₂ : HLe x w .rst (S x.length) { S x.length with pos := 0 }
+        (unitCost w * (x.length + 1)) := by
+      refine (HLe.of_runs (HRuns.rst (x := x) (w := w) (by simp [S]))).mono ?_
+      simp [S]
+    refine ⟨{ S x.length with pos := 0 }, (hr₁.seq (hc.seq (hrd.seq (hloop.seq hr₂)))).mono
+      (by simp only [cost]; nlinarith), ?_, ?_, by simp [hp0]⟩
+    · rw [← he]; funext q
+      show (S x.length).env (ur D q) = _
+      by_cases hq : q = r
+      · subst hq; simp [S, HSt.set_env_ne _ (ur_ne_sc q 0), exec]
+      · simp [S, HSt.set_env_ne _ (ur_ne_sc q 0), HSt.set_env_ne _ (ur_ne_sc q 1),
+          HSt.set_env_ne _ (fun e => hq (ur_inj.mp e)), exec, Function.update_of_ne hq, uenv]
+    · simp [S, exec]
 
 end Stm
 
