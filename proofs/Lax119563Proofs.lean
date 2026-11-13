@@ -21,3 +21,4 @@ import Lax119563Proofs.Circuits.AddrProgram
 import Lax119563Proofs.Circuits.MachineRun
 import Lax119563Proofs.Circuits.Windows
 import Lax119563Proofs.Circuits.MoveProgram
+import Lax119563Proofs.Circuits.Verifier
