@@ -3,3 +3,4 @@ import Lax119563Proofs.Programs.Propagation
 import Lax119563Proofs.Programs.Encoding
 import Lax119563Proofs.Programs.Compile
 import Lax119563Proofs.Programs.Correctness
+import Lax119563Proofs.Programs.Size
