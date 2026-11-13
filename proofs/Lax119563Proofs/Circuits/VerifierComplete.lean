@@ -200,5 +200,104 @@ lemma complete_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : 
         simp only [wG]
         omega
 
+lemma cellT_of_rel {d ω θ : ℕ} {ν : Tape M} {j : ℕ} (h : rel M x H d ω θ ν = j) :
+    cellT M x H d ω θ ν j =
+      ((runOn M x (ptime H d ω θ)).tape ν (off M x H d ω ν + j), true) := by
+  unfold cellT cfgCell
+  unfold rel hd at h
+  simp only [Prod.mk.injEq, decide_eq_true_eq, true_and]
+  linarith
+
+lemma complete_state (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (p : ExtState M)
+    {A : ℕ} (hA : A < 2 ^ (s * ℓ)) (hS : Sem M x H (.state d θ p) A) :
+    ∃ mv ∈ moves M x s ℓ H (.state d θ p),
+      mv.Fires ℓ (Sem M x H) (rank M H) (.state d θ p) A := by
+  have hA2 := P.addr_lt hA
+  change semState M x H d θ p A at hS
+  by_cases h0 : θ.val = 0
+  · by_cases hd0 : d.val = 0
+    · have h1 : cω H 0 A = 0 := by simp [cω, Nat.div_eq_of_lt hA2]
+      have hp : p = (0, none) := by
+        have := hS.2; rw [hd0, h0, h1, extT_root] at this; exact this.symm
+      refine ⟨.goto .accept, ?_, field_zero_width _ _, trivial, ?_⟩
+      · simp [moves, h0, hd0, hp]
+      · simp only [rank, h0, ↓reduceIte]
+        have := wP_pos (M := M) (H := H)
+        omega
+    · have hdp : d.val - 1 < H := by omega
+      have hdd : d.val = d.val - 1 + 1 := by omega
+      set θ' : Fin 2 := ⟨field A (bpos H (d.val - 1) + 2) 1, field_lt _ _ _⟩ with hθ'
+      have hc : cω H d A = 2 * cω H (d.val - 1) A + θ'.val := by
+        have hc' : cω H (d.val - 1 + 1) A =
+            2 * cω H (d.val - 1) A + field A (bpos H (d.val - 1) + 2) 1 := by
+          rw [cω_child hdp, field_top_bit]
+        conv_lhs => rw [hdd]
+        exact hc'
+      have hpt : ptime H d (2 * cω H (d.val - 1) A + θ'.val) 0 =
+          ptime H (d.val - 1) (cω H (d.val - 1) A) θ' := by
+        have := ptime_child_zero' (H := H) (d.val - 1) (cω H (d.val - 1) A) θ' hdp θ'.isLt
+        rwa [← hdd] at this
+      refine ⟨.step (bpos H (d.val - 1) + 2) 1 θ' θ' (.state (dpred d) θ'.castSucc p), ?_,
+        rfl, ?_, ?_⟩
+      · simp only [moves, h0, hd0, ↓reduceIte, List.mem_map, List.mem_finRange, true_and]
+        exact ⟨θ', rfl⟩
+      · rw [setBits_self rfl]
+        change semState M x H (d.val - 1) θ' p A
+        refine (stateUp_iff hdp θ'.isLt p rfl).mpr ?_
+        rw [← hdd, ← h0]; exact hS
+      · rw [setBits_self rfl]
+        simp only [rank, h0, ↓reduceIte, dpred_val, Fin.val_castSucc]
+        rw [hc, hpt]
+        have key : 2 * (d.val - 1) * wQ H + H + 2 < 2 * d.val * wQ H := by
+          obtain ⟨e, he⟩ : ∃ e, e = d.val - 1 := ⟨_, rfl⟩
+          rw [← he, show d.val = e + 1 by omega]
+          simp only [wQ]; nlinarith
+        have := lvl1_lt_wP (M := M) (H := H) (d.val - 1)
+        split_ifs <;> omega
+  · by_cases hdH : d.val < H
+    · have hθθ := ppred_val h0
+      set e : Fin 2 := ⟨field A (bpos H d + 2) 1, field_lt _ _ _⟩
+      have hv : (ppred θ).val < 2 ^ 1 := (ppred θ).isLt
+      refine ⟨.step (bpos H d + 2) 1 e (ppred θ) (.state (dsucc d hdH) 2 p), ?_, rfl, ?_, ?_⟩
+      · simp only [moves, h0, ↓reduceIte, dif_pos hdH, List.mem_map, List.mem_finRange,
+          true_and]
+        exact ⟨e, rfl⟩
+      · change semState M x H (d.val + 1) 2 p _
+        refine (stateDown_iff hdH (ppred θ).isLt p).mpr ?_
+        rw [hθθ]; exact hS
+      · have hc : cω H (d.val + 1) (setBits A (bpos H d + 2) 1 (ppred θ)) =
+            2 * cω H d A + (ppred θ).val := by
+          rw [cω_child hdH, ← field_top_bit, field_setBits hv,
+            cω_setBits hv (by rw [bpos_add_three hdH])]
+        have h2v : ((2 : Fin 3) : ℕ) = 2 := rfl
+        simp only [rank, h0, ↓reduceIte, dsucc_val, h2v, OfNat.ofNat_ne_zero]
+        change ptime H (d.val + 1) (cω H (d.val + 1) (setBits A (bpos H d + 2) 1 (ppred θ))) 2 *
+          wK M H + _ < _
+        rw [hc, ptime_child_end _ _ _ hdH, hθθ]
+        have : wG M * (H - (d.val + 1)) + wG M ≤ wG M * (H - d.val) := by
+          rw [show H - d.val = H - (d.val + 1) + 1 by omega]; ring_nf; omega
+        have : 2 ≤ wG M := by simp [wG]
+        omega
+    · have hd : d.val = H := by omega
+      have hθ2 : θ.val = 2 := by
+        have := θ.isLt
+        have h1 := hS.1
+        by_contra h
+        exact hdH (h1 (by omega))
+      set ρ : Row M := trueRow (x := x) (H := H) A with hρ
+      have h20 : ((2 : ℕ) = 0) ↔ False := by simp
+      rw [hd, hθ2, semState_base2] at hS
+      refine ⟨.goto (.baseState ρ 0), ?_, field_zero_width _ _, ?_, ?_⟩
+      · simp only [moves, ↓reduceIte, dif_neg hdH, hθ2, h20, List.mem_map, List.mem_filter,
+          decide_eq_true_eq]
+        exact ⟨ρ, ⟨mem_allRows _, hS⟩, rfl⟩
+      · rw [setBits_zero_width]
+        exact ⟨fun i _ => trueRow_rows hA2 i, (semState_base0 A _).mpr rfl⟩
+      · simp only [rank, ↓reduceIte, hd, hθ2, h20, Nat.sub_self, mul_zero, zero_add,
+          Fin.val_zero]
+        rw [setBits_zero_width]
+        simp only [wG]
+        omega
+
 end Lax119563Proofs.Circuits
 
