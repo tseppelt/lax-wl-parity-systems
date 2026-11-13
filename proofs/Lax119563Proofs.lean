@@ -15,3 +15,5 @@ import Lax119563Proofs.Matrix.Duplicator
 import Lax119563Proofs.Matrix.SpoilerBasics
 import Lax119563Proofs.Matrix.SpoilerStrip
 import Lax119563Proofs.Matrix.SpoilerGadget
+import Lax119563Proofs.Matrix.SpoilerWalk
+import Lax119563Proofs.Matrix.SpoilerMain

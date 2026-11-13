@@ -16,7 +16,7 @@ variable {k ℓ w : ℕ}
 /-! ### Arguments of a schema -/
 
 /-- The number of arguments of a schema. -/
-def arity : Schema k ℓ w → ℕ
+@[reducible] def arity : Schema k ℓ w → ℕ
   | .binary .. => 2
   | .ternary .. => 3
 
