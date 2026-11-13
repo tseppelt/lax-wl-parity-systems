@@ -15,3 +15,17 @@ import Lax119563Proofs.Main.Compose
 import Lax119563Proofs.Main.ComposeCorrect
 import Lax119563Proofs.Main.ComposeMain
 import Lax119563Proofs.Main.RuntimeLowerBound
+import Lax119563Proofs.Machines.Basic
+import Lax119563Proofs.Machines.Compile
+import Lax119563Proofs.Machines.Plan
+import Lax119563Proofs.Machines.Words
+import Lax119563Proofs.Machines.Routines
+import Lax119563Proofs.Machines.WordRoutines
+import Lax119563Proofs.Machines.Numbers
+import Lax119563Proofs.Machines.Output
+import Lax119563Proofs.Machines.SortModel
+import Lax119563Proofs.Machines.SortTape
+import Lax119563Proofs.Machines.SortMerge
+import Lax119563Proofs.Machines.SortPass
+import Lax119563Proofs.Machines.SortMain
+import Lax119563Proofs.Machines.Extras
