@@ -2,3 +2,4 @@ import Lax119563Proofs.Circuits.Plan
 import Lax119563Proofs.Circuits.RegisterProgramStub
 import Lax119563Proofs.Circuits.Bits
 import Lax119563Proofs.Circuits.AddrProgram
+import Lax119563Proofs.Circuits.MachineRun
