@@ -1,1 +1,4 @@
 import Lax119563Proofs.Programs.RegisterProgram
+import Lax119563Proofs.Programs.Propagation
+import Lax119563Proofs.Programs.Encoding
+import Lax119563Proofs.Programs.Compile
