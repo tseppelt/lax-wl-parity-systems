@@ -33,17 +33,35 @@ head of tape 0 follows the cursor; registers are binary, least significant digit
 
 So the remaining work is purely about `HProg` programs and their semantics on `ℕ`.
 
-## Own register program (to do)
+`HLib` (done): `HLe` (runs within a cost) with seq/ite/loop lemmas, `loop_seq` (loop along
+a sequence of states), `inc`, `setC`, `skip`, and counting loops `forUp` (`forUp_spec`).
 
-`P' := Circuits.compile (numLoc M H) Loc.code .accept .reject code_accept_ne_reject
-  (progCmds ℓ (allLocs M H) (moves M x s ℓ H))` — as `timeProgram` but over `allLocs`
-without `dedup` (acceptance only uses membership in the command list:
-`verifier_accepts_iff` needs `∀ L, L ∈ locs`, and `compile_accepts`). Correctness and size
-bounds as in `TimeSimulation` (`allLocs` has `O(H²)` entries, each with `O(1)` moves).
-Every command has an executable source (no moves at `accept`/`reject`), so every schema
-domain contains the whole checksum block `{s} × 𝔽₂^ℓ`.
+## Register program (done: `Locs`)
 
-## Output graph (to do; math layer)
+`nodup_allLocs`, `dedup_allLocs`: the commands of `timeProgram` are exactly
+`progCmds ℓ (allLocs M H) (moves M x s ℓ H)`, i.e. the moves of the locations of `allLocs`
+in list order, so `timeProgram`, `timeProgram_graphs` (Assembly) and all Circuits bounds are
+used as they are. Every command has an executable source (no moves at `accept`/`reject`),
+so every schema domain contains the whole checksum block `{s} × 𝔽₂^ℓ`.
+
+## Output graph (math layer)
+
+Done (`OutGraph`, `OutCorr`, `OutEdges`, `OutEdgeList`), for any implicit parity system
+`I` with `s + 1` blocks:
+* `num`, `classNum`, `famNum`, `nOut`; `num_injective`, `num_lt` (on valid names);
+* `outGraph I ε` and `distinguishes_outGraph_iff` (via `corr : Corr (matrixPair I)
+  (outPair I)` and `duplicatorWins_iff_of_corr`);
+* `hubNbrs I ε a` (valid neighbors of a hub, in output order) and `adjN_iff_hubNbrs`;
+* `edgeList_outGraph`: the edge list is the concatenation over `u < nOut` of
+  `(upNbrs I ε u).map (u, ·)`, with `upNbrs_hub` (`= (hubNbrs I ε a).map num` for a valid
+  hub `a`, needs `1 ≤ s` and `TernOrdered I`), `upNbrs_nonhub`, `upNbrs_invalid`.
+To do: `TernOrdered` for `timeProgram.compile` (slot codes), and explicit (decodable)
+descriptions of `OutValid z` and of `hubNbrs` for the program: decode `z` into
+`(lab, b, i, F)`, `F` into the kind and `(e, σ)` / `v`, and evaluate `ClsValid` (domain
+membership via the command guard, `ent σ c`), `LabelOK` and the neighbor classes
+(`trackAt` by `prevStep`, `permU` shift) from the command data.
+
+## Output graph (design notes)
 
 Let `I = P'.compile p₀ 0`, `E = I.schemas.length`, `W = I.numLocations`, `NS = numSteps`.
 Family offsets (hubs first): `upd` `[0, E·NS)`, `junc` `+E`, `link` `+E`, then non-hubs
