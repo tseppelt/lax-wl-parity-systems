@@ -2,3 +2,9 @@ import Lax119563Proofs.Game.Colors
 import Lax119563Proofs.Game.Duplicator
 import Lax119563Proofs.Game.Spoiler
 import Lax119563Proofs.Game.Characterization
+import Lax119563Proofs.Programs.RegisterProgram
+import Lax119563Proofs.Programs.Propagation
+import Lax119563Proofs.Programs.Encoding
+import Lax119563Proofs.Programs.Compile
+import Lax119563Proofs.Programs.Correctness
+import Lax119563Proofs.Programs.Size
