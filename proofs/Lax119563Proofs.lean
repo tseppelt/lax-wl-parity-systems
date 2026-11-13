@@ -9,3 +9,5 @@ import Lax119563Proofs.Hierarchy.Locality
 import Lax119563Proofs.Hierarchy.Programs
 import Lax119563Proofs.Hierarchy.Padding
 import Lax119563Proofs.Hierarchy.Reduction
+import Lax119563Proofs.Hierarchy.UnivSim
+import Lax119563Proofs.Hierarchy.UnivKey
