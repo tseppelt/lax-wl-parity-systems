@@ -17,3 +17,4 @@ import Lax119563Proofs.Matrix.SpoilerStrip
 import Lax119563Proofs.Matrix.SpoilerGadget
 import Lax119563Proofs.Matrix.SpoilerWalk
 import Lax119563Proofs.Matrix.SpoilerMain
+import Lax119563Proofs.Matrix.Size
