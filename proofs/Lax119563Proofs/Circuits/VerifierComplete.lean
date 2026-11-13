@@ -299,5 +299,222 @@ lemma complete_state (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (p : 
         simp only [wG]
         omega
 
+lemma complete_headIn (d : Fin (H + 1)) (θ : Fin 2) (ν : Tape M)
+    (u : Fin (H + 1)) {A : ℕ} (hS : Sem M x H (.headIn d θ ν u) A) :
+    ∃ mv ∈ moves M x s ℓ H (.headIn d θ ν u),
+      mv.Fires ℓ (Sem M x H) (rank M H) (.headIn d θ ν u) A := by
+  obtain ⟨hu, y, hy, hrel⟩ := (show semHead M x H d θ ν u A from hS)
+  by_cases hu0 : u.val = 0
+  · have hy0 : y = 0 := by rw [hu0] at hy; simpa using hy
+    subst hy0
+    rw [hu0, setBits_zero_width] at hrel
+    set γ := (runOn M x (ptime H d (cω H d A) θ)).tape ν (off M x H d (cω H d A) ν + cj H d A)
+    refine ⟨.goto (.cell d θ.castSucc ν (γ, true)), ?_, field_zero_width _ _, ?_, ?_⟩
+    · have h0d : 0 < H - d.val := by omega
+      simp only [moves, hu0, h0d, ↓reduceIte, List.mem_map, List.mem_finRange, true_and]
+      exact ⟨γ, rfl⟩
+    · rw [setBits_zero_width]
+      refine ⟨fun _ => by omega, ?_⟩
+      exact cellT_of_rel hrel
+    · rw [setBits_zero_width]
+      simp only [rank, Fin.val_castSucc]
+      have := lvl1_lt_wP (M := M) (H := H) d
+      split_ifs <;> omega
+  · have hu1 : u.val - 1 + 1 = u.val := by omega
+    set e : Fin 2 := ⟨field A (u.val - 1) 1, field_lt _ _ _⟩
+    set e' : Fin 2 := ⟨field y (u.val - 1) 1, field_lt _ _ _⟩
+    have he' : e'.val < 2 ^ 1 := e'.isLt
+    have hω : cω H d (setBits A (u.val - 1) 1 e') = cω H d A := cω_setBits he' (by omega)
+    refine ⟨.step (u.val - 1) 1 e e' (.headIn d θ ν (dpred u)), ?_, rfl, ?_, ?_⟩
+    · simp only [moves, hu, hu0, ↓reduceIte, List.mem_flatMap, List.mem_map,
+        List.mem_finRange, true_and]
+      exact ⟨e, e', rfl⟩
+    · refine ⟨by simp only [dpred_val]; omega, y % 2 ^ (u.val - 1),
+        Nat.mod_lt _ (by positivity), ?_⟩
+      simp only [dpred_val]
+      rw [hω, setBits_merge he' (Nat.mod_lt _ (by positivity)), hu1]
+      have hy' : y < 2 ^ (u.val - 1 + 1) := by rwa [hu1]
+      rw [show (e' : ℕ) = field y (u.val - 1) 1 from rfl, split_low hy']
+      exact hrel
+    · simp only [rank, dpred_val]
+      rw [hω]
+      omega
+
+lemma moves_complete (P : Params x s ℓ H) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (s * ℓ))
+    (hS : Sem M x H L A) :
+    L = .accept ∨ ∃ mv ∈ moves M x s ℓ H L, mv.Fires ℓ (Sem M x H) (rank M H) L A := by
+  have hA2 := P.addr_lt hA
+  cases L with
+  | accept => exact Or.inl rfl
+  | reject => exact hS.elim
+  | query =>
+    right
+    have hS' : (cfgExt (runOn M x (2 ^ H))).2 = some true := hS
+    have h1 : cω H 0 A = 0 := by simp [cω, Nat.div_eq_of_lt hA2]
+    refine ⟨.goto (.state 0 2 (cfgExt (runOn M x (2 ^ H)))), ?_, field_zero_width _ _, ?_, ?_⟩
+    · simp only [moves, List.mem_map, List.mem_filter, decide_eq_true_eq]
+      exact ⟨_, ⟨mem_allExt _, hS'⟩, rfl⟩
+    · rw [setBits_zero_width]
+      refine ⟨by simp, ?_⟩
+      change extT M x H 0 (cω H 0 A) 2 = _
+      rw [h1, extT_query]
+    · rw [setBits_zero_width]
+      have h2v : ((2 : Fin 3) : ℕ) = 2 := rfl
+      simp only [rank, h2v, OfNat.ofNat_ne_zero, ↓reduceIte, Fin.val_zero]
+      change ptime H 0 (cω H 0 A) 2 * wK M H + _ < _
+      rw [h1]
+      have hp : ptime H 0 0 2 = 2 ^ H := by simp [ptime]
+      rw [hp]
+      have := lvl1_lt_wP (M := M) (H := H) 0
+      have := lvl0_lt (M := M) (H := H) (d := 0) (Nat.zero_le _)
+      nlinarith
+  | cell d θ ν c => exact Or.inr (complete_cell P d θ ν c hA hS)
+  | state d θ p => exact Or.inr (complete_state P d θ p hA hS)
+  | headIn d θ ν u => exact Or.inr (complete_headIn d θ ν u hS)
+  | headSet d θ ν β =>
+    right
+    obtain ⟨hdH, hh⟩ := hS
+    have hk : bpos H d < H + 1 := by unfold bpos; omega
+    refine ⟨.step (bpos H d) 3 (field A (bpos H d) 3) β (.headIn d θ ν ⟨bpos H d, hk⟩), ?_, rfl,
+      hh, ?_⟩
+    · simp only [moves, hdH, ↓reduceIte, List.mem_map, List.mem_finRange, true_and]
+      exact ⟨⟨_, field_lt _ _ _⟩, rfl⟩
+    · simp only [rank]
+      rw [cω_setBits β.isLt (by rw [bpos_add_three hdH])]
+      have : bpos H d ≤ H := by unfold bpos; omega
+      omega
+  | restore d θ ν c β =>
+    right
+    obtain ⟨hdH, hr⟩ := hS
+    set q : Fin 8 := ⟨field A (bpos H d) 3, field_lt _ _ _⟩
+    by_cases hin : sel β ≤ q.val ∧ q.val < sel β + 4
+    · rw [if_pos hin] at hr
+      have hv : 4 * θ.val + (q.val - sel β) < 2 ^ 3 := by have := θ.isLt; norm_num; omega
+      refine ⟨.step (bpos H d) 3 q (4 * θ.val + (q.val - sel β)) (.cell (dsucc d hdH) 2 ν c),
+        ?_, rfl, hr, ?_⟩
+      · simp only [moves, dif_pos hdH, List.mem_map, List.mem_finRange, true_and]
+        exact ⟨q, by simp [hin]⟩
+      · have hc : cω H (d.val + 1) (setBits A (bpos H d) 3 (4 * θ.val + (q.val - sel β))) =
+            2 * cω H d A + θ.val := by
+          rw [cω_child hdH, field_setBits hv, cω_setBits hv (by rw [bpos_add_three hdH])]
+          congr 1; omega
+        have h2v : ((2 : Fin 3) : ℕ) = 2 := rfl
+        simp only [rank, dsucc_val, h2v, OfNat.ofNat_ne_zero, ↓reduceIte]
+        change ptime H (d.val + 1) (cω H (d.val + 1) (setBits A (bpos H d) 3
+          (4 * θ.val + (q.val - sel β)))) 2 * wK M H + _ < _
+        rw [hc, ptime_child_end _ _ _ hdH]
+        have : wG M * (H - (d.val + 1)) + wG M ≤ wG M * (H - d.val) := by
+          rw [show H - d.val = H - (d.val + 1) + 1 by omega]; ring_nf; omega
+        have : 2 ≤ wG M := by simp [wG]
+        omega
+    · rw [if_neg hin] at hr
+      refine ⟨.step (bpos H d) 3 q q (.cell d θ.castSucc ν c), ?_, rfl, ?_, ?_⟩
+      · simp only [moves, dif_pos hdH, List.mem_map, List.mem_finRange, true_and]
+        exact ⟨q, by simp [hin]⟩
+      · rw [setBits_self rfl]; exact hr
+      · rw [setBits_self rfl]
+        simp only [rank, Fin.val_castSucc]
+        have h := rk_lt_time (b := wG M * (H - d) + wG M - 2)
+          (ptime_lt_succ (ω := cω H d A) (θ := θ.val) hdH) (lvl0_lt (M := M) d.is_le)
+        have := lvl1_lt_wP (M := M) (H := H) d
+        split_ifs <;> omega
+  | gather d θ ν c β =>
+    right
+    obtain ⟨hdH, hf, hg⟩ := hS
+    set c' : Fin 4 := ⟨field A (bpos H d) 3 % 4, Nat.mod_lt _ (by norm_num)⟩
+    have hfq : field A (bpos H d) 3 = 4 * θ.val + c'.val := by
+      have := Nat.div_add_mod (field A (bpos H d) 3) 4
+      simp only [c']; omega
+    have hv : sel β + c'.val < 2 ^ 3 := by
+      have := c'.isLt; have : sel β ≤ 4 := min_le_right _ _; norm_num; omega
+    refine ⟨.step (bpos H d) 3 (4 * θ.val + c'.val) (sel β + c'.val) (.cell d θ.castSucc ν c),
+      ?_, hfq, hg, ?_⟩
+    · simp only [moves, hdH, ↓reduceIte, List.mem_map, List.mem_finRange, true_and]
+      exact ⟨c', rfl⟩
+    · simp only [rank, Fin.val_castSucc]
+      rw [cω_setBits hv (by rw [bpos_add_three hdH])]
+      have := lvl1_lt_wP (M := M) (H := H) d
+      split_ifs <;> omega
+  | baseCell ν ρ old k =>
+    right
+    obtain ⟨hrow, hst, hold⟩ := hS
+    by_cases hk : k.val < M.tapes + 1
+    · refine ⟨.fork' (.setJ ⟨k.val, hk⟩ ⟨(ρ.2.1 ⟨k.val, hk⟩).val + 1, by omega⟩
+          (ρ.2.2 ⟨k.val, hk⟩, true)) (.baseCell ν ρ old ⟨k.val + 1, by omega⟩), ?_,
+          field_zero_width _ _, hrow _ le_rfl, ⟨fun i hi => hrow i (by simp at hi; omega),
+          hst, hold⟩, ?_, ?_⟩
+      · simp [moves, hk, Move.fork']
+      · simp only [rank]; omega
+      · simp only [rank]; omega
+    · refine ⟨.fork' (.state ⟨H, by omega⟩ 0 ρ.1) (.cell ⟨H, by omega⟩ 0 ν old), ?_,
+          field_zero_width _ _, hst, hold, ?_, ?_⟩
+      · simp [moves, hk, Move.fork']
+      · simp only [rank, Fin.val_zero, ↓reduceIte]
+        have h := lvl0_lt (M := M) (H := H) (d := H) le_rfl
+        have hp : ptime H H (cω H H A) 0 < ptime H H (cω H H A) 2 := by
+          rw [ptime_base, ptime_base]; omega
+        have := rk_lt_time (b := 0) hp (show wP M H + 2 * H * wQ H < wK M H by omega)
+        omega
+      · simp only [rank, Fin.val_zero, ↓reduceIte]
+        have h := lvl0_lt (M := M) (H := H) (d := H) le_rfl
+        have hp : ptime H H (cω H H A) 0 < ptime H H (cω H H A) 2 := by
+          rw [ptime_base, ptime_base]; omega
+        have := rk_lt_time (b := 0) hp (show wP M H + 2 * H * wQ H < wK M H by omega)
+        omega
+  | baseState ρ k =>
+    right
+    obtain ⟨hrow, hst⟩ := hS
+    by_cases hk : k.val < M.tapes + 1
+    · refine ⟨.fork' (.setJ ⟨k.val, hk⟩ ⟨(ρ.2.1 ⟨k.val, hk⟩).val + 1, by omega⟩
+          (ρ.2.2 ⟨k.val, hk⟩, true)) (.baseState ρ ⟨k.val + 1, by omega⟩), ?_,
+          field_zero_width _ _, hrow _ le_rfl, ⟨fun i hi => hrow i (by simp at hi; omega),
+          hst⟩, ?_, ?_⟩
+      · simp [moves, hk, Move.fork']
+      · simp only [rank]; omega
+      · simp only [rank]; omega
+    · refine ⟨.goto (.state ⟨H, by omega⟩ 0 ρ.1), ?_, field_zero_width _ _, ?_, ?_⟩
+      · simp [moves, hk, Move.goto]
+      · rw [setBits_zero_width]; exact hst
+      · rw [setBits_zero_width]
+        simp only [rank, Fin.val_zero, ↓reduceIte]
+        have h := lvl0_lt (M := M) (H := H) (d := H) le_rfl
+        have hp : ptime H H (cω H H A) 0 < ptime H H (cω H H A) 2 := by
+          rw [ptime_base, ptime_base]; omega
+        have := rk_lt_time (b := 0) hp (show wP M H + 2 * H * wQ H < wK M H by omega)
+        omega
+  | setJ ν h c =>
+    right
+    have hh : h.val < 2 ^ 2 := h.isLt
+    refine ⟨.step 0 2 (field A 0 2) h (.cell ⟨H, by omega⟩ 0 ν c), ?_, rfl, hS, ?_⟩
+    · simp only [moves, List.mem_map, List.mem_finRange, true_and]
+      exact ⟨⟨_, field_lt _ _ _⟩, rfl⟩
+    · simp only [rank, Fin.val_zero, ↓reduceIte]
+      rw [cω_setBits hh (by omega)]
+      have h := lvl0_lt (M := M) (H := H) (d := H) le_rfl
+      have hp : ptime H H (cω H H A) 0 < ptime H H (cω H H A) 2 := by
+        rw [ptime_base, ptime_base]; omega
+      have := rk_lt_time (b := 0) hp (show wP M H + 2 * H * wQ H < wK M H by omega)
+      omega
+
 end Lax119563Proofs.Circuits
 
+namespace Lax119563Proofs.Circuits
+
+open Lax489179.TuringMachine
+
+variable {M : Machine} {x : List Bool} {s ℓ H : ℕ}
+
+/-- The verifier accepts exactly the configurations whose assertion is true. -/
+theorem verifier_accepts_iff (P : Params x s ℓ H) (L : Loc M H) {A : ℕ}
+    (hA : A < 2 ^ (s * ℓ)) :
+    AAccepts ℓ (verifierCmds M x s ℓ H) .accept .reject L A ↔ Sem M x H L A := by
+  constructor
+  · intro h
+    exact progCmds_sound P.hℓ (fun src _ => moves_wf P.hH src)
+      (fun src _ => moves_sound P src) (fun A => show Sem M x H .accept A from trivial) h hA
+  · intro hS
+    exact progCmds_complete P.hℓ (rank M H) (mem_allLocs M H)
+      (fun src _ => moves_wf P.hH src) (fun _ h => h)
+      (fun src _ hA hS => moves_complete P src hA hS) L A hA hS
+
+end Lax119563Proofs.Circuits

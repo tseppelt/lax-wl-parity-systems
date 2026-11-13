@@ -24,3 +24,5 @@ import Lax119563Proofs.Circuits.MoveProgram
 import Lax119563Proofs.Circuits.Verifier
 import Lax119563Proofs.Circuits.VerifierSem
 import Lax119563Proofs.Circuits.VerifierLemmas
+import Lax119563Proofs.Circuits.VerifierSound
+import Lax119563Proofs.Circuits.VerifierComplete
