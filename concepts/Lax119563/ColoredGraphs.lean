@@ -1,4 +1,5 @@
 import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.SetTheory.Cardinal.Finite
 
 /-!
 ---

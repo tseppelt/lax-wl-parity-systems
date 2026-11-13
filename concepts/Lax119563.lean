@@ -1,6 +1,12 @@
+import Lax119563.BinaryEncodings
 import Lax119563.ColoredGraphs
-import Lax119563.WeisfeilerLeman
-import Lax119563.PebbleGame
+import Lax119563.DeterministicTime
 import Lax119563.GameCharacterization
-import Lax119563.ParitySystems
 import Lax119563.ImplicitParitySystems
+import Lax119563.MatrixCompiler
+import Lax119563.ParitySystems
+import Lax119563.PebbleGame
+import Lax119563.RuntimeLowerBound
+import Lax119563.TimeHierarchy
+import Lax119563.TimeReduction
+import Lax119563.WeisfeilerLeman

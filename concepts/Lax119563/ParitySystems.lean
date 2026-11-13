@@ -39,7 +39,7 @@ structure ParitySystem (V : Type*) where
 
 namespace ParitySystem
 
-variable {V : Type*}
+variable {V : Type*} [DecidableEq V]
 
 /-- The set `K_r` of facts known after round `r` of unit propagation. In round `r + 1`, an
 equation `h` and a variable `X ∈ h` infer `X = ∑_{Y ∈ h \ {X}} b_Y` from known facts
