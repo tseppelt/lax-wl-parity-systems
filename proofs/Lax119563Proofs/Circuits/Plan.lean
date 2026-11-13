@@ -42,8 +42,7 @@ All address changes replace a field of at most three bits (guard on the current 
 XOR with a constant mask). No navigation chain of length `H` is needed.
 
 ## Files
-* `RegisterProgramStub`  — copy of the shared register program interface (to be replaced
-                            by `Lax119563Proofs.Programs.RegisterProgram` at merge time).
+* Register programs are `Lax119563Proofs.Programs.RegisterProgram` (area `Programs`).
 * `AddrProgram`          — programs over numeric addresses with field guards and XOR
                             masks, compiled to register programs (transfer theorem).
 * `Bits`                 — bit fields `field A k m`, `setBits`, XOR lemmas.

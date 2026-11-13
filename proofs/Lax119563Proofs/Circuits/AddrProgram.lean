@@ -1,5 +1,5 @@
 import Lax119563Proofs.Circuits.Bits
-import Lax119563Proofs.Circuits.RegisterProgramStub
+import Lax119563Proofs.Programs.RegisterProgram
 
 /-!
 # Programs over numeric addresses
@@ -14,7 +14,7 @@ register permutation), and acceptance is preserved (`compile_accepts`).
 
 namespace Lax119563Proofs.Circuits
 
-open Stub
+open Programs
 
 /-- The number with bits `f 0, …, f (n - 1)`. -/
 def ofBits : ℕ → (ℕ → Bool) → ℕ
