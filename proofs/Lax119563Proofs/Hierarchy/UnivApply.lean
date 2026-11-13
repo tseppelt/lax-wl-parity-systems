@@ -219,4 +219,84 @@ lemma recLoop_runs :
       simp only [cK]
       omega
 
+/-- The new left parts. -/
+def newLefts (ts : List Tp) : List (List ℕ) := ts.map (fun t => (tapeUpd t.1 t.2.1 t.2.2.1 t.2.2.2).1)
+
+/-- The new right parts. -/
+def newRights (ts : List Tp) : List (List ℕ) :=
+  ts.map (fun t => (tapeUpd t.1 t.2.1 t.2.2.1 t.2.2.2).2)
+
+lemma newRecords_length :
+    ∀ ts : List Tp, (records (newLefts ts)).length + (records (newRights ts)).length ≤
+      (records (ts.map (·.1))).length + (records (ts.map (·.2.1))).length + (insPairs ts).length
+  | [] => by simp [newLefts, newRights, records, insPairs]
+  | ⟨l, r, w, mv⟩ :: ts => by
+    have := newRecords_length ts
+    have h := tapeUpd_length l r w mv
+    simp only [newLefts, newRights, List.map_cons, records_cons, List.length_append,
+      length_record, insPairs, List.flatMap_cons, length_encN, List.length_singleton] at this h ⊢
+    omega
+
+lemma applyNext_runs (q' : ℕ) (ts : List Tp) (Q : List Tok) (s : Stacks 16 13)
+    (hI : s INS = tN :: (encN q' ++ insPairs ts)) (hQ : s QS = Q)
+    (hL : s LS = records (ts.map (·.1))) (hR : s RS = records (ts.map (·.2.1)))
+    (hT : s TMP = []) (hL2 : s LS2 = []) (hR2 : s RS2 = []) :
+    applyNext.RunsLe s (update (update (update (update s INS []) QS (List.replicate q' tU)) LS
+      (records (newLefts ts))) RS (records (newRights ts)))
+      (6 * cK * ((s LS).length + (s RS).length + (s INS).length + Q.length + 1)) := by
+  have h1 := RunsLe.pop INS s
+  set s₁ := update s INS (s INS).tail
+  have h2 := clear_runs QS Q s₁ (by simp [s₁, hQ])
+  set s₂ := update s₁ QS []
+  have h3 := moveWhileNot_runs (i := INS) (j := QS) (by decide) tS (tS :: insPairs ts) (by simp)
+    (List.replicate q' tU) s₂ (tS_not_mem_rep q') (by simp [s₂, s₁, hI, encN])
+  set s₃ := update (update s₂ INS (tS :: insPairs ts)) QS
+    ((List.replicate q' tU).reverse ++ s₂ QS)
+  have h4 := RunsLe.pop INS s₃
+  set s₄ := update s₃ INS (s₃ INS).tail
+  have h5 := recLoop_runs ts s₄ (by simp [s₄, s₃]) (by simp [s₄, s₃, s₂, s₁, hL])
+    (by simp [s₄, s₃, s₂, s₁, hR]) (by simp [s₄, s₃, s₂, s₁, hT])
+  set s₅ := update (update (update (update (update s₄ INS []) LS []) RS []) LS2
+    ((records (ts.map (fun t => (tapeUpd t.1 t.2.1 t.2.2.1 t.2.2.2).1))).reverse ++ s₄ LS2)) RS2
+    ((records (ts.map (fun t => (tapeUpd t.1 t.2.1 t.2.2.1 t.2.2.2).2))).reverse ++ s₄ RS2)
+  have h6 := moveAll_runs (i := LS2) (j := LS) (by decide)
+    (records (newLefts ts)).reverse s₅ (by simp [s₅, s₄, s₃, s₂, s₁, hL2, newLefts])
+  set s₆ := update (update s₅ LS2 []) LS ((records (newLefts ts)).reverse.reverse ++ s₅ LS)
+  have h7 := moveAll_runs (i := RS2) (j := RS) (by decide)
+    (records (newRights ts)).reverse s₆ (by simp [s₆, s₅, s₄, s₃, s₂, s₁, hR2, newRights])
+  refine (h1.seq (h2.seq (h3.seq (h4.seq (h5.seq (h6.seq h7)))))).of_eq ?_ ?_
+  · funext k; fin_cases k <;>
+      simp (config := {decide := true}) [update_apply, s₆, s₅, s₄, s₃, s₂, s₁, hL2, hR2]
+  · have e := newRecords_length ts
+    have eL : (s₄ LS).length = (s LS).length := by simp [s₄, s₃, s₂, s₁]
+    have eR : (s₄ RS).length = (s RS).length := by simp [s₄, s₃, s₂, s₁]
+    have eI : (s₄ INS).length = (insPairs ts).length := by simp [s₄, s₃]
+    have eI' : (s INS).length = q' + 2 + (insPairs ts).length := by simp [hI]; omega
+    rw [eL, eR, eI]
+    rw [← hL, ← hR] at e
+    simp only [List.length_reverse, List.length_replicate, cK]
+    simp only [newLefts, newRights] at e ⊢
+    omega
+
+/-- The halting token. -/
+def haltTok (b : Bool) : Tok := if b then tH1 else tH0
+
+lemma apply_halt (b : Bool) (s : Stacks 16 13) (hI : s INS = [haltTok b]) (hD : s DONE = []) :
+    apply.RunsLe s (update (update s INS []) DONE [haltTok b]) 20 := by
+  have hc : (fun r : Stk → Option Tok => r INS == some tH0 || r INS == some tH1) (tops s) = true := by
+    cases b <;> simp [tops, hI, haltTok]
+  refine ((moveOne_runs (i := INS) (j := DONE) (by decide) (l := []) hI).iteT hc).of_eq
+    (by funext k; fin_cases k <;> simp (config := {decide := true}) [update_apply, hD]) (by omega)
+
+lemma apply_next (q' : ℕ) (ts : List Tp) (Q : List Tok) (s : Stacks 16 13)
+    (hI : s INS = tN :: (encN q' ++ insPairs ts)) (hQ : s QS = Q)
+    (hL : s LS = records (ts.map (·.1))) (hR : s RS = records (ts.map (·.2.1)))
+    (hT : s TMP = []) (hL2 : s LS2 = []) (hR2 : s RS2 = []) :
+    apply.RunsLe s (update (update (update (update s INS []) QS (List.replicate q' tU)) LS
+      (records (newLefts ts))) RS (records (newRights ts)))
+      (6 * cK * ((s LS).length + (s RS).length + (s INS).length + Q.length + 1) + 1) := by
+  have hc : (fun r : Stk → Option Tok => r INS == some tH0 || r INS == some tH1) (tops s) = false := by
+    simp [tops, hI]
+  exact (applyNext_runs q' ts Q s hI hQ hL hR hT hL2 hR2).iteF hc
+
 end Lax119563Proofs.Hierarchy.Universal
