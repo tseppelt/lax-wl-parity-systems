@@ -12,3 +12,4 @@ import Lax119563Proofs.Hierarchy.Reduction
 import Lax119563Proofs.Hierarchy.UnivSim
 import Lax119563Proofs.Hierarchy.UnivKey
 import Lax119563Proofs.Hierarchy.UnivLookup
+import Lax119563Proofs.Hierarchy.UnivApply
