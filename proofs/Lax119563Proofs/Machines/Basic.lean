@@ -141,6 +141,9 @@ theorem RunsWithin.mono {T T' : Tapes k Γ} {t t' : ℕ} (h : M.RunsWithin T t T
     (ht : t ≤ t') : M.RunsWithin T t' T' := by
   obtain ⟨s, hs, h⟩ := h; exact ⟨s, hs.trans ht, h⟩
 
+theorem RunsWithin.congr_right {T T' T'' : Tapes k Γ} {t : ℕ} (h : M.RunsWithin T t T')
+    (e : T' = T'') : M.RunsWithin T t T'' := e ▸ h
+
 theorem RunsWithin.unique {T T₁ T₂ : Tapes k Γ} {t₁ t₂ : ℕ} (h₁ : M.RunsWithin T t₁ T₁)
     (h₂ : M.RunsWithin T t₂ T₂) : T₁ = T₂ := by
   obtain ⟨_, _, h₁⟩ := h₁; obtain ⟨_, _, h₂⟩ := h₂
@@ -313,6 +316,24 @@ theorem loop_runsWithin_const {c : (Fin k → Γ) → Bool} {B : TM k Γ} (n : �
     (hB : ∀ i < n, B.RunsWithin (f i) t (f (i + 1))) :
     (loop c B).RunsWithin (f 0) (n * (t + 1)) (f n) := by
   simpa using loop_runsWithin n f (fun _ => t) hc hn hB
+
+/-- Loop rule with an invariant and a potential: every iteration preserves `Inv` and pays
+for its transitions (plus the one extra loop transition) out of the potential. -/
+theorem loop_runsWithin_inv {c : (Fin k → Γ) → Bool} {B : TM k Γ}
+    (Inv Post : Tapes k Γ → Prop) (pot : Tapes k Γ → ℕ)
+    (hexit : ∀ T, Inv T → c (readAll T) = false → Post T)
+    (hbody : ∀ T, Inv T → c (readAll T) = true →
+      ∃ t T', B.RunsWithin T t T' ∧ Inv T' ∧ pot T' + t + 1 ≤ pot T) :
+    ∀ T, Inv T → ∃ T', (loop c B).RunsWithin T (pot T) T' ∧ Post T' := by
+  intro T hT
+  induction hn : pot T using Nat.strong_induction_on generalizing T with
+  | _ n ih =>
+    cases hc : c (readAll T) with
+    | false => exact ⟨T, (loop_runsWithin_exit hc).mono (Nat.zero_le _), hexit T hT hc⟩
+    | true =>
+      obtain ⟨t, T₁, h₁, hT₁, hpot⟩ := hbody T hT hc
+      obtain ⟨T₂, h₂, hpost⟩ := ih (pot T₁) (by omega) T₁ hT₁ rfl
+      exact ⟨T₂, (loop_runsWithin_iter hc h₁ h₂).mono (by omega), hpost⟩
 
 /-! ## Running a machine on a subset of the tapes -/
 

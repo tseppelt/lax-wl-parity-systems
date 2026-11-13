@@ -1,2 +1,6 @@
 import Lax119563Proofs.Machines.Basic
 import Lax119563Proofs.Machines.Compile
+import Lax119563Proofs.Machines.Plan
+import Lax119563Proofs.Machines.Words
+import Lax119563Proofs.Machines.Routines
+import Lax119563Proofs.Machines.WordRoutines
