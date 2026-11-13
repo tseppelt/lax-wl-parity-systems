@@ -8,3 +8,10 @@ import Lax119563Proofs.Programs.Encoding
 import Lax119563Proofs.Programs.Compile
 import Lax119563Proofs.Programs.Correctness
 import Lax119563Proofs.Programs.Size
+import Lax119563Proofs.Main.Runs
+import Lax119563Proofs.Main.Asymptotics
+import Lax119563Proofs.Main.AbstractMachine
+import Lax119563Proofs.Main.Compose
+import Lax119563Proofs.Main.ComposeCorrect
+import Lax119563Proofs.Main.ComposeMain
+import Lax119563Proofs.Main.RuntimeLowerBound
