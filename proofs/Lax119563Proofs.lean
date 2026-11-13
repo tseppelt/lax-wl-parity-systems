@@ -8,3 +8,4 @@ import Lax119563Proofs.Machines.Numbers
 import Lax119563Proofs.Machines.Output
 import Lax119563Proofs.Machines.SortModel
 import Lax119563Proofs.Machines.SortTape
+import Lax119563Proofs.Machines.SortMerge
