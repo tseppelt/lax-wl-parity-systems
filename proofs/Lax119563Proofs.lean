@@ -4,3 +4,11 @@ import Lax119563Proofs.Matrix.Seeds
 import Lax119563Proofs.Matrix.ListGraph
 import Lax119563Proofs.Matrix.Construction
 import Lax119563Proofs.Matrix.VertexList
+import Lax119563Proofs.Matrix.GameLemmas
+import Lax119563Proofs.Matrix.Semantics
+import Lax119563Proofs.Matrix.Shifts
+import Lax119563Proofs.Matrix.Exposure
+import Lax119563Proofs.Matrix.Invariant
+import Lax119563Proofs.Matrix.ExtendSeeds
+import Lax119563Proofs.Matrix.Extension
+import Lax119563Proofs.Matrix.Duplicator
