@@ -1,0 +1,10 @@
+build-output.json
+paper.pdf
+paper-web.tar
+lake-manifest.json
+.lake/
+
+# Paper sources are not part of the repository
+framework/
+refs.bib
+.DS_Store
