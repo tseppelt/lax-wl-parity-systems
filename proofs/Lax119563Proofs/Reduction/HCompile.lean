@@ -160,8 +160,7 @@ lemma enc_rst (x : List Bool) (st : HSt R) :
       unfold enc
       simp [h0, h1']
 
-lemma inBit_eq (x : List Bool) (pos : ℕ) : inBit x pos = ((x.drop pos).headD false).toNat := by
-  rw [inBit, getD_eq_headD_drop]
+lemma inBit_eq (x : List Bool) (pos : ℕ) : inBit x pos = rdVal (x.drop pos) := rfl
 
 /-! ## Compilation -/
 
@@ -336,7 +335,8 @@ theorem compileH_runs {x : List Bool} {w : ℕ} {p : HProg R} {st st' : HSt R} {
     rw [enc_set, ← inBit_eq] at hA
     obtain ⟨h₁, e₁, r₁⟩ := RunsLe.toH hA
       (show Avoids sIo (hRdA (sReg r) sIo : Hierarchy.Prog (R + 7) 0) from
-        ⟨avoids_clear (by dist), (show sReg r ≠ sIo by dist), trivial⟩) hd
+        ⟨avoids_clear (by dist), ⟨(show sReg r ≠ sIo by dist), (show sReg r ≠ sIo by dist)⟩,
+          (show sReg r ≠ sIo by dist), trivial⟩) hd
     have hio := enc_io x (st.set r (inBit x st.pos))
     simp only [HSt.set_pos] at hio
     have hlen := length_nst_le hv

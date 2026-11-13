@@ -254,7 +254,7 @@ def nodeCost (w : ℕ) : ℕ := (w + 3) * unitCost w
 lemma unitCost_le_nodeCost (w : ℕ) : unitCost w ≤ nodeCost w := by
   unfold nodeCost; nlinarith
 
-lemma code_spec (hw : 1 ≤ w) : ∀ (e : Ex R) (k : ℕ) (st : HSt (R + D + 1)),
+lemma code_spec (hw : 2 ≤ w) : ∀ (e : Ex R) (k : ℕ) (st : HSt (R + D + 1)),
     k + e.depth ≤ D → st.Bdd w → e.Fits w (uenv D st) →
     ∃ st', HLe x w (code R D k e) st st' (e.size * nodeCost w) ∧
       st'.env (sc R D k) = e.eval (uenv D st)
@@ -311,7 +311,7 @@ lemma code_spec (hw : 1 ≤ w) : ∀ (e : Ex R) (k : ℕ) (st : HSt (R + D + 1))
     by_cases hodd : st₁.env (sc R D k) % 2 = 1
     · have hc : (st₁.view (sc R D k) == some true) = true := by
         simp [HSt.view, hodd]; omega
-      have h₂ := setK_spec (x := x) (sc R D k) 1 1 (by norm_num) hw st₁ (hb₁ _)
+      have h₂ := setK_spec (x := x) (sc R D k) 1 1 (by norm_num) (by omega) st₁ (hb₁ _)
       refine ⟨_, (h₁.seq (HLe.iteT (c := fun v => v (sc R D k) == some true)
         (q := .clr (sc R D k)) hc h₂)).mono ?_, ?_⟩
       · simp only [size, nodeCost]; nlinarith

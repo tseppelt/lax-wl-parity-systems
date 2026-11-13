@@ -53,6 +53,13 @@ end HProg
 /-- All registers are below `2 ^ w`. -/
 def HSt.Bdd (w : ℕ) (st : HSt R) : Prop := ∀ q, st.env q < 2 ^ w
 
+lemma rdVal_le (l : List Bool) : rdVal l ≤ 2 := by
+  rcases l with _ | ⟨b, _⟩
+  · simp [rdVal]
+  · cases b <;> simp [rdVal]
+
+lemma inBit_le (x : List Bool) (pos : ℕ) : inBit x pos ≤ 2 := rdVal_le _
+
 lemma HRuns.frame {p : HProg R} {st st' : HSt R} {t : ℕ} (h : HRuns x w p st st' t) {q : Fin R}
     (hq : p.wr q = false) : st'.env q = st.env q := by
   induction h with
@@ -97,7 +104,7 @@ lemma HRuns.pos_eq {p : HProg R} {st st' : HSt R} {t : ℕ} (h : HRuns x w p st 
   | _ => rfl
 
 lemma HRuns.bounded {p : HProg R} {st st' : HSt R} {t : ℕ} (h : HRuns x w p st st' t)
-    (hw : 1 ≤ w) (hb : st.Bdd w) : st'.Bdd w := by
+    (hw : 2 ≤ w) (hb : st.Bdd w) : st'.Bdd w := by
   have h2 : (1 : ℕ) < 2 ^ w := Nat.one_lt_two_pow (by omega)
   induction h with
   | seq _ _ ih₁ ih₂ => exact ih₂ (ih₁ hb)
@@ -138,7 +145,10 @@ lemma HRuns.bounded {p : HProg R} {st st' : HSt R} {t : ℕ} (h : HRuns x w p st
     · exact hb q
   | rd =>
     intro q; simp only [HSt.set, Function.update_apply]; split_ifs
-    · unfold inBit; cases (x.getD _ false) <;> simp; omega
+    · have h4 : (4 : ℕ) ≤ 2 ^ w := by
+        calc (4 : ℕ) = 2 ^ 2 := by norm_num
+          _ ≤ 2 ^ w := Nat.pow_le_pow_right (by norm_num) hw
+      exact lt_of_le_of_lt (inBit_le _ _) (by omega)
     · exact hb q
 
 lemma HLe.frame {p : HProg R} {st st' : HSt R} {T : ℕ} (h : HLe x w p st st' T) {q : Fin R}
@@ -154,7 +164,7 @@ lemma HLe.pos_eq {p : HProg R} {st st' : HSt R} {T : ℕ} (h : HLe x w p st st' 
   obtain ⟨t, -, h⟩ := h; exact h.pos_eq hp
 
 lemma HLe.bounded {p : HProg R} {st st' : HSt R} {T : ℕ} (h : HLe x w p st st' T)
-    (hw : 1 ≤ w) (hb : st.Bdd w) : st'.Bdd w := by
+    (hw : 2 ≤ w) (hb : st.Bdd w) : st'.Bdd w := by
   obtain ⟨t, -, h⟩ := h; exact h.bounded hw hb
 
 end Lax119563Proofs.Reduction

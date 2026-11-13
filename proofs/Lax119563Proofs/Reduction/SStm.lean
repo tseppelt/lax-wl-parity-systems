@@ -21,7 +21,7 @@ variable {R D : ℕ} {x : List Bool} {w : ℕ}
 /-! ## Counting loops with an invariant -/
 
 lemma forUp_inv {N : ℕ} {i lim f t : Fin N} {body : HProg N} (hil : i ≠ lim) (hif : i ≠ f)
-    (hit : i ≠ t) (hlf : lim ≠ f) (hlt : lim ≠ t) (hft : f ≠ t) (hw : 1 ≤ w) (L : ℕ)
+    (hit : i ≠ t) (hlf : lim ≠ f) (hlt : lim ≠ t) (hft : f ≠ t) (hw : 2 ≤ w) (L : ℕ)
     (hL : L + 1 < 2 ^ w) (hbi : body.wr i = false) (hbl : body.wr lim = false)
     (Inv : ℕ → HSt N → Prop) (C : ℕ → ℕ)
     (hstep : ∀ k < L, ∀ σ : HSt N, Inv k σ → σ.Bdd w → σ.env i = k → σ.env lim = L →
@@ -289,7 +289,7 @@ lemma inBit_min (x : List Bool) (k : ℕ) : inBit x (min k x.length) = inBit x k
   unfold inBit
   rcases le_or_gt k x.length with h | h
   · rw [min_eq_left h]
-  · rw [min_eq_right h.le, List.getD_eq_default _ _ le_rfl, List.getD_eq_default _ _ h.le]
+  · rw [min_eq_right h.le, List.drop_eq_nil_of_le le_rfl, List.drop_eq_nil_of_le h.le]
 
 lemma uenv_of_agree {σ τ : HSt (R + D + 1)} {i : Fin R} {v : ℕ}
     (h : ∀ q, q ≠ ur D i → q ≠ sc R D 0 → q ≠ sc R D 1 → τ.env q = σ.env q)
@@ -303,7 +303,7 @@ lemma uenv_of_agree {σ τ : HSt (R + D + 1)} {i : Fin R} {v : ℕ}
 namespace Stm
 
 /-- **Compilation of statements.** -/
-theorem code_spec (hw : 1 ≤ w) : ∀ (c : Stm R) (env : Fin R → ℕ) (st : HSt (R + D + 1)),
+theorem code_spec (hw : 2 ≤ w) : ∀ (c : Stm R) (env : Fin R → ℕ) (st : HSt (R + D + 1)),
     WF c → depth c ≤ D → Fits x w c env → uenv D st = env → st.Bdd w → st.pos ≤ x.length →
     (noX c = true ∨ st.pos = 0) →
     ∃ st', HLe x w (code R D c) st st' (cost x w c env) ∧ uenv D st' = (exec x c env).1 ∧

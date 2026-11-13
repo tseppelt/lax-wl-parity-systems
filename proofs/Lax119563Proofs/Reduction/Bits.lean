@@ -157,4 +157,9 @@ lemma cmpL_spec : ∀ (l l' : List Bool) (st : Ordering),
   | a :: l, b :: l', st => by
     rw [cmpL, cmpL_spec l l' _, ← Ordering.then_assoc]; simp only [valBits]; rw [compare_bit_add]
 
+/-- The value read from the remaining input: `0` at its end, else the next bit plus one. -/
+def rdVal : List Bool → ℕ
+  | [] => 0
+  | b :: _ => b.toNat + 1
+
 end Lax119563Proofs.Reduction
