@@ -88,5 +88,12 @@ import Lax119563Proofs.Reduction.Plan
 import Lax119563Proofs.Reduction.Assembly
 import Lax119563Proofs.Reduction.Transfer
 import Lax119563Proofs.Reduction.StackOut
+import Lax119563Proofs.Reduction.Bits
+import Lax119563Proofs.Reduction.HProg
+import Lax119563Proofs.Reduction.HStack
+import Lax119563Proofs.Reduction.HRoutines
+import Lax119563Proofs.Reduction.HHeads
+import Lax119563Proofs.Reduction.HCompile
+import Lax119563Proofs.Reduction.HMachine
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
