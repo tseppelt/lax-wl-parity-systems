@@ -133,3 +133,59 @@ lemma setBits_lt {A k m v N : ℕ} (hv : v < 2 ^ m) (hA : A < 2 ^ N) (hkm : k + 
   exact Nat.testBit_eq_false_of_lt (lt_of_lt_of_le hA (Nat.pow_le_pow_right (by norm_num) hi))
 
 end Lax119563Proofs.Circuits
+
+namespace Lax119563Proofs.Circuits
+
+lemma field_zero_eq_mod (A m : ℕ) : field A 0 m = A % 2 ^ m := by simp [field]
+
+lemma field_setBits_of_disjoint {A k m v k' m' : ℕ} (hv : v < 2 ^ m)
+    (h : k' + m' ≤ k ∨ k + m ≤ k') : field (setBits A k m v) k' m' = field A k' m' := by
+  apply Nat.eq_of_testBit_eq
+  intro t
+  rw [testBit_field, testBit_field, testBit_setBits hv]
+  by_cases ht : t < m'
+  · rw [if_neg (by omega)]
+  · simp [ht]
+
+lemma setBits_div_of_le {A k m v N : ℕ} (hv : v < 2 ^ m) (h : k + m ≤ N) :
+    setBits A k m v / 2 ^ N = A / 2 ^ N := by
+  apply Nat.eq_of_testBit_eq
+  intro t
+  simp only [Nat.testBit_div_two_pow, testBit_setBits hv]
+  rw [if_neg (by omega)]
+
+lemma setBits_mod_of_le {A k m v N : ℕ} (hv : v < 2 ^ m) (h : N ≤ k) :
+    setBits A k m v % 2 ^ N = A % 2 ^ N := by
+  apply Nat.eq_of_testBit_eq
+  intro t
+  simp only [Nat.testBit_mod_two_pow, testBit_setBits hv]
+  by_cases ht : t < N
+  · simp [ht, show ¬ (k ≤ t) by omega]
+  · simp [ht]
+
+/-- Splitting off the top bit of a three-bit field. -/
+lemma split_field3 (A k : ℕ) :
+    A / 2 ^ (k + 2) = 2 * (A / 2 ^ (k + 3)) + field A k 3 / 4 ∧
+      A % 2 ^ (k + 2) = field A k 3 % 4 * 2 ^ k + A % 2 ^ k := by
+  have hd := decomp A k 3
+  have hu : A % 2 ^ k < 2 ^ k := Nat.mod_lt _ (by positivity)
+  have h4 : field A k 3 % 4 < 2 ^ 2 := by
+    have := Nat.mod_lt (field A k 3) (by norm_num : 4 > 0); simpa using this
+  have key : A = (2 * (A / 2 ^ (k + 3)) + field A k 3 / 4) * 2 ^ (k + 2) +
+      field A k 3 % 4 * 2 ^ k + A % 2 ^ k := by
+    have e := Nat.div_add_mod (field A k 3) 4
+    have p3 : 2 ^ (k + 3) = 2 ^ k * 8 := by rw [pow_add]; norm_num
+    have p2 : 2 ^ (k + 2) = 2 ^ k * 4 := by rw [pow_add]; norm_num
+    have e' : field A k 3 * 2 ^ k =
+        4 * (field A k 3 / 4) * 2 ^ k + field A k 3 % 4 * 2 ^ k := by
+      conv_lhs => rw [← e]
+      ring
+    rw [p3] at hd
+    rw [p2, p3]
+    conv_lhs => rw [hd, e']
+    ring
+  obtain ⟨h1, h2, h3⟩ := eq_of_decomp h4 hu key
+  refine ⟨h1, ?_⟩
+  rw [mod_eq_field_add A k 2, h2, h3]
+
+end Lax119563Proofs.Circuits
