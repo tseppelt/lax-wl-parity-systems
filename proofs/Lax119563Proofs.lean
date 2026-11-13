@@ -19,3 +19,4 @@ import Lax119563Proofs.Circuits.Plan
 import Lax119563Proofs.Circuits.Bits
 import Lax119563Proofs.Circuits.AddrProgram
 import Lax119563Proofs.Circuits.MachineRun
+import Lax119563Proofs.Circuits.Windows
