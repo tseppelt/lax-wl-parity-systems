@@ -181,6 +181,118 @@ lemma padPrep_runs_true (x : List Bool) (j : ℕ) :
       split_ifs <;> first | omega | rfl
   · simp
 
+lemma padPrep_runs_false (n : ℕ) :
+    ∃ s', (padPrep ML C s).RunsLe (inputStacks _ _ (List.replicate n false)) s'
+        ((ML.symbols + 6) * n + 1 + (4 * n + 1 + (1 + 1))) ∧
+      HandsOver ML s' [] ∧ (s' (clockIdx ML 5)).length = 0 := by
+  have ne : ∀ a b : Fin (ML.tapes + 1 + 5 + 1), a.val ≠ b.val → a ≠ b :=
+    fun a b h => Fin.ne_of_val_ne h
+  set m := ML.symbols
+  have hs0 : inputStacks (ML.tapes + 1 + 5) m (List.replicate n false) =
+      pst ML (unary m n) [] [] [] [] := by
+    funext i
+    simp only [inputStacks, pst, Fin.ext_iff, Fin.val_zero, List.map_replicate]
+    split_ifs <;> first | omega | rfl | simp_all [bitSym]
+  rw [hs0]
+  have h1 : (moveAll 0 (d1 ML 0) : Prog _ m).RunsLe (pst ML (unary m n) [] [] [] [])
+      (pst ML [] (unary m n ++ []) [] [] []) ((m + 6) * n + 1) :=
+    (moveAll_runs (ne _ _ (by simp [d1])) (unary m n) _ (by simp [pst])).of_eq
+      (by simp only [List.reverse_replicate]; pst_eq) (by simp)
+  have h2 : (popZeros (d1 ML 0) (d1 ML 1) : Prog _ m).RunsLe
+      (pst ML [] (unary m n ++ []) [] [] []) (pst ML [] [] (unary m n) [] []) (4 * n + 1) :=
+    (popZeros_runs (ne _ _ (by simp [d1])) [] (by simp) n _ (by simp [pst, d1])).of_eq
+      (by pst_eq) le_rfl
+  have hc : (fun r : Fin (ML.tapes + 1 + 5 + 1) → Option (Fin (m + 2)) => r (d1 ML 0) == some 1)
+      (tops (pst ML [] [] (unary m n) [] [])) = false := by
+    simp [tops, pst, d1]
+  refine ⟨_, h1.seq (h2.seq (RunsLe.iteF hc (RunsLe.skip _))), ?_, ?_⟩
+  · intro i
+    refine ⟨fun hi => ?_, fun hi1 hi2 => ?_⟩
+    · simp only [pst]; split_ifs <;> first | omega | rfl
+    · simp only [pst]; split_ifs <;> first | omega | rfl
+  · simp [pst, clockIdx]
+
+/-- The constant of the time bound of `padDecider`. -/
+def padK (m C s : ℕ) : ℕ := 2 * m + 28 + (C + 1) * (m + 14) + (s + 1) * (4 * m + 40) * (C + 2) ^ s
+
+lemma padCost_le {m n j xl C s : ℕ} (hs : 1 ≤ s) (hj : j ≤ n) (hxl : xl ≤ n) :
+    padCost m n j xl C s + ((C + 1) * (j + 1)) ^ s + 1 ≤ padK m C s * (n + 1) ^ s := by
+  set P := (n + 1) ^ s
+  have hP : n + 1 ≤ P := Nat.le_self_pow (by omega) _
+  have hQ : ((C + 1) * (j + 1) + 1) ^ s ≤ (C + 2) ^ s * P := by
+    rw [← mul_pow]; exact Nat.pow_le_pow_left (by nlinarith) s
+  have hU : ((C + 1) * (j + 1)) ^ s ≤ (C + 2) ^ s * P :=
+    le_trans (Nat.pow_le_pow_left (by omega) s) hQ
+  unfold padCost padK
+  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul]
+  have h_a : (2 * m + 16) * (n + 1) ≤ (2 * m + 16) * P := Nat.mul_le_mul_left _ hP
+  have h_b : (C + 1) * (m + 14) * (n + 1) ≤ (C + 1) * (m + 14) * P := Nat.mul_le_mul_left _ hP
+  have h_c : s * ((4 * m + 40) * ((C + 1) * (j + 1) + 1) ^ s) ≤
+      s * ((4 * m + 40) * ((C + 2) ^ s * P)) := by gcongr
+  have h_f : (C + 2) ^ s * P ≤ (4 * m + 40) * ((C + 2) ^ s * P) :=
+    Nat.le_mul_of_pos_left _ (by omega)
+  have h_g : (C + 1) * ((m + 12) * (j + 1) + 2) ≤ (C + 1) * (m + 14) * (n + 1) := by
+    rw [mul_assoc]; gcongr; nlinarith
+  have h_h : (m + 6) * xl ≤ (m + 6) * n := Nat.mul_le_mul_left _ hxl
+  nlinarith
+
+lemma succ_pow_le (n s : ℕ) : (n + 1) ^ s ≤ 2 ^ s * (n ^ s + 1) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · rw [zero_add, one_pow]; exact Nat.mul_pos (Nat.two_pow_pos s) (Nat.succ_pos _)
+  · calc (n + 1) ^ s ≤ (2 * n) ^ s := Nat.pow_le_pow_left (by omega) s
+      _ = 2 ^ s * n ^ s := mul_pow 2 n s
+      _ ≤ 2 ^ s * (n ^ s + 1) := by gcongr; omega
+
+lemma padDecider_decides (hs : 1 ≤ s) (y : List Bool) :
+    ∃ t, t ≤ padK ML.symbols C s * (y.length + 1) ^ s ∧
+      Lax119563.DeterministicTime.DecidesWithin (padDecider ML C s) y (y ∈ padLang ML C s) t := by
+  rcases split_last_true y with ⟨x, j, rfl⟩ | ⟨n, rfl⟩
+  · obtain ⟨s', ⟨t, ht, hr⟩, hH, hK⟩ := padPrep_runs_true (C := C) (s := s) x j
+    have hans := thenClocked_answer hr hH hK
+    refine ⟨_, ?_, _, hans, ?_⟩
+    · have := padCost_le (m := ML.symbols) (C := C) hs (j := j) (xl := x.length)
+        (n := (x ++ true :: List.replicate j false).length) (by simp; omega) (by simp)
+      omega
+    · constructor
+      · intro h
+        refine ⟨x, j, rfl, ?_⟩
+        revert h
+        rcases (runOn ML x (((C + 1) * (j + 1)) ^ s)).answer with _ | _ | _ <;> simp
+      · rintro ⟨x', j', hy, hacc⟩
+        obtain ⟨rfl, rfl⟩ := last_true_unique hy
+        rw [hacc]; rfl
+  · obtain ⟨s', ⟨t, ht, hr⟩, hH, hK⟩ := padPrep_runs_false (C := C) (s := s) (ML := ML) n
+    have hans := thenClocked_answer hr hH hK
+    refine ⟨_, ?_, _, hans, ?_⟩
+    · have hP : n + 1 ≤ (n + 1) ^ s := Nat.le_self_pow (by omega) _
+      simp only [List.length_replicate]
+      calc t + 0 + 1 ≤ (2 * ML.symbols + 28) * (n + 1) := by nlinarith
+        _ ≤ (2 * ML.symbols + 28) * (n + 1) ^ s := Nat.mul_le_mul_left _ hP
+        _ ≤ padK ML.symbols C s * (n + 1) ^ s := Nat.mul_le_mul_right _
+          (by unfold padK; exact le_trans (Nat.le_add_right _ _) (Nat.le_add_right _ _))
+    · have h0 : (runOn ML [] 0).answer = none := rfl
+      rw [h0]
+      constructor
+      · simp
+      · rintro ⟨x', j', hy, -⟩
+        have : true ∈ List.replicate n false := by rw [hy]; simp
+        simp at this
+
+theorem padLang_dt (ML : Machine) (C s : ℕ) (hs : 1 ≤ s) : DT (padLang ML C s) (s : ℝ) := by
+  refine ⟨padDecider ML C s, thenClocked_deterministic _ _ _, padK ML.symbols C s * 2 ^ s,
+    fun y => ?_⟩
+  obtain ⟨t, ht, hd⟩ := padDecider_decides (ML := ML) (C := C) hs y
+  refine decidesWithin_mono hd ?_
+  apply Nat.le_floor
+  have h1 := succ_pow_le y.length s
+  have h2 : t ≤ padK ML.symbols C s * 2 ^ s * y.length ^ s + padK ML.symbols C s * 2 ^ s := by
+    calc t ≤ padK ML.symbols C s * (y.length + 1) ^ s := ht
+      _ ≤ padK ML.symbols C s * (2 ^ s * (y.length ^ s + 1)) := Nat.mul_le_mul_left _ h1
+      _ = _ := by ring
+  beta_reduce
+  rw [Real.rpow_natCast]
+  exact_mod_cast h2
+
 end Spec
 
 end Lax119563Proofs.Hierarchy
