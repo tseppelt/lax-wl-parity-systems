@@ -51,3 +51,16 @@ import Lax119563Proofs.Hierarchy.UnivInit
 import Lax119563Proofs.Hierarchy.UnivMain
 import Lax119563Proofs.Hierarchy.Coarse
 import Lax119563Proofs.Hierarchy.Main
+import Lax119563Proofs.Circuits.Plan
+import Lax119563Proofs.Circuits.Bits
+import Lax119563Proofs.Circuits.AddrProgram
+import Lax119563Proofs.Circuits.MachineRun
+import Lax119563Proofs.Circuits.Windows
+import Lax119563Proofs.Circuits.MoveProgram
+import Lax119563Proofs.Circuits.Verifier
+import Lax119563Proofs.Circuits.VerifierSem
+import Lax119563Proofs.Circuits.VerifierLemmas
+import Lax119563Proofs.Circuits.VerifierSound
+import Lax119563Proofs.Circuits.VerifierComplete
+import Lax119563Proofs.Circuits.LocCode
+import Lax119563Proofs.Circuits.TimeSimulation
