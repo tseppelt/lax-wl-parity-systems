@@ -37,7 +37,6 @@ lemma listGraph_adj (i j : Fin (listGraph L adj hsymm hirr cls).n) :
 
 lemma listGraph_color_lt (i : Fin (listGraph L adj hsymm hirr cls).n) :
     (listGraph L adj hsymm hirr cls).color i < L.length := by
-  simp only [listGraph]
   exact List.findIdx_lt_length_of_exists ⟨L[(i : ℕ)]'i.2, List.getElem_mem _, by simp⟩
 
 lemma listGraph_color_eq_iff (i j : Fin (listGraph L adj hsymm hirr cls).n) :
@@ -45,7 +44,7 @@ lemma listGraph_color_eq_iff (i j : Fin (listGraph L adj hsymm hirr cls).n) :
       cls (L[(i : ℕ)]'i.2) = cls (L[(j : ℕ)]'j.2) := by
   constructor
   · intro h
-    simp only [listGraph] at h
+    change List.findIdx _ L = List.findIdx _ L at h
     have hi := List.findIdx_lt_length_of_exists
       (p := fun x => decide (cls x = cls (L[(i : ℕ)]'i.2)))
       ⟨L[(i : ℕ)]'i.2, List.getElem_mem _, by simp⟩

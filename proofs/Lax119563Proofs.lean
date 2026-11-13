@@ -18,3 +18,5 @@ import Lax119563Proofs.Matrix.SpoilerGadget
 import Lax119563Proofs.Matrix.SpoilerWalk
 import Lax119563Proofs.Matrix.SpoilerMain
 import Lax119563Proofs.Matrix.Size
+import Lax119563Proofs.Matrix.Edges
+import Lax119563Proofs.Matrix.Main
