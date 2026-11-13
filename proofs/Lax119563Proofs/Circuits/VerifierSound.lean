@@ -299,4 +299,174 @@ lemma sound_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tap
     exact_mod_cast hnext
   · simp at hmv
 
+lemma rel_of_cellT_flag {d ω θ : ℕ} {ν : Tape M} {j : ℕ} {γ : Sym M}
+    (h : cellT M x H d ω θ ν j = (γ, true)) : rel M x H d ω θ ν = j := by
+  unfold cellT cfgCell at h
+  simp only [Prod.mk.injEq, decide_eq_true_eq] at h
+  unfold rel hd
+  rw [h.2]; ring
+
+lemma moves_sound (P : Params x s ℓ H) (L : Loc M H) :
+    ∀ mv ∈ moves M x s ℓ H L, mv.Sound ℓ (Sem M x H) L := by
+  cases L with
+  | accept => simp [moves]
+  | reject => simp [moves]
+  | query =>
+    intro mv hmv
+    simp only [moves, List.mem_map, List.mem_filter, decide_eq_true_eq] at hmv
+    obtain ⟨p, ⟨-, hp⟩, rfl⟩ := hmv
+    intro A hA _ hS
+    rw [setBits_zero_width] at hS
+    obtain ⟨-, hS⟩ := hS
+    have h1 : cω H 0 A = 0 := by simp [cω, Nat.div_eq_of_lt (P.addr_lt hA)]
+    change extT M x H 0 (cω H 0 A) 2 = p at hS
+    rw [h1, extT_query] at hS
+    show (cfgExt (runOn M x (2 ^ H))).2 = some true
+    rw [hS, hp]
+  | cell d θ ν c => exact sound_cell P d θ ν c
+  | state d θ p =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with h0 hd0 hp hdH h2'
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
+      subst hmv
+      intro A hA _ _
+      have h1 : cω H 0 A = 0 := by simp [cω, Nat.div_eq_of_lt (P.addr_lt hA)]
+      show semState M x H d θ p A
+      unfold semState
+      rw [hd0, h0, h1, extT_root, hp]
+      simp
+    · simp at hmv
+    · simp only [List.mem_map] at hmv
+      obtain ⟨θ', -, rfl⟩ := hmv
+      intro A hA hf hS
+      rw [setBits_self hf] at hS
+      have hdp : d.val - 1 < H := by omega
+      have := (stateUp_iff hdp θ'.isLt p hf).mp hS
+      show semState M x H d θ p A
+      rwa [h0, show d.val = d.val - 1 + 1 by omega]
+    · simp only [List.mem_map] at hmv
+      obtain ⟨e, -, rfl⟩ := hmv
+      intro A hA _ hS
+      have := (stateDown_iff hdH (ppred θ).isLt p).mp hS
+      show semState M x H d θ p A
+      rwa [ppred_val h0] at this
+    · simp only [List.mem_map, List.mem_filter, decide_eq_true_eq] at hmv
+      obtain ⟨ρ, ⟨-, hnext⟩, rfl⟩ := hmv
+      intro A hA _ hS
+      rw [setBits_zero_width] at hS
+      obtain ⟨hrow, hst⟩ := hS
+      have hd : d.val = H := by omega
+      have hθ : θ.val = 2 := by omega
+      obtain ⟨-, hscan⟩ := (baseRow_iff A ρ).mp fun i => hrow i (Nat.zero_le _)
+      rw [semState_base0] at hst
+      show semState M x H d θ p A
+      rw [hd, hθ, semState_base2, hst, hscan, hnext]
+    · simp at hmv
+  | headIn d θ ν u =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hu hu0
+    · simp only [List.mem_map] at hmv
+      obtain ⟨γ, -, rfl⟩ := hmv
+      intro A hA _ hS
+      rw [setBits_zero_width] at hS
+      obtain ⟨-, hS⟩ := hS
+      refine ⟨by omega, 0, by simp, ?_⟩
+      rw [hu0, setBits_zero_width]
+      exact rel_of_cellT_flag hS
+    · simp only [List.mem_flatMap, List.mem_map] at hmv
+      obtain ⟨e, -, e', -, rfl⟩ := hmv
+      intro A hA _ hS
+      obtain ⟨-, y', hy', hrel⟩ := hS
+      have he' : e'.val < 2 ^ 1 := e'.isLt
+      simp only [dpred_val] at hy' hrel
+      rw [cω_setBits he' (by omega), setBits_merge he' hy',
+        show u.val - 1 + 1 = u.val by omega] at hrel
+      refine ⟨hu, _, ?_, hrel⟩
+      have := setBits_lt (A := y') (N := u.val - 1 + 1) he'
+        (lt_of_lt_of_le hy' (Nat.pow_le_pow_right (by norm_num) (by omega))) le_rfl
+      rwa [show u.val - 1 + 1 = u.val by omega] at this
+    · simp at hmv
+  | headSet d θ ν β =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hdH
+    · simp only [List.mem_map] at hmv
+      obtain ⟨q, -, rfl⟩ := hmv
+      intro A hA _ hS
+      exact ⟨hdH, hS⟩
+    · simp at hmv
+  | restore d θ ν c β =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hdH
+    · simp only [List.mem_map] at hmv
+      obtain ⟨q, -, rfl⟩ := hmv
+      split_ifs with hq
+      · intro A hA hf hS
+        refine ⟨hdH, ?_⟩
+        rw [hf, if_pos hq]
+        exact hS
+      · intro A hA hf hS
+        refine ⟨hdH, ?_⟩
+        rw [setBits_self hf] at hS
+        rw [hf, if_neg hq]
+        exact hS
+    · simp at hmv
+  | gather d θ ν c β =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hdH
+    · simp only [List.mem_map] at hmv
+      obtain ⟨c', -, rfl⟩ := hmv
+      intro A hA hf hS
+      have := c'.isLt
+      refine ⟨hdH, by rw [hf]; omega, ?_⟩
+      rwa [hf, show (4 * θ.val + c'.val) % 4 = c'.val by omega]
+    · simp at hmv
+  | baseCell ν ρ old k =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hk
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
+      subst hmv
+      intro A hA _ hS₁ hS₂
+      obtain ⟨hrow, hst, hold⟩ := hS₂
+      refine ⟨fun i hi => ?_, hst, hold⟩
+      rcases Nat.lt_or_ge k.val i.val with h | h
+      · exact hrow i h
+      · have : i = ⟨k.val, hk⟩ := Fin.ext (by simp; omega)
+        subst this
+        exact hS₁
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
+      subst hmv
+      intro A hA _ hS₁ hS₂
+      exact ⟨fun i hi => absurd i.isLt (by omega), hS₁, hS₂⟩
+  | baseState ρ k =>
+    intro mv hmv
+    simp only [moves] at hmv
+    split_ifs at hmv with hk
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
+      subst hmv
+      intro A hA _ hS₁ hS₂
+      obtain ⟨hrow, hst⟩ := hS₂
+      refine ⟨fun i hi => ?_, hst⟩
+      rcases Nat.lt_or_ge k.val i.val with h | h
+      · exact hrow i h
+      · have : i = ⟨k.val, hk⟩ := Fin.ext (by simp; omega)
+        subst this
+        exact hS₁
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
+      subst hmv
+      intro A hA _ hS
+      rw [setBits_zero_width] at hS
+      exact ⟨fun i hi => absurd i.isLt (by omega), hS⟩
+  | setJ ν h c =>
+    intro mv hmv
+    simp only [moves, List.mem_map] at hmv
+    obtain ⟨q, -, rfl⟩ := hmv
+    intro A hA _ hS
+    exact hS
+
 end Lax119563Proofs.Circuits
