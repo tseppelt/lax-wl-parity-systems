@@ -95,5 +95,6 @@ import Lax119563Proofs.Reduction.HRoutines
 import Lax119563Proofs.Reduction.HHeads
 import Lax119563Proofs.Reduction.HCompile
 import Lax119563Proofs.Reduction.HMachine
+import Lax119563Proofs.Reduction.HLib
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
