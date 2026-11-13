@@ -8,3 +8,4 @@ import Lax119563Proofs.Hierarchy.Chain
 import Lax119563Proofs.Hierarchy.Locality
 import Lax119563Proofs.Hierarchy.Programs
 import Lax119563Proofs.Hierarchy.Padding
+import Lax119563Proofs.Hierarchy.Reduction

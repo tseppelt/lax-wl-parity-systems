@@ -370,6 +370,144 @@ lemma unpadPrep_runs (x : List Bool) :
   · simp only [qst]; split_ifs <;> first | omega | rfl
   · simp only [qst]; split_ifs <;> first | omega | rfl
 
+lemma unpadCost_le (m n r : ℕ) (hr : 1 ≤ r) :
+    unpadCost m n r ≤ (3 * m + 28 + r * (4 * m + 40)) * (n + 1) ^ r := by
+  unfold unpadCost
+  set P := (n + 1) ^ r
+  have hP : n + 1 ≤ P := Nat.le_self_pow (by omega) _
+  have hP' : n ^ r ≤ P := Nat.pow_le_pow_left (by omega) r
+  have h1 : (m + 8) * n ≤ (m + 8) * P := Nat.mul_le_mul_left _ (by omega)
+  have h2 : (m + 6) * n ^ r ≤ (m + 6) * P := Nat.mul_le_mul_left _ hP'
+  have h3 : (m + 6) * n ≤ (m + 6) * P := Nat.mul_le_mul_left _ (by omega)
+  nlinarith
+
+lemma succ_pow_le_rpow (n r : ℕ) {a : ℝ} (ha : 1 ≤ a) :
+    (((n + 1) ^ r : ℕ) : ℝ) ≤ 2 ^ r * (n : ℝ) ^ (a * r) + 1 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have : (0 : ℝ) ≤ ((0 : ℕ) : ℝ) ^ (a * r) := Real.rpow_nonneg (by simp) _
+    simp only [zero_add, one_pow, Nat.cast_one] at *
+    nlinarith [pow_pos (show (0 : ℝ) < 2 by norm_num) r]
+  · have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    have h1 : (((n + 1) ^ r : ℕ) : ℝ) ≤ 2 ^ r * (n : ℝ) ^ r := by
+      rw [← mul_pow]; push_cast
+      exact pow_le_pow_left₀ (by positivity) (by linarith) r
+    have h2 : (n : ℝ) ^ r ≤ (n : ℝ) ^ (a * r) := by
+      rw [← Real.rpow_natCast]
+      exact Real.rpow_le_rpow_of_exponent_le hn1 (by nlinarith [(Nat.cast_nonneg r : (0 : ℝ) ≤ r)])
+    have : (0 : ℝ) ≤ 2 ^ r := by positivity
+    nlinarith
+
+lemma padLen_rpow_le (n r : ℕ) (hr : 1 ≤ r) {a : ℝ} (ha : 1 ≤ a) :
+    (((n + (n ^ r + 1) : ℕ) : ℝ)) ^ a ≤ 3 ^ a * (n : ℝ) ^ (a * r) + 1 := by
+  have h3 : (0 : ℝ) ≤ 3 ^ a * (n : ℝ) ^ (a * r) := by positivity
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [zero_add, zero_pow (by omega : r ≠ 0), Nat.cast_one, Real.one_rpow]
+    linarith
+  · have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    have hle : ((n + (n ^ r + 1) : ℕ) : ℝ) ≤ 3 * (n : ℝ) ^ (r : ℝ) := by
+      rw [Real.rpow_natCast]
+      have : (n : ℝ) ≤ (n : ℝ) ^ r := by
+        calc (n : ℝ) = (n : ℝ) ^ 1 := (pow_one _).symm
+          _ ≤ (n : ℝ) ^ r := pow_le_pow_right₀ hn1 hr
+      have : (1 : ℝ) ≤ (n : ℝ) ^ r := one_le_pow₀ hn1
+      push_cast; linarith
+    calc (((n + (n ^ r + 1) : ℕ) : ℝ)) ^ a ≤ (3 * (n : ℝ) ^ (r : ℝ)) ^ a :=
+          Real.rpow_le_rpow (by positivity) hle (by linarith)
+      _ = 3 ^ a * (n : ℝ) ^ (a * r) := by
+          rw [Real.mul_rpow (by norm_num) (by positivity), ← Real.rpow_mul (by positivity),
+            mul_comm (r : ℝ) a]
+      _ ≤ _ := by linarith
+
+lemma pad_mem_iff {L : Set (List Bool)} {ML : Machine} {C s r : ℕ} (hs : 1 ≤ s)
+    (hML : ∀ x, Lax119563.DeterministicTime.DecidesWithin ML x (x ∈ L)
+      ⌊(C : ℝ) * (x.length : ℝ) ^ ((s : ℝ) * r) + C⌋₊) (x : List Bool) :
+    x ++ true :: List.replicate (x.length ^ r) false ∈ padLang ML C s ↔ x ∈ L := by
+  set U := ((C + 1) * (x.length ^ r + 1)) ^ s
+  obtain ⟨b, hb, hiff⟩ := hML x
+  have hT : ⌊(C : ℝ) * (x.length : ℝ) ^ ((s : ℝ) * r) + C⌋₊ ≤ U := by
+    apply Nat.floor_le_of_le
+    have e : (x.length : ℝ) ^ ((s : ℝ) * r) = (((x.length ^ r) ^ s : ℕ) : ℝ) := by
+      rw [mul_comm, Real.rpow_mul (Nat.cast_nonneg _), Real.rpow_natCast, Real.rpow_natCast]
+      push_cast; ring
+    rw [e]
+    have key : C * (x.length ^ r) ^ s + C ≤ U := by
+      set N := x.length ^ r
+      have h1 : N ^ s + 1 ≤ (N + 1) ^ s := by
+        obtain ⟨k, rfl⟩ : ∃ k, s = k + 1 := ⟨s - 1, by omega⟩
+        rw [pow_succ, pow_succ]
+        have := Nat.pow_le_pow_left (Nat.le_succ N) k
+        have := Nat.one_le_pow k (N + 1) (Nat.succ_pos N)
+        nlinarith
+      have h2 : C + 1 ≤ (C + 1) ^ s := Nat.le_self_pow (by omega) _
+      calc C * N ^ s + C ≤ C * N ^ s + C + (N ^ s + 1) := Nat.le_add_right _ _
+        _ = (C + 1) * (N ^ s + 1) := by ring
+        _ ≤ (C + 1) ^ s * (N + 1) ^ s := Nat.mul_le_mul h2 h1
+        _ = U := by rw [← mul_pow]
+    exact_mod_cast key
+  have hb' : (runOn ML x U).answer = some b := drun_answer_mono hb hT
+  constructor
+  · rintro ⟨x', j', hy, hacc⟩
+    obtain ⟨rfl, rfl⟩ := last_true_unique hy
+    rw [hb'] at hacc
+    exact hiff.mp (Option.some.inj hacc)
+  · intro hx
+    refine ⟨x, x.length ^ r, rfl, ?_⟩
+    rw [hb', hiff.mpr hx]
+
+/-- Unpadding: a fast decider of the padded language gives a fast decider of `L`. -/
+theorem dt_of_padLang {L : Set (List Bool)} {ML : Machine} {C s r : ℕ} {a : ℝ} (hs : 1 ≤ s)
+    (hr : 1 ≤ r) (ha : 1 ≤ a)
+    (hML : ∀ x, Lax119563.DeterministicTime.DecidesWithin ML x (x ∈ L)
+      ⌊(C : ℝ) * (x.length : ℝ) ^ ((s : ℝ) * r) + C⌋₊)
+    (hP : DT (padLang ML C s) a) : DT L (a * r) := by
+  obtain ⟨MP, hMP, CP, hCP⟩ := hP
+  set K2 := 3 * MP.symbols + 28 + r * (4 * MP.symbols + 40)
+  set C'' := ⌈(K2 : ℝ) * 2 ^ r + CP * 3 ^ a⌉₊ + K2 + 2 * CP
+  refine ⟨thenRun MP 5 (unpadPrep MP r), thenRun_deterministic _ _ _, C'', fun x => ?_⟩
+  obtain ⟨s', ⟨t, ht, hrun⟩, hH⟩ := unpadPrep_runs (MP := MP) (r := r) x
+  set x' := x ++ true :: List.replicate (x.length ^ r) false
+  obtain ⟨b, hb, hiff⟩ := hCP x'
+  have hans := thenRun_answer hrun hH hb
+  refine decidesWithin_mono ⟨b, hans, ?_⟩ ?_
+  · rw [hiff, pad_mem_iff hs hML]
+  · apply Nat.le_floor
+    have hlen : x'.length = x.length + (x.length ^ r + 1) := by simp [x']
+    beta_reduce
+    rw [hlen, Nat.cast_add]
+    have hC'' : (C'' : ℝ) = ⌈(K2 : ℝ) * 2 ^ r + CP * 3 ^ a⌉₊ + K2 + 2 * CP := by
+      simp only [C'']; push_cast; ring
+    rw [hC'']
+    have e1 := unpadCost_le MP.symbols x.length r hr
+    have e2 := succ_pow_le_rpow x.length r ha
+    have e3 := padLen_rpow_le x.length r hr ha
+    have e4 : ((⌊(CP : ℝ) * ((x.length + (x.length ^ r + 1) : ℕ) : ℝ) ^ a + CP⌋₊ : ℕ) : ℝ) ≤
+        CP * ((x.length + (x.length ^ r + 1) : ℕ) : ℝ) ^ a + CP :=
+      Nat.floor_le (by positivity)
+    have e5 : ((t : ℕ) : ℝ) ≤ K2 * (((x.length + 1) ^ r : ℕ) : ℝ) := by
+      exact_mod_cast le_trans ht e1
+    have e6 := Nat.le_ceil ((K2 : ℝ) * 2 ^ r + CP * 3 ^ a)
+    set X := (x.length : ℝ) ^ (a * r)
+    have hX : 0 ≤ X := by positivity
+    have hK2 : (0 : ℝ) ≤ K2 := Nat.cast_nonneg _
+    have hCP0 : (0 : ℝ) ≤ CP := Nat.cast_nonneg _
+    have f1 : (t : ℝ) ≤ K2 * 2 ^ r * X + K2 := by
+      have := mul_le_mul_of_nonneg_left e2 hK2; linarith
+    have f2 : ((⌊(CP : ℝ) * (x.length + (x.length ^ r + 1) : ℕ) ^ a + CP⌋₊ : ℕ) : ℝ) ≤
+        CP * 3 ^ a * X + 2 * CP := by
+      have := mul_le_mul_of_nonneg_left e3 hCP0; linarith
+    have f3 := mul_le_mul_of_nonneg_right e6 hX
+    have f4 : 0 ≤ ((K2 : ℝ) + 2 * CP) * X := by positivity
+    have f5 : (0 : ℝ) ≤ ⌈(K2 : ℝ) * 2 ^ r + CP * 3 ^ a⌉₊ := Nat.cast_nonneg _
+    nlinarith
+
 end Unpad
+
+/-- The padding step of the translational argument. -/
+theorem pad_step (s : ℕ) (a : ℝ) (hs : 1 ≤ s) (ha : 1 ≤ a) (r : ℕ) (hr : 1 ≤ r)
+    (L : Set (List Bool)) (hL : DT L ((s : ℝ) * r)) :
+    ∃ L', DT L' (s : ℝ) ∧ (DT L' a → DT L (a * r)) := by
+  obtain ⟨ML, -, C, hC⟩ := hL
+  exact ⟨padLang ML C s, padLang_dt ML C s hs, fun h => dt_of_padLang hs hr ha hC h⟩
+
 
 end Lax119563Proofs.Hierarchy
