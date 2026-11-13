@@ -205,4 +205,96 @@ lemma examine_mismatch {key rest : List Tok} {e : List Tok × List Tok}
     simp only [List.length_reverse]
     nlinarith
 
+lemma tableToks_cons (e : List Tok × List Tok) (es : List (List Tok × List Tok)) :
+    tableToks (e :: es) = entryToks e ++ tableToks es := by simp [tableToks]
+
+lemma two_le_entry (e : List Tok × List Tok) : 2 ≤ (entryToks e).length := by
+  simp [entryToks]; omega
+
+/-- The loop of `lookup`. -/
+def lookupLoop : SProg := loop (fun r => (r TBL).isSome && (r FLG).isNone) examine
+
+lemma lookupLoop_runs {key ins rest : List Tok} (hk : ∀ t ∈ key, t = tU ∨ t = tS)
+    (hi : tE ∉ ins) :
+    ∀ (es₁ : List (List Tok × List Tok)) (s : Stacks 16 13),
+      (∀ e ∈ es₁, WellFormed e ∧ e.1 ≠ key) → s KEY = key → s KEY2 = [] → s FLG = [] →
+      s TBL = tableToks es₁ ++ entryToks (key, ins) ++ rest →
+      lookupLoop.RunsLe s (update (update (update (update s FLG [0]) TBL (tE :: rest)) TBL2
+        (ins ++ tM :: (key.reverse ++ ((tableToks es₁).reverse ++ s TBL2)))) INS (ins ++ s INS))
+        (200 * ((tableToks es₁).length + (entryToks (key, ins)).length + 1) * (key.length + 1))
+  | [], s, _, hK, hK2, hF, hT => by
+    have h1 := examine_match hk hi s hK (by simpa [tableToks] using hT) hK2
+    set s₁ := update (update (update (update s FLG (0 :: s FLG)) TBL (tE :: rest)) TBL2
+      (ins ++ tM :: (key.reverse ++ s TBL2))) INS (ins ++ s INS)
+    have h2 := RunsLe.loopF (c := fun r => (r TBL).isSome && (r FLG).isNone) (p := examine)
+      (s := s₁) (by simp [tops, s₁])
+    have hc : (fun r : Stk → Option Tok => (r TBL).isSome && (r FLG).isNone) (tops s) = true := by
+      have : (tableToks ([] : List (List Tok × List Tok)) ++ entryToks (key, ins) ++ rest).head?
+          = (key ++ [tM]).head? := by
+        cases key <;> simp [tableToks, entryToks]
+      simp only [tops, hT, hF, this]
+      cases key <;> simp
+    refine (RunsLe.loopT hc h1 h2).of_eq ?_ ?_
+    · simp only [s₁, hF, tableToks, List.flatMap_nil, List.reverse_nil, List.nil_append]
+    · have := two_le_entry (key, ins)
+      simp only [tableToks, List.flatMap_nil, List.length_nil]
+      nlinarith
+  | e :: es₁, s, hes, hK, hK2, hF, hT => by
+    have he := hes e List.mem_cons_self
+    have h1 := examine_mismatch (rest := tableToks es₁ ++ entryToks (key, ins) ++ rest) hk he.1
+      he.2 s hK (by rw [hT, tableToks_cons]; simp only [List.append_assoc]) hK2
+    set s₁ := update (update s TBL (tableToks es₁ ++ entryToks (key, ins) ++ rest)) TBL2
+      ((entryToks e).reverse ++ s TBL2)
+    have h2 := lookupLoop_runs (key := key) (ins := ins) (rest := rest) hk hi es₁ s₁ (fun e' h => hes e' (List.mem_cons_of_mem _ h))
+      (by simp [s₁, hK]) (by simp [s₁, hK2]) (by simp [s₁, hF]) (by simp [s₁])
+    have hc : (fun r : Stk → Option Tok => (r TBL).isSome && (r FLG).isNone) (tops s) = true := by
+      have hne : tableToks (e :: es₁) ++ entryToks (key, ins) ++ rest ≠ [] := by
+        simp [tableToks_cons, entryToks]
+      simp only [tops, hT, hF]
+      cases h : (tableToks (e :: es₁) ++ entryToks (key, ins) ++ rest) with
+      | nil => exact absurd h hne
+      | cons _ _ => simp
+    refine (RunsLe.loopT hc h1 h2).of_eq ?_ ?_
+    · simp only [s₁, tableToks_cons, List.reverse_append, List.append_assoc]
+      sim_eq
+    · have h2e := two_le_entry e
+      simp only [tableToks_cons, List.length_append]
+      nlinarith
+
+/-- Looking up a key present in the table. -/
+lemma lookup_runs {key ins : List Tok} {es₁ es₂ : List (List Tok × List Tok)}
+    (hk : ∀ t ∈ key, t = tU ∨ t = tS) (hi : tE ∉ ins)
+    (hes : ∀ e ∈ es₁, WellFormed e ∧ e.1 ≠ key) (s : Stacks 16 13)
+    (hK : s KEY = key) (hK2 : s KEY2 = []) (hF : s FLG = []) (hT2 : s TBL2 = [])
+    (hT : s TBL = tableToks (es₁ ++ (key, ins) :: es₂)) :
+    lookup.RunsLe s (update (update s KEY []) INS (ins ++ s INS))
+      (300 * ((tableToks (es₁ ++ (key, ins) :: es₂)).length + 1) * (key.length + 1)) := by
+  have hT' : s TBL = tableToks es₁ ++ entryToks (key, ins) ++ tableToks es₂ := by
+    rw [hT]; simp [tableToks]
+  have h1 := lookupLoop_runs hk hi es₁ s hes hK hK2 hF hT'
+  set s₁ := update (update (update (update s FLG [0]) TBL (tE :: tableToks es₂)) TBL2
+    (ins ++ tM :: (key.reverse ++ ((tableToks es₁).reverse ++ s TBL2)))) INS (ins ++ s INS)
+  have h2 := moveAll_runs (i := TBL2) (j := TBL) (by decide)
+    (ins ++ tM :: (key.reverse ++ (tableToks es₁).reverse)) s₁ (by simp [s₁, hT2])
+  set s₂ := update (update s₁ TBL2 []) TBL
+    ((ins ++ tM :: (key.reverse ++ (tableToks es₁).reverse)).reverse ++ s₁ TBL)
+  have h3 := RunsLe.pop FLG s₂
+  set s₃ := update s₂ FLG (s₂ FLG).tail
+  have h4 := clear_runs KEY key s₃ (by simp [s₃, s₂, s₁, hK])
+  refine (h1.seq (h2.seq (h3.seq h4))).of_eq ?_ ?_
+  · have : (ins ++ tM :: (key.reverse ++ (tableToks es₁).reverse)).reverse ++ tE :: tableToks es₂
+        = tableToks (es₁ ++ (key, ins) :: es₂) := by
+      simp [tableToks, entryToks]
+    simp only [s₃, s₂, s₁]
+    funext k; fin_cases k <;>
+      simp (config := {decide := true}) [update_apply, hT, hT2, hF, tableToks, entryToks]
+  · have htl : (tableToks (es₁ ++ (key, ins) :: es₂)).length =
+        (tableToks es₁).length + (entryToks (key, ins)).length + (tableToks es₂).length := by
+      simp only [tableToks, List.flatMap_append, List.flatMap_cons, List.length_append]; omega
+    have hent : (entryToks (key, ins)).length = key.length + ins.length + 2 := by
+      simp [entryToks]; omega
+    simp only [List.length_append, List.length_cons, List.length_reverse]
+    rw [htl]
+    nlinarith
+
 end Lax119563Proofs.Hierarchy.Universal
