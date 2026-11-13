@@ -95,6 +95,28 @@ theorem run_of_halted (A : AMachine σ ι S) (t : ℕ) (c : AConfig σ ι S)
   | zero => rfl
   | succ t ih => rw [run_succ, ih, step_of_halted A c h]
 
+theorem step_eq_next (A : AMachine σ ι S) {c : AConfig σ ι S} (hc : c.answer = none)
+    {q : Option σ} {w : Option ι → Fin (S + 3)} {m : Option ι → Move}
+    (h : A.δ c.state (fun o => c.tape o (c.head o)) = .next q w m) :
+    A.step c = { state := q
+                 head := fun o => c.head o + (m o).offset
+                 tape := fun o z => if z = c.head o then w o else c.tape o z
+                 answer := none } := by
+  simp [step, hc, h]
+
+theorem step_eq_halt (A : AMachine σ ι S) {c : AConfig σ ι S} (hc : c.answer = none)
+    {b : Bool} (h : A.δ c.state (fun o => c.tape o (c.head o)) = .halt b) :
+    A.step c = { c with answer := some b } := by
+  simp [step, hc, h]
+
+/-- Writing back the scanned symbol leaves a tape unchanged. -/
+theorem write_back {α : Type} (f : ℤ → α) (h : ℤ) :
+    (fun z => if z = h then f h else f z) = f := by
+  funext z
+  split_ifs with hz
+  · rw [hz]
+  · rfl
+
 /-! ### Translation into `Lax489179.TuringMachine` -/
 
 variable [Fintype σ] [Fintype ι]
