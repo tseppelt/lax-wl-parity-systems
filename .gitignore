@@ -8,3 +8,4 @@ lake-manifest.json
 framework/
 refs.bib
 .DS_Store
+.claude/
