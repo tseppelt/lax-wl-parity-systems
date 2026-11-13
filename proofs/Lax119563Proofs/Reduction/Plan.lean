@@ -55,7 +55,8 @@ Done (`OutGraph`, `OutCorr`, `OutEdges`, `OutEdgeList`), for any implicit parity
 * `edgeList_outGraph`: the edge list is the concatenation over `u < nOut` of
   `(upNbrs I ε u).map (u, ·)`, with `upNbrs_hub` (`= (hubNbrs I ε a).map num` for a valid
   hub `a`, needs `1 ≤ s` and `TernOrdered I`), `upNbrs_nonhub`, `upNbrs_invalid`.
-To do: `TernOrdered` for `timeProgram.compile` (slot codes), and explicit (decodable)
+Done: `ternOrdered_compile` (`TernOrder`) for every compiled register program.
+To do: explicit (decodable)
 descriptions of `OutValid z` and of `hubNbrs` for the program: decode `z` into
 `(lab, b, i, F)`, `F` into the kind and `(e, σ)` / `v`, and evaluate `ClsValid` (domain
 membership via the command guard, `ent σ c`), `LabelOK` and the neighbor classes
