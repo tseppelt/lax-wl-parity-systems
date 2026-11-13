@@ -67,4 +67,68 @@ lemma readBits_runs :
     · exact ((h1.seq h2).iteF (by simp [tops, isTop, hs, bitSym])).mono (by simp; omega)
     · exact ((h1.seq h2).iteT (by simp [tops, isTop, hs, bitSym])).mono (by simp; omega)
 
+lemma length_tokBits (t : Tok) : (tokBits t).length = 4 := rfl
+
+/-- Parsing tokens up to the end token. -/
+lemma parseLoop_runs (rest : List Tok) :
+    ∀ (ts : List Tok) (s : Stacks 16 13), (∀ t ∈ ts, 2 ≤ t.val ∧ t.val ≤ 13) → s FLG = [] →
+      s IN = bitsToks ((ts ++ [tEnd]).flatMap tokBits) ++ rest →
+      (loop (isEmpty FLG) (readBits 4 0)).RunsLe s
+        (update (update (update (update s IN rest) Y
+          ((bitsToks ((ts ++ [tEnd]).flatMap tokBits)).reverse ++ s Y)) P (ts.reverse ++ s P))
+          FLG [0]) (200 * (ts.length + 1))
+  | [], s, _, hF, hs => by
+    have h1 := readBits_runs (tokBits tEnd) 0 s rest (by simpa using hs)
+    rw [tokBits_val tEnd (by decide)] at h1
+    simp only [emit, tokOf_end] at h1
+    have h2 := RunsLe.loopF (c := isEmpty FLG) (p := readBits 4 0)
+      (s := update (update (update s IN rest) Y ((bitsToks (tokBits tEnd)).reverse ++ s Y)) FLG
+        (0 :: update (update s IN rest) Y ((bitsToks (tokBits tEnd)).reverse ++ s Y) FLG))
+      (by simp [tops, isEmpty])
+    refine (RunsLe.loopT (by simp [tops, isEmpty, hF]) h1 h2).of_eq ?_ (by simp [length_tokBits])
+    funext k; fin_cases k <;> simp (config := {decide := true}) [update_apply, hF]
+  | t :: ts, s, hts, hF, hs => by
+    have ht := hts t List.mem_cons_self
+    have h1 := readBits_runs (tokBits t) 0 s
+      (bitsToks ((ts ++ [tEnd]).flatMap tokBits) ++ rest) (by simp [hs])
+    rw [tokBits_val t ht.1] at h1
+    simp only [emit, tokOf_tok t ht.1 ht.2] at h1
+    set s₁ := update (update (update s IN (bitsToks ((ts ++ [tEnd]).flatMap tokBits) ++ rest)) Y
+      ((bitsToks (tokBits t)).reverse ++ s Y)) P (t :: s P)
+    have h2 := parseLoop_runs rest ts s₁ (fun t h => hts t (List.mem_cons_of_mem _ h))
+      (by simp [s₁, hF]) (by simp [s₁])
+    refine (RunsLe.loopT (by simp [tops, isEmpty, hF]) h1 h2).of_eq ?_ ?_
+    · funext k; fin_cases k <;> simp (config := {decide := true}) [update_apply, s₁]
+    · simp [length_tokBits]; omega
+
+/-- The value of an input bit as a symbol of the tape. -/
+def symOfBit (b : Bool) : ℕ := if b then 2 else 1
+
+lemma inputToRS_runs :
+    ∀ (bs : List Bool) (s : Stacks 16 13), s Y = bitsToks bs →
+      inputToRS.RunsLe s (update (update s Y []) RS (encL (bs.reverse.map symOfBit) ++ s RS))
+        (10 * bs.length + 1)
+  | [], s, hs => (RunsLe.loopF (by simp [tops, nonempty, hs])).of_eq
+      (by funext k; fin_cases k <;> simp (config := {decide := true}) [update_apply, hs, encL])
+      (by simp)
+  | b :: bs, s, hs => by
+    set s₁ := update (update s RS (encN (symOfBit b) ++ s RS)) Y (bitsToks bs)
+    have hb : (seq (ite (isTop Y tT) (seq (push RS tS) (seq (push RS tU) (push RS tU)))
+        (seq (push RS tS) (push RS tU))) (pop Y) : SProg).RunsLe s s₁ 8 := by
+      cases b
+      · refine ((((RunsLe.push RS tS s).seq (RunsLe.push RS tU _)).iteF
+          (by simp [tops, isTop, hs, bitSym])).seq (RunsLe.pop Y _)).of_eq ?_ (by simp)
+        funext k; fin_cases k <;>
+          simp (config := {decide := true}) [update_apply, s₁, hs, symOfBit, encN]
+      · refine ((((RunsLe.push RS tS s).seq ((RunsLe.push RS tU _).seq
+          (RunsLe.push RS tU _))).iteT (by simp [tops, isTop, hs, bitSym])).seq
+          (RunsLe.pop Y _)).of_eq ?_ (by simp)
+        funext k; fin_cases k <;>
+          simp (config := {decide := true}) [update_apply, s₁, hs, symOfBit, encN]
+    have h2 := inputToRS_runs bs s₁ (by simp [s₁])
+    refine (RunsLe.loopT (by simp [tops, nonempty, hs]) hb h2).of_eq ?_ ?_
+    · funext k; fin_cases k <;>
+        simp (config := {decide := true}) [update_apply, s₁, encL]
+    · simp; omega
+
 end Lax119563Proofs.Hierarchy.Universal
