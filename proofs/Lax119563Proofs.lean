@@ -18,3 +18,5 @@ import Lax119563Proofs.Hierarchy.UnivTape
 import Lax119563Proofs.Hierarchy.UnivStep
 import Lax119563Proofs.Hierarchy.UnivInit
 import Lax119563Proofs.Hierarchy.UnivMain
+import Lax119563Proofs.Hierarchy.Coarse
+import Lax119563Proofs.Hierarchy.Main

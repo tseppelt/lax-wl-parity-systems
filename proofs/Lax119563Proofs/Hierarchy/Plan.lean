@@ -43,24 +43,10 @@ so that the universal machine may have any polynomial overhead of fixed degree.
 
 ## Status
 
-Done (sorry-free): `Run`, `Mach`, `Lax`, `Stack`, `Glue`, `Programs`, `Chain`, `Locality`,
-`Padding`, `Reduction` (`time_hierarchy_of_coarse : CoarseHierarchy → ...`).
-Universal simulator (sorry-free so far): program `UnivSim.sim`; token-level phase lemmas
-`UnivKey.buildKey_runs`, `UnivLookup.lookup_runs`, `UnivApply.apply_halt`, `UnivApply.apply_next`.
-
-Remaining for `CoarseHierarchy`:
-1. `UnivCode`: the table of a deterministic machine `M` (entries `(keyOf q rs, ins δ(q, c))`
-   over `Finset.univ.toList` of keys; `WellFormed`; distinct keys), instruction tokens
-   `tN :: encN q' ++ insPairs ts`, and the code bits (4 bits per token).
-2. Relation `Rel M c s` between a configuration and the stacks (`LS = records lefts`,
-   `RS = records rights`, cells of `c` read off `lefts`/`rights`, `QS = U^q`, `TBL = table M`,
-   scratch stacks empty).  Step lemma: `simStep` from `Rel M c s` reaches `Rel M (step c) s'`
-   (or `DONE = [haltTok b]`), using `tapeUpd` = effect of the Lax step on one tape; cost
-   `≤ c (size + 1)^2`.
-3. `init`: parsing (`readBits`), then `Rel M (init M y) s`; cost `O(n)`.
-4. Main loop by induction on the halting time; sizes grow by `O(m)` per step.
-5. `D b = thenClocked (Prog.toMachine sim simAns) E prep` with `prep` copying the length of the
-   input and computing the clock `(n + 1)^B` (`Programs.power`); diagonal argument.
+Complete and sorry-free: `Main.time_hierarchy` (annotated proof of
+`Lax119563.TimeHierarchy.time_hierarchy`) from `Reduction.time_hierarchy_of_coarse` and
+`Coarse.coarseHierarchy`.  The universal simulator is in the `Univ*` files
+(`UnivMain.simMachine_answer`).
 
 ## Design of the universal simulator (`Universal`)
 
