@@ -338,7 +338,7 @@ def vertexList : List (VName I) :=
     (List.finRange I.schemas.length).flatMap (schemaVerts I)
 
 /-- **The matrix compiler graph** `G_ε`. -/
-def matrixGraph (ε : ZMod 2) : ColoredGraph :=
+abbrev matrixGraph (ε : ZMod 2) : ColoredGraph :=
   listGraph (vertexList I) (adjN I ε) (adjN_symm I ε) (adjN_irrefl I ε) Prod.fst
 
 end Lax119563Proofs.Matrix

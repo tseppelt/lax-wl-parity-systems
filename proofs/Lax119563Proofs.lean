@@ -12,3 +12,5 @@ import Lax119563Proofs.Matrix.Invariant
 import Lax119563Proofs.Matrix.ExtendSeeds
 import Lax119563Proofs.Matrix.Extension
 import Lax119563Proofs.Matrix.Duplicator
+import Lax119563Proofs.Matrix.SpoilerBasics
+import Lax119563Proofs.Matrix.SpoilerStrip

@@ -17,7 +17,7 @@ namespace Lax119563Proofs.Matrix
 variable {α β : Type*} [DecidableEq β]
 
 /-- The colored graph on the names of `L`. -/
-def listGraph (L : List α) (adj : α → α → Prop) [DecidableRel adj] (hsymm : ∀ x y, adj x y → adj y x)
+@[reducible] def listGraph (L : List α) (adj : α → α → Prop) [DecidableRel adj] (hsymm : ∀ x y, adj x y → adj y x)
     (hirr : ∀ x, ¬ adj x x) (cls : α → β) : ColoredGraph where
   n := L.length
   graph :=
@@ -38,7 +38,7 @@ lemma listGraph_adj (i j : Fin (listGraph L adj hsymm hirr cls).n) :
 lemma listGraph_color_lt (i : Fin (listGraph L adj hsymm hirr cls).n) :
     (listGraph L adj hsymm hirr cls).color i < L.length := by
   simp only [listGraph]
-  exact List.findIdx_lt_length_of_exists ⟨L[(i : ℕ)]'i.2, List.getElem_mem _, by simp; rfl⟩
+  exact List.findIdx_lt_length_of_exists ⟨L[(i : ℕ)]'i.2, List.getElem_mem _, by simp⟩
 
 lemma listGraph_color_eq_iff (i j : Fin (listGraph L adj hsymm hirr cls).n) :
     (listGraph L adj hsymm hirr cls).color i = (listGraph L adj hsymm hirr cls).color j ↔
