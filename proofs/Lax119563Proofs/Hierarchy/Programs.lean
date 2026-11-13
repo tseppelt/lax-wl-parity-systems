@@ -301,6 +301,70 @@ lemma power_runs {p n q h : Fin K} (hpn : p ≠ n) (hpq : p ≠ q) (hph : p ≠ 
     simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at this
     omega
 
+/-! ## Moving up to a delimiter, duplicating -/
+
+/-- Move symbols from `i` to `j` while the top of `i` is not `a`. -/
+def moveWhileNot (i j : Fin K) (a : Fin (m + 2)) : Prog K m :=
+  loop (fun r => (r i).isSome && r i != some a) (moveOne i j)
+
+lemma moveWhileNot_runs {i j : Fin K} (hij : i ≠ j) (a : Fin (m + 2)) (l₂ : List (Fin (m + 2)))
+    (hl₂ : l₂.head? = some a ∨ l₂ = []) :
+    ∀ (l₁ : List (Fin (m + 2))) (s : Stacks K m), a ∉ l₁ → s i = l₁ ++ l₂ →
+      (moveWhileNot i j a).RunsLe s (update (update s i l₂) j (l₁.reverse ++ s j))
+        ((m + 6) * l₁.length + 1)
+  | [], s, _, hs =>
+    (RunsLe.loopF (p := moveOne i j) (c := fun r => (r i).isSome && r i != some a) (s := s)
+      (by rcases hl₂ with h | h <;> simp_all [tops])).of_eq (by simp at hs; stacks_eq) (by simp)
+  | b :: l, s, ha, hs => by
+    have hb : b ≠ a := fun h => ha (by simp [h])
+    have h1 := moveOne_runs (l := l ++ l₂) hij hs
+    have h2 := moveWhileNot_runs hij a l₂ hl₂ l (update (update s i (l ++ l₂)) j (b :: s j))
+      (fun h => ha (by simp [h])) (by simp [update_of_ne hij])
+    exact (RunsLe.loopT (c := fun r => (r i).isSome && r i != some a) (by simp [tops, hs, hb])
+      h1 h2).of_eq (by stacks_eq) (le_of_eq (by simp only [List.length_cons]; ring))
+
+/-- Move symbols from `i` to `j` up to and including the first `a`. -/
+def moveThrough (i j : Fin K) (a : Fin (m + 2)) : Prog K m := seq (moveWhileNot i j a) (moveOne i j)
+
+lemma moveThrough_runs {i j : Fin K} (hij : i ≠ j) {a : Fin (m + 2)} {l₁ l₂ : List (Fin (m + 2))}
+    {s : Stacks K m} (ha : a ∉ l₁) (hs : s i = l₁ ++ a :: l₂) :
+    (moveThrough i j a).RunsLe s (update (update s i l₂) j (a :: (l₁.reverse ++ s j)))
+      ((m + 6) * (l₁.length + 1)) := by
+  have h1 := moveWhileNot_runs hij a (a :: l₂) (by simp) l₁ s ha hs
+  have h2 := moveOne_runs (s := update (update s i (a :: l₂)) j (l₁.reverse ++ s j)) hij
+    (a := a) (l := l₂) (by simp [update_of_ne hij])
+  exact (h1.seq h2).of_eq (by stacks_eq) (le_of_eq (by ring))
+
+/-- Move all of `i` onto both `j` and `k` (reversing it). -/
+def dupAll (i j k : Fin K) : Prog K m :=
+  loop (fun r => (r i).isSome)
+    (seq (pushTopOf i j (List.finRange (m + 2))) (seq (pushTopOf i k (List.finRange (m + 2)))
+      (pop i)))
+
+lemma dupAll_runs {i j k : Fin K} (hij : i ≠ j) (hik : i ≠ k) (hjk : j ≠ k) :
+    ∀ (l : List (Fin (m + 2))) (s : Stacks K m), s i = l →
+      (dupAll i j k).RunsLe s
+        (update (update (update s i []) j (l.reverse ++ s j)) k (l.reverse ++ s k))
+        ((2 * m + 10) * l.length + 1)
+  | [], s, hs =>
+    (RunsLe.loopF (c := fun r => (r i).isSome) (s := s)
+      (p := seq (pushTopOf i j (List.finRange (m + 2))) (seq (pushTopOf i k
+        (List.finRange (m + 2))) (pop i))) (by simp [tops, hs])).of_eq (by stacks_eq) (by simp)
+  | a :: l, s, hs => by
+    set s₁ := update (update (update s i l) j (a :: s j)) k (a :: s k)
+    have hb : (seq (pushTopOf i j (List.finRange (m + 2))) (seq (pushTopOf i k
+        (List.finRange (m + 2))) (pop i)) : Prog K m).RunsLe s s₁ (2 * m + 9) := by
+      have h1 := pushTopOf_runs i j (s := s) (by simp [tops, hs]) (List.finRange (m + 2))
+        (List.mem_finRange a)
+      have h2 := pushTopOf_runs i k (s := update s j (a :: s j))
+        (by simp [tops, update_of_ne hij, hs]) (List.finRange (m + 2)) (List.mem_finRange a)
+      have h3 := RunsLe.pop i (update (update s j (a :: s j)) k (a :: update s j (a :: s j) k))
+      refine (h1.seq (h2.seq h3)).of_eq ?_ (by simp; omega)
+      simp only [s₁]; stacks_eq
+    have h2 := dupAll_runs hij hik hjk l s₁ (by simp [s₁, update_of_ne hij, update_of_ne hik])
+    exact (RunsLe.loopT (c := fun r => (r i).isSome) (by simp [tops, hs]) hb h2).of_eq
+      (by simp only [s₁]; stacks_eq) (le_of_eq (by simp only [List.length_cons]; ring))
+
 end Prog
 
 end Lax119563Proofs.Hierarchy
