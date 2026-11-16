@@ -1,5 +1,6 @@
 import Mathlib.Data.Fintype.Basic
 import Lax119563.BinaryEncodings
+import Lax119563Proofs.Reduction.Bits
 
 /-!
 # Register programs with binary registers
@@ -11,9 +12,9 @@ compiled machine writes as `encodeNats out`.
 
 Instructions: `clr r` (`r := 0`), `one r` (`r := 2r + 1`), `dbl r` (`r := 2r`), `half r`
 (`r := r / 2`), `copy r s` (`s := r`), `add r s` (`r := r + s`), `lt f a b`
-(`f := [a < b]`), `emit r`, `rd r` (`r := x[pos]`, advance the cursor), `rst` (cursor back to
-`0`), and sequencing, conditionals and while loops whose conditions inspect, for every
-register, whether it is zero and its parity.
+(`f := [a < b]`), `emit r`, `rd r` (`r := x[pos] + 1`, or `0` at the end of the input;
+advance the cursor), `rst` (cursor back to `0`), and sequencing, conditionals and while
+loops whose conditions inspect, for every register, whether it is zero and its parity.
 
 The big-step semantics `HRuns x w p st st' t` fixes a *word size* `w`: every primitive
 instruction requires the registers it touches to stay below `2 ^ w` and costs
@@ -71,8 +72,8 @@ end HSt
 /-- The cost of a primitive instruction for word size `w`. -/
 def unitCost (w : ℕ) : ℕ := 64 * (w + 1)
 
-/-- The bit read at cursor position `pos`. -/
-def inBit (x : List Bool) (pos : ℕ) : ℕ := (x.getD pos false).toNat
+/-- The value read at cursor position `pos`. -/
+def inBit (x : List Bool) (pos : ℕ) : ℕ := rdVal (x.drop pos)
 
 variable {R : ℕ}
 

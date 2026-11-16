@@ -241,22 +241,29 @@ lemma hEmit_runs {r o t₀ t₁ : Fin K} (hro : r ≠ o) (hr0 : r ≠ t₀) (hr1
 
 /-- Read the top bit of the remaining input `xr` into `r`. -/
 def hRdA (r xr : Fin K) : Prog K 0 :=
-  seq (clear r) (ite (fun t => t xr == some 1) (push r 1) skip)
+  seq (clear r) (ite (fun t => t xr == some 1) (seq (push r 1) (push r 0))
+    (ite (fun t => t xr == some 0) (push r 1) skip))
 
 lemma hRdA_runs {r xr : Fin K} (hrr : r ≠ xr) {s : Stacks K 0} {l : List Bool}
     (hs : s xr = bs l) :
-    (hRdA r xr).RunsLe s (update s r (nst (l.headD false).toNat)) (2 * (s r).length + 4) := by
+    (hRdA r xr).RunsLe s (update s r (nst (rdVal l))) (2 * (s r).length + 6) := by
   have c1 := clear_runs r (s r) s rfl
   have hxr : update s r [] xr = bs l := by simp [update_of_ne hrr.symm, hs]
-  have c2 : (ite (fun t => t xr == some 1) (push r 1) skip : Prog K 0).RunsLe
-      (update s r []) (update (update s r []) r (nst (l.headD false).toNat)) 3 := by
+  have c2 : (ite (fun t => t xr == some 1) (seq (push r 1) (push r 0))
+      (ite (fun t => t xr == some 0) (push r 1) skip) : Prog K 0).RunsLe
+      (update s r []) (update (update s r []) r (nst (rdVal l))) 5 := by
     cases l with
-    | nil => exact ((RunsLe.skip _).iteF (by simp [tops, hxr])).of_eq (by simp) (by norm_num)
+    | nil =>
+      exact (((RunsLe.skip _).iteF (by simp [tops, hxr])).iteF (by simp [tops, hxr])).of_eq
+        (by simp [rdVal]) (by norm_num)
     | cons d l =>
       cases d
-      · exact ((RunsLe.skip _).iteF (by simp [tops, hxr])).of_eq (by simp) (by norm_num)
-      · exact ((RunsLe.push r 1 _).iteT (by simp [tops, hxr])).of_eq
-          (by simp [nst_one]) (by norm_num)
+      · exact (((RunsLe.push r 1 _).iteT (by simp [tops, hxr, bs, sym])).iteF
+          (by simp [tops, hxr, bs, sym])).of_eq (by simp [rdVal, nst_one]) (by norm_num)
+      · have e2 : nst 2 = [0, 1] := by
+          have := nst_bit0 (v := 1) (by norm_num); rw [this, nst_one]
+        exact (((RunsLe.push r 1 _).seq (RunsLe.push r 0 _)).iteT
+          (by simp [tops, hxr, bs, sym])).of_eq (by simp [rdVal, e2]) (by norm_num)
   exact (c1.seq c2).of_eq (by simp) (by omega)
 
 /-- Move the top symbol of the remaining input `xr` (if any) to `xl`. -/
