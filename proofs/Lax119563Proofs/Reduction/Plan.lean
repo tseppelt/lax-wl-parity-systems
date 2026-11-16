@@ -169,15 +169,51 @@ E'. Schema data (started: `SchemaData`): `mem_guardDomain_toGuard` (block `< s`:
    by splitting the step loop `σ = q (s+ℓ) + j` into `j < s` (static) and `j = s + j'`;
    `prevStep c σ + 1 = #{σ' < σ | some σ'' ∈ [σ', σ) has ent ≠ 0}` (a nested `count`);
    `hitGuard` on register `0` needs `cfgCell (init M x) ν v` from `inBit x v` (`loopX`).
-C. Symbolic moves: for each location kind (12) and static fields (unrolled by `dispatch`),
-   with runtime `d, u, H` branches (`d = 0`, `d < H`, `u < H - d`, …), the data of the
-   `k`-th move as `Xp` expressions (field position/width/value, mask
-   `fieldMask k q v = (q ^^^ v) <<< k`, guard kind: field/hit/miss, target codes
-   `Loc.code = tag + 16 (t1 + radix (t2 + …))`), proven equal to `(moves L)[k]`.
-D. Command enumerator `Gn`: loops over the code digits (`tag < 16` static, `t1..t5 < radix`),
-   `k < movBound`, pushing the command data and running a body; output lemma
-   `= cmds'.flatMap body-output`.
-E. Schema data per command (4 or 9 schemas, `compiledSchemas` order), `e` by prefix count,
+C. Symbolic moves (done: `GEnum`, `SymLoc`, `SymMoves`).
+   * `GEnum`: `Xp.Bnd n e` (reads only levels `< n`) with `Xp.eval_append`; `Xp.mul a b :=
+     mulB a b b` (exact product, cost ~ value of `b`, Fits needs `a 2^b < B`); `Gn.bindL`
+     (push a list, `out_bindL`), `Gn.bindSub n a b g` (push truncated `a - b` by `count`,
+     `out_bindSub`; used instead of an `Xp.sub` constructor), `flatMap_range_mul`.
+   * `SymLoc`: `finH H v = ⟨min v H, _⟩`; `SLoc M` (locations with runtime fields `Xp`),
+     `SLoc.eval H ρ`, `SLoc.codeX R HX` (location number; runtime fields clamped with
+     `minX`, so `eval_codeX` needs only `R ↦ radix M H`, `HX ↦ H`); `SMv M s`
+     (`step/fork/hit/miss`), `SMv.eval` to a `Move`, `SMv.recX R HX`: eight numbers
+     `[fk, mask, q1, q2, gk, g1, g2, g3]` (`fk` 0 assign / 1 fork; mask
+     `(q ^^^ v) * 2^k`; targets; guard `gk` 0 `fieldGuard ℓ g1 g2 g3`, 1 `hitGuard ν c` with
+     `g1 = ν`, `g2 = encCV c`, 2 `missGuard i` with `g1 = i`). `CmdDesc`/`GDesc` state this
+     for an `ACmd`; `SMv.desc` proves it.
+   * `SymMoves`: `RVals` (expressions for `d, u, d-1, u-1, H-d-1, H+2-d, H`, `RVals.Ok`),
+     `SKind M` (the 12 kinds with their constant fields), `SKind.loc H d u`, `SKind.brs V`
+     (branches `(condition, moves)`, transcribing `moves`), `selBr` (first branch with
+     nonzero condition), **`moves_eq`**: `(selBr ρ (K.brs V)).map SMv.eval = moves (K.loc H d u)`.
+     Also `kindsOfTag`, `Loc.kind` with `Loc.kind_spec`, `SKind.sloc`.
+D. Command enumerator (done: `CmdEnum`). `cmdEnum M s b HX RX body` (`b` = stack depth,
+   `HX, RX` read levels `< b` and evaluate to `H, radix M H`): loops `t5 … t1 < R` (levels
+   `b … b+9`, digit `t1` at `b+9`, `t4` at `b+3`), pushes `t1-1, t4-1, H-t1-1, H+2-t1, rest`
+   (`b+10 … b+14`), then per tag (`firstL` over `kindsOfTag`, test `matchX`) pushes the
+   location number (`b+15`) and per move the index `k` (`b+16`) and `recX` (`b+17 … b+24`);
+   body runs at depth `b+25`. **`out_cmdEnum`**: output
+   `= (range numLoc).flatMap (c ↦ match decodeLoc c with some L ↦ (recsOf L).flatMap
+   (r ↦ body.out (stkL ρ L ++ r)) | none ↦ [])` (compare `verifierCmds'_eq`).
+   **`desc_recsOf`**: `recsOf L = rs.zipIdx.map (k :: ·)` with
+   `Forall₂ (CmdDesc ∘ toACmd ℓ L) (moves L) rs`.
+E. (started: `SchList`) `schemas_match`: the schema list of `(compile N code acc rej hne
+   cmds).compile p₀ a₀` is `Forall₂ SchMatch` to the explicit numeric list
+   `cmds.zipIdx.flatMap (cmdN …) ++ detN …` with domains (`cmdDom`, query guard):
+   `SchNum = (tern, u, v, en, msk)`, `PermDesc` (block kept, `regVal` XOR
+   `shiftVal s ℓ msk`), `PermId` for `permV/permEnd`. Slot location numbers are
+   `N + (t + 8 j)`, detector `N + r*8 + t`.
+   Next: the schema enumerator. Inside the `cmdEnum` body (depth `b+25`) push
+   `j = count (cmdEnum (b+26) … (when before (emit 0)))` with
+   `before = c' < c ∨ (c' = c ∧ k' < k)` (inner `c'` at `(b+26)+15`, `k'` at `+16`) and
+   `e₀ = count (…emit 4 or 9 zeros…)`; the counts equal the index in the command list
+   because the records are strictly increasing in `(code, k)` (from `out_cmdEnum` +
+   `desc_recsOf`: `recsOf` heads are `0, 1, …`). Then `ite fk` over the 4 resp. 9 schemas,
+   each pushing `[e₀ + i, tern, u, v, en, msk]` + guard numbers at one fixed depth (pad the
+   detector branch with zeros to the same depth) and running the schema body. Every
+   command source is executable (`moves accept = moves reject = []`), so `cmdDom` is
+   `i = s ∨ guard i (regVal b)`.
+   Old notes for E: schema data per command (4 or 9 schemas, `compiledSchemas` order), `e` by prefix count,
    `dom` membership test `i = s ∨ guard i (regVal b)` (hit guard needs `x[b]`: use
    `loopX` over `b`), `permU` (`regVal (b + δᵢ) = regVal b ^^^ field mask (iℓ) ℓ` for the
    first two schemas of an assignment gadget), location numbers (`TernOrder.loc_slot_val`).
