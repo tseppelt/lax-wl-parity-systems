@@ -112,8 +112,9 @@ theorem relay_pairwise :
     · exact h
     · rw [loc_inj] at h; cases h
 
-/-- **The relay counter** `Î^{k,ℓ}_ctr`, counting down. -/
-def relay (k ℓ : ℕ) : ImplicitParitySystem k ℓ where
+/-- **The relay counter** `Î^{k,ℓ}_ctr`, counting down. (Reducible, so that its number of
+locations is seen to be `nlocs k ℓ` by `simp`.) -/
+@[reducible] def relay (k ℓ : ℕ) : ImplicitParitySystem k ℓ where
   numLocations := nlocs k ℓ
   domain x := domS k ℓ ((locEquiv _).symm x)
   schemas := relaySchemas k ℓ
