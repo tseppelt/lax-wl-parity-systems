@@ -123,6 +123,15 @@ import Lax119563Proofs.Reduction.CmdEnum
 import Lax119563Proofs.Reduction.SchList
 import Lax119563Proofs.Reduction.CountIdx
 import Lax119563Proofs.Reduction.SchEnum
+import Lax119563Proofs.Reduction.CmdStk
+import Lax119563Proofs.Reduction.SchGen
+import Lax119563Proofs.Reduction.SchOut
+import Lax119563Proofs.Reduction.SchFinal
+import Lax119563Proofs.Reduction.GuardEval
+import Lax119563Proofs.Reduction.OutNum
+import Lax119563Proofs.Reduction.EntNum
+import Lax119563Proofs.Reduction.DomGen
+import Lax119563Proofs.Reduction.ValidKinds
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.UpperBound.Rounds
