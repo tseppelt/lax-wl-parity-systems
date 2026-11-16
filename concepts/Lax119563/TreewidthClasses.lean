@@ -38,7 +38,7 @@ def mapTreeDecomposition {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W} (
   bag_indices_connected v := by
     have h : {i | v ∈ (D.bag i).map e.toEquiv.toEmbedding} = {i | e.symm v ∈ D.bag i} := by
       ext i
-      simp only [Set.mem_setOf_eq, Finset.mem_map_equiv]
+      simp only [Set.mem_ofPred_eq, Finset.mem_map_equiv]
       rfl
     rw [h]
     exact D.bag_indices_connected (e.symm v)

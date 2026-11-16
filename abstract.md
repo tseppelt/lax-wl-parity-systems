@@ -22,7 +22,7 @@ distinguished by $k$-WL, which is also stated for uncolored graphs in the langua
 homomorphism indistinguishability.
 
 The submission states the main theorems together with the pebble game characterization of
-$k$-WL, the matrix compiler for implicit parity systems, a quasi-linear reduction from
+$k$-WL, the row-space and matrix compilers for implicit parity systems, a quasi-linear reduction from
 deterministic time $O(n^{k-1})$ to $k$-WL Distinguishing, and a bound on the size of
 homomorphism witnesses in terms of the number of rounds. The time hierarchy theorem, the
 homomorphism characterization of $k$-WL due to Dvořák and to Dell, Grohe and Rattan, and the

@@ -1,6 +1,7 @@
 import Lax119563.BinaryEncodings
 import Lax119563.ColoredGraphs
 import Lax119563.ColoredHomomorphisms
+import Lax119563.ContradictionTrees
 import Lax119563.DeterministicTime
 import Lax119563.GameCharacterization
 import Lax119563.HomomorphismCharacterization
@@ -9,6 +10,7 @@ import Lax119563.IterationNumber
 import Lax119563.MatrixCompiler
 import Lax119563.ParitySystems
 import Lax119563.PebbleGame
+import Lax119563.RowSpaceCompiler
 import Lax119563.RuntimeLowerBound
 import Lax119563.Stabilization
 import Lax119563.TimeHierarchy
