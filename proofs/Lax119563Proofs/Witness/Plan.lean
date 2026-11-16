@@ -29,5 +29,8 @@ Goal: `Lax119563.WitnessLowerBound.witness_lower_bound`, assuming the concept st
 
 ## Status
 
-See the commit log; all files are intended sorry-free.
+Done. `Main.witness_lower_bound` is proven, sorry-free; `#print axioms` shows only the
+standard axioms plus `RowSpaceCompiler.rowspace_compiler` and the two directions
+`GameCharacterization.distinguishesAfter_of_spoilerWinsWithin`,
+`GameCharacterization.spoilerWinsWithin_of_distinguishesAfter`.
 -/
