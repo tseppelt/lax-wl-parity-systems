@@ -59,10 +59,6 @@ lemma Det.congr {r : ℕ} {φ ψ : Fam k} (h : Det r φ) (e : ∀ G p, ψ G p = 
   obtain ⟨f, hf⟩ := h
   exact ⟨f, fun G p => (e G p).trans (hf G p)⟩
 
-lemma DetAny.congr {φ ψ : Fam k} (h : DetAny φ) (e : ∀ G p, ψ G p = φ G p) : DetAny ψ := by
-  obtain ⟨r, h⟩ := h
-  exact ⟨r, h.congr e⟩
-
 lemma DetAny.prod {ι : Type*} (s : Finset ι) {φ : ι → Fam k} (h : ∀ j ∈ s, DetAny (φ j)) :
     DetAny (fun G p => ∏ j ∈ s, φ j G p) := by
   classical

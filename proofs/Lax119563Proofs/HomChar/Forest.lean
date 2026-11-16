@@ -67,13 +67,6 @@ lemma Up.depth_le {v a : Fin n} (h : Up T v a) : T.depth a ≤ T.depth v := by
   | refl => exact le_rfl
   | tail _ h2 ih => exact (T.depth_lt _ _ h2).le.trans ih
 
-lemma Up.eq_of_depth {v a : Fin n} (h : Up T v a) (hd : T.depth v ≤ T.depth a) : v = a := by
-  rcases ReflTransGen.cases_head h with h | ⟨c, hc, hca⟩
-  · exact h
-  · have := T.depth_lt _ _ hc
-    have := Up.depth_le (T := T) hca
-    omega
-
 lemma Up.ne_parent {v a : Fin n} (h : Up T v a) (hne : v ≠ a) :
     ∃ c, T.parent v = some c ∧ Up T c a := by
   rcases ReflTransGen.cases_head h with h | h
