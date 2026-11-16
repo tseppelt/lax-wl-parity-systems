@@ -139,3 +139,12 @@ import Lax119563Proofs.Witness.RelayTree
 import Lax119563Proofs.Witness.RelayConflict
 import Lax119563Proofs.Witness.RelaySize
 import Lax119563Proofs.Witness.Main
+import Lax119563Proofs.Counter.Plan
+import Lax119563Proofs.Counter.Bits
+import Lax119563Proofs.Counter.System
+import Lax119563Proofs.Counter.Construction
+import Lax119563Proofs.Counter.Propagation
+import Lax119563Proofs.Counter.Rounds
+import Lax119563Proofs.Counter.Size
+import Lax119563Proofs.Counter.Stabilize
+import Lax119563Proofs.Counter.Main
