@@ -126,3 +126,8 @@ import Lax119563Proofs.RowSpace.Extension
 import Lax119563Proofs.RowSpace.Size
 import Lax119563Proofs.RowSpace.Duplicator
 import Lax119563Proofs.RowSpace.Spoiler
+import Lax119563Proofs.RowSpace.Affine
+import Lax119563Proofs.RowSpace.Exposed
+import Lax119563Proofs.RowSpace.Realize
+import Lax119563Proofs.RowSpace.PatternTree
+import Lax119563Proofs.RowSpace.Main
