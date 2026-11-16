@@ -121,5 +121,7 @@ import Lax119563Proofs.Reduction.SymLoc
 import Lax119563Proofs.Reduction.SymMoves
 import Lax119563Proofs.Reduction.CmdEnum
 import Lax119563Proofs.Reduction.SchList
+import Lax119563Proofs.Reduction.CountIdx
+import Lax119563Proofs.Reduction.SchEnum
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main

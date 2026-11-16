@@ -203,6 +203,10 @@ E. (started: `SchList`) `schemas_match`: the schema list of `(compile N code acc
    `SchNum = (tern, u, v, en, msk)`, `PermDesc` (block kept, `regVal` XOR
    `shiftVal s ℓ msk`), `PermId` for `permV/permEnd`. Slot location numbers are
    `N + (t + 8 j)`, detector `N + r*8 + t`.
+   Done for the counts: `CountIdx.length_filter_lt_getElem` (with strictly increasing keys,
+   the index of an entry = number of entries with smaller key, `lexLt`) and
+   `SchEnum.keys_pairwise` (the keys `(code, k)` of `recKeys`, the records of `cmdEnum` in
+   order, strictly increase).
    Next: the schema enumerator. Inside the `cmdEnum` body (depth `b+25`) push
    `j = count (cmdEnum (b+26) … (when before (emit 0)))` with
    `before = c' < c ∨ (c' = c ∧ k' < k)` (inner `c'` at `(b+26)+15`, `k'` at `+16`) and
@@ -213,6 +217,19 @@ E. (started: `SchList`) `schemas_match`: the schema list of `(compile N code acc
    detector branch with zeros to the same depth) and running the schema body. Every
    command source is executable (`moves accept = moves reject = []`), so `cmdDom` is
    `i = s ∨ guard i (regVal b)`.
+   Design notes (from reduction5): keep every generator a Lean function of its base depth
+   `b` and state output lemmas for arbitrary stacks of length `b` (junk below is fine, the
+   body only reads globals `< b` and its own pushes); prove `Bnd` side conditions with the
+   `allB_*`/`allBr_*` helpers (`CmdEnum`) using `refine`, never `apply` (apply adds
+   arguments to `∀`-conclusions); avoid big `simp` calls on goals containing `allRows`
+   lists (timeouts) — resolve `if`s with `rw [if_pos h]` first and use
+   `List.map_congr_left`/`List.flatMap_congr`. Costs: all counting runs cost
+   `O(numLoc² movBound²)` = `O(log^10)` per pass, independent of `s` in the exponent;
+   `loopX` costs `|x|` per call, so call it only `polylog` times (once per schema/step/block).
+   A family pass is then: schema enumerator, `σ < NS` as `q < s+2, j < s+ℓ` (so the row
+   `σ % (s+ℓ) = j` needs no division), `i ≤ s`, `loopX` over `b < 2^ℓ` (gives `inBit x b`
+   for `hitGuard`: `cfgCell (init M x) 0 b = (inBit-coded symbol, b = 0)`, cf.
+   `TuringMachine.init`), `lab < 4`.
    Old notes for E: schema data per command (4 or 9 schemas, `compiledSchemas` order), `e` by prefix count,
    `dom` membership test `i = s ∨ guard i (regVal b)` (hit guard needs `x[b]`: use
    `loopX` over `b`), `permU` (`regVal (b + δᵢ) = regVal b ^^^ field mask (iℓ) ℓ` for the
