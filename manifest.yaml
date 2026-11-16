@@ -75,3 +75,35 @@ bibEntries:
       pages   = {533--546},
       year    = {1966},
     }
+  - |
+    @article{dvorak_recognizing_2010,
+      title = {On recognizing graphs by numbers of homomorphisms},
+      volume = {64},
+      doi = {10.1002/jgt.20461},
+      number = {4},
+      journal = {Journal of Graph Theory},
+      author = {Dvořák, Zdeněk},
+      year = {2010},
+      pages = {330--342},
+    }
+  - |
+    @inproceedings{DGR,
+      series = {Leibniz International Proceedings in Informatics (LIPIcs)},
+      title = {Lovász Meets Weisfeiler and Leman},
+      volume = {107},
+      doi = {10.4230/LIPIcs.ICALP.2018.40},
+      booktitle = {45th International Colloquium on Automata, Languages, and Programming (ICALP 2018)},
+      publisher = {Schloss Dagstuhl – Leibniz-Zentrum für Informatik},
+      author = {Dell, Holger and Grohe, Martin and Rattan, Gaurav},
+      year = {2018},
+      pages = {40:1--40:14},
+    }
+  - |
+    @misc{DN,
+      title = {The Classical Weisfeiler-Leman Algorithm Stabilizes in {$O(n)$} Rounds},
+      doi = {10.48550/arXiv.2609.17364},
+      publisher = {arXiv},
+      author = {Döring, Simon and Neuen, Daniel},
+      year = {2026},
+      note = {arXiv:2609.17364 [cs.DS]},
+    }
