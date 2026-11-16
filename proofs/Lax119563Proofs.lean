@@ -113,5 +113,7 @@ import Lax119563Proofs.Reduction.XSpec
 import Lax119563Proofs.Reduction.GLang
 import Lax119563Proofs.Reduction.GSpec
 import Lax119563Proofs.Reduction.GMachine
+import Lax119563Proofs.Reduction.GTools
+import Lax119563Proofs.Reduction.CodeOrder
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
