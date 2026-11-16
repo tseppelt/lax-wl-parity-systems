@@ -172,3 +172,8 @@ import Lax119563Proofs.RowSpace.SpoilerBasics
 import Lax119563Proofs.RowSpace.SpoilerStage
 import Lax119563Proofs.RowSpace.SpoilerInfer
 import Lax119563Proofs.RowSpace.Plan
+import Lax119563Proofs.HomChar.Plan
+import Lax119563Proofs.HomChar.Det
+import Lax119563Proofs.HomChar.Forest
+import Lax119563Proofs.HomChar.Tensor
+import Lax119563Proofs.HomChar.Main
