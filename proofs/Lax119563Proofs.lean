@@ -118,3 +118,11 @@ import Lax119563Proofs.Reduction.CodeOrder
 import Lax119563Proofs.Reduction.SchemaData
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
+import Lax119563Proofs.HomTensors.Plan
+import Lax119563Proofs.HomTensors.BagTree
+import Lax119563Proofs.HomTensors.PolyClosure
+import Lax119563Proofs.HomTensors.LGraph
+import Lax119563Proofs.HomTensors.Spaces
+import Lax119563Proofs.HomTensors.Rounds
+import Lax119563Proofs.HomTensors.Unlabel
+import Lax119563Proofs.HomTensors.WitnessFromRounds
