@@ -115,12 +115,13 @@ So from now on everything is pure mathematics about `Stm.exec` (no runs).
 
 ## Remaining work (in order)
 
-1. Arithmetic library on `Stm` (file `SArith`): `mul` by repeated addition (`O(a)`
-   iterations, fine for polylog values), `shl` by a runtime amount (`x·2^k`, `k` doublings),
-   truncated subtraction (count up), `div/mod` by a runtime value (count), bit test
-   `testBit v p` (`p` halvings then `odd`), XOR of two `ℓ`-bit values (bit loop with a power
-   register), `eq`, `and/or/not` on `0/1` (`lt` tricks). Each as a `Stm` with a `Good`
-   lemma and an exact `exec` value lemma (via `runLoop_inv`).
+1. Arithmetic library on `Stm` (file `SArith`). Done: accumulating loops `accum`
+   (`exec_accum`: `acc + Σ f k`), `mulS` (`a * b`), `subS` (truncated `a - b`), `shlS`
+   (`acc * 2^k`), `shrS` (`acc / 2^k`), `xorS` (`(a ^^^ b) % 2^lim`), each with its exact
+   value and frame (costs via `Good.loop`). Still to add if needed: `div/mod` by a runtime
+   value (counter with wrap-around, invariant `q·d + r = k`), `eq`, `and/or/not` on `0/1`
+   as `Ex` abbreviations (`not a = lt a 1`, `and a b = lt 1 (a + b)`, …), and `Good`
+   wrappers for the routines.
 2. Parameters: `n := |x|` (`len`), `L := log₂ n` (loop), `ℓ = L + C₀ + 4`, `P = 2^ℓ`,
    `H = sℓ - 2`, radix `H + 1 + cM`, `NS = (s+2)(s+ℓ)`, `numLoc`, `r` (command count, by a
    counting run of the enumerator), `E = Σ (4 or 9) + 4`, `W = numLoc + 8r + 4`,
