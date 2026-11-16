@@ -131,3 +131,7 @@ import Lax119563Proofs.RowSpace.Exposed
 import Lax119563Proofs.RowSpace.Realize
 import Lax119563Proofs.RowSpace.PatternTree
 import Lax119563Proofs.RowSpace.Main
+import Lax119563Proofs.RowSpace.SpoilerBasics
+import Lax119563Proofs.RowSpace.SpoilerStage
+import Lax119563Proofs.RowSpace.SpoilerInfer
+import Lax119563Proofs.RowSpace.Plan
