@@ -123,3 +123,6 @@ import Lax119563Proofs.RowSpace.TreeLike
 import Lax119563Proofs.RowSpace.Construction
 import Lax119563Proofs.RowSpace.Shifts
 import Lax119563Proofs.RowSpace.Extension
+import Lax119563Proofs.RowSpace.Size
+import Lax119563Proofs.RowSpace.Duplicator
+import Lax119563Proofs.RowSpace.Spoiler
