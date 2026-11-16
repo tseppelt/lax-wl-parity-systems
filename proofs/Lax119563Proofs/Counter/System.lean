@@ -69,11 +69,4 @@ theorem supp_subset_dom_iff {j : ℕ} {a : Arr K ℓ} (ha : IsAddress a) :
           if_pos (by rw [pos_val]; dsimp; nlinarith [i'.2])]
       simp [Finset.sum_apply, this]
 
-theorem prefix_add_shift {j : ℕ} {a : Arr K ℓ} (ha : Prefix j a) :
-    ∀ p : Fin (ℓ * K), (p : ℕ) ≤ j →
-      dbit (a + shift K ℓ j) p = if (p : ℕ) < j then 0 else 1 := by
-  intro p hp
-  rw [dbit_add, dbit_shift, ha p hp, if_pos hp]
-  split_ifs <;> decide
-
 end Lax119563Proofs.Counter
