@@ -90,23 +90,63 @@ otherwise; `permV = permEnd = id`; `coef e σ` exists for all `σ < NS`; domain 
 schema: `{s} × 𝔽₂^ℓ ∪ {(i, b) | i < s, g i (regVal b)}` for its address guard `g`
 (`fieldGuard`, `hitGuard`, `missGuard`, or the detector guard `b = 0`).
 
-## Reduction program (to do; `HProg` layer)
+## Reduction program: structured-statement layer (done)
 
-Registers hold `n, ℓ, H, NS, E, W, FN`, loop counters and command data. Structure:
-1. Count `n = |x|` (read the input, `rst`), compute `ℓ = log₂ n + C₀ + 4` etc.
-2. For `ε ∈ {0, 1}`: emit `N'`; emit the colors of all slots (nested loops over the
-   families in offset order, then `i ≤ s`, `b < 2^ℓ`, `lab < 4`; for families of schemas the
-   commands are enumerated in list order, maintaining the schema counter `e`); run the hub
-   loop in counting mode to get the edge number, emit it, run it again emitting `u, v`.
-   `hitGuard` on register `0` needs `x[b]`: the `b`-loop streams the input (`rd`, `rst` per
-   family), so each family costs `O(n)` extra.
-3. `rst` at the end (cursor `0`, as required by `HProg.computesWithin`).
-The commands are enumerated by a program generated from `allLocs` and `moves` at the Lean
-level: constant-size fields (`θ, ν, c, β, ρ, …`) are unrolled, `d, u` are runtime counters,
-and the runtime conditions of `moves` (`d = 0`, `d < H`, `u < H - d`, `u = 0`) are tests.
-Location codes `Loc.code` are computed with multiplication by the runtime radix `H + 1 + cM`.
-Cost: `O(N' · polylog)`; word size `w = O(log n)`.
+* `rd r` now distinguishes the end of the input: `inBit x pos = rdVal (x.drop pos)` is `0`
+  at the end, else the bit plus one (`HProg`, `HRoutines.hRdA`, `HCompile`). Without this
+  no `HProg` can compute `|x|` (it could not tell `x` from `x ++ [false]`).
+* `HFrame`: syntactic writes/emits/cursor moves (`HProg.wr/em/mv`) with frame lemmas;
+  `HRuns.bounded` (all registers stay `< 2^w`, needs `2 ≤ w`).
+* `SProg`: expressions `Ex R` (`var, const, add, lt, half, odd`) compiled into scratch
+  registers (`Ex.code_spec`). User registers `ur D r`, scratch `sc R D k` in `HProg (R+D+1)`.
+* `SStm`: statements `Stm R` (`skip, set, emit, seq, ite, loop i lim body,
+  loopX i lim xb body` (sets `xb := inBit x i` each iteration), `len r` (`r := |x|`)) with
+  a *total denotational semantics* `Stm.exec x c env : valuation × emitted list`, a cost
+  bound `Stm.cost x w c env`, `Stm.Fits` (values `< 2^w`), `WF`, `depth`, and the compiler
+  `Stm.code R D` with `Stm.code_spec`.
+* `SLib`: `Good x w c env out T` (fits, emits `out`, cost `≤ T`) with rules `Good.seq/ite/
+  set/emit/len/loop/loopX` (loop bodies are specified for every valuation with the right
+  counter agreeing with the initial one on registers the body does not write: the emitted
+  list of a loop is `(range L).flatMap g`); `Stm.exec_frame`, `Stm.runLoop_inv`;
+  `Stm.computesWithin`: `WF`, `depth ≤ D`, `Good x w c 0 out T`, `|x| ≤ |encodeNats out|`
+  give `ComputesWithin (c.code R D).machine x (encodeNats out) (T + 20 |…| + 4)`.
 
-Library still to write on top of `HRuns`: frame lemmas (registers not written are kept),
-constants, increment, counting loops with invariants, multiplication, bit tests, XOR.
+So from now on everything is pure mathematics about `Stm.exec` (no runs).
+
+## Remaining work (in order)
+
+1. Arithmetic library on `Stm` (file `SArith`): `mul` by repeated addition (`O(a)`
+   iterations, fine for polylog values), `shl` by a runtime amount (`x·2^k`, `k` doublings),
+   truncated subtraction (count up), `div/mod` by a runtime value (count), bit test
+   `testBit v p` (`p` halvings then `odd`), XOR of two `ℓ`-bit values (bit loop with a power
+   register), `eq`, `and/or/not` on `0/1` (`lt` tricks). Each as a `Stm` with a `Good`
+   lemma and an exact `exec` value lemma (via `runLoop_inv`).
+2. Parameters: `n := |x|` (`len`), `L := log₂ n` (loop), `ℓ = L + C₀ + 4`, `P = 2^ℓ`,
+   `H = sℓ - 2`, radix `H + 1 + cM`, `NS = (s+2)(s+ℓ)`, `numLoc`, `r` (command count, by a
+   counting run of the enumerator), `E = Σ (4 or 9) + 4`, `W = numLoc + 8r + 4`,
+   `famCount`, `nOut`, and the edge count (counting run of the edge loop).
+   Word size: `w = C·(log₂ n + 1)` chosen in the proof so that all values `≤ nOut²` fit.
+3. Schema descriptors (math): for `I = (timeProgram M s C₀ x).compile (timeQuery …) 0`
+   describe `sch I e` by numbers: `isTern`, `locU/locV/locEnd` (location numbers:
+   `prog p ↦ code p`, `slot j t ↦ numLoc + t + 8j`, `det t ↦ numLoc + 8r + t`, see
+   `TernOrder.loc_slot_val`), `permU` shift mask (`fieldMask` of the move for the first two
+   schemas of an assignment gadget, else `0`), guard kind + parameters. Prove
+   `(i, b) ∈ dom I e ↔ i = s ∨ guard i (regVal b)` and the `permU.apply` formula
+   (`regVal (b + δᵢ) = regVal b ^^^ field mask (iℓ) ℓ`, checksum block: XOR of all fields).
+   Every command source is executable (`moves accept = moves reject = []`).
+4. Command enumerator (program + proof): nested loops in `allLocs` order (`d, u` runtime,
+   constant fields unrolled at the Lean level), `moves` case analysis with runtime tests,
+   body parameterised by a per-schema statement; prove its output is
+   `(compiledSchemas).zipIdx.flatMap (body output)`. Consider a generic "template" proof.
+5. Per-family bodies (kinds `upd, junc, link, coord, sum, track, coef`, then `i ≤ s`,
+   `b < 2^ℓ` via `loopX` to get `x[b]` for `hitGuard`, `lab < 4`): colors
+   `outColor z = if OutValid z then 2(z/4)+2 else 1` (z and z/4 are running counters) and,
+   for hubs, the numbers of `hubNbrs` (`trackAt` via `prevStep` by a scan over `σ' < σ`,
+   `permU` by XOR, multiplication by `2^ℓ` by shifting). Math lemmas: decodable
+   `OutValid (num (X,l)) ↔ ClsValid X ∧ LabelOK X l` per kind, `ent σ c` formula
+   (row `σ % (s+ℓ)`), `coef` always valid.
+6. Assembly: `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges` with
+   `edgeList_outGraph`, `upNbrs_hub/nonhub/invalid`; `distinguishes_outGraph_iff`,
+   `timeProgram_graphs` (size), `Stm.computesWithin`; final file with the Lax frontmatter
+   (`conclusion: Lax119563.TimeReduction.time_reduction`).
 -/
