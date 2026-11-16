@@ -323,7 +323,7 @@ lemma depth_comp (e : Xp) : ∀ t, (comp R d A t e).depth ≤ 3 := by
     simp only [comp, Stm.shrS, Stm.depth, Ex.depth]; omega
   | xorM a b k iha ihb ihk =>
     intro t; have := iha (t + 1); have := ihb (t + 2); have := ihk (t + 3)
-    simp only [comp, Stm.xorS, xorBody, Stm.depth, Ex.depth]; omega
+    simp only [comp, Stm.xorS, Stm.xorBody, Stm.depth, Ex.depth]; omega
 
 lemma noX_comp (e : Xp) : ∀ t, (comp R d A t e).noX = true := by
   induction e with
@@ -336,7 +336,7 @@ lemma noX_comp (e : Xp) : ∀ t, (comp R d A t e).noX = true := by
   | mulB a b k iha ihb ihk => intro t; simp [comp, Stm.noX, iha, ihb, ihk, mulBody]
   | shl a k iha ihk => intro t; simp [comp, Stm.noX, iha, ihk, Stm.shlS]
   | shr a k iha ihk => intro t; simp [comp, Stm.noX, iha, ihk, Stm.shrS]
-  | xorM a b k iha ihb ihk => intro t; simp [comp, Stm.noX, iha, ihb, ihk, Stm.xorS, xorBody]
+  | xorM a b k iha ihb ihk => intro t; simp [comp, Stm.noX, iha, ihb, ihk, Stm.xorS, Stm.xorBody]
 
 lemma wf_comp (e : Xp) : ∀ t, t + e.need ≤ R → (comp R d A t e).WF := by
   induction e with
@@ -360,7 +360,7 @@ lemma wf_comp (e : Xp) : ∀ t, t + e.need ≤ R → (comp R d A t e).WF := by
     have m1 : rg R (t + 3) ≠ rg R (t + 1) := rg_ne (by omega) (by omega)
     have m2 : rg R (t + 3) ≠ rg R (t + 2) := rg_ne (by omega) (by omega)
     refine ⟨iha _ (by omega), ihb _ (by omega), ihk _ (by omega), trivial, n3, ?_, ?_,
-      ⟨trivial, trivial⟩, trivial⟩
+      ⟨trivial, trivial⟩, trivial, trivial⟩
     · simp [mulBody, Stm.wr, n0, n1, n2]
     · simp [mulBody, Stm.wr, m0, m1, m2]
   | shl a k iha ihk =>
@@ -382,8 +382,8 @@ lemma wf_comp (e : Xp) : ∀ t, t + e.need ≤ R → (comp R d A t e).WF := by
     have hn := regs6 (R := R) (t := t) (by omega)
     refine ⟨iha _ (by omega), ihb _ (by omega), ihk _ (by omega), trivial, trivial,
       Ne.symm hn.n35, ?_, ?_, ⟨⟨trivial, trivial⟩, trivial, trivial, trivial⟩⟩
-    · simp [xorBody, Stm.wr, Ne.symm hn.n15, Ne.symm hn.n25, Ne.symm hn.n05, Ne.symm hn.n45]
-    · simp [xorBody, Stm.wr, hn.n31, hn.n32, hn.n30, hn.n34]
+    · simp [Stm.xorBody, Stm.wr, Ne.symm hn.n15, Ne.symm hn.n25, Ne.symm hn.n05, Ne.symm hn.n45]
+    · simp [Stm.xorBody, Stm.wr, hn.n31, hn.n32, hn.n30, hn.n34]
 
 end Xp
 
