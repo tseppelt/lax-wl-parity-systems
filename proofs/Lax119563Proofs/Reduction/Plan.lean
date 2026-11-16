@@ -113,7 +113,78 @@ schema: `{s} × 𝔽₂^ℓ ∪ {(i, b) | i < s, g i (regVal b)}` for its addres
 
 So from now on everything is pure mathematics about `Stm.exec` (no runs).
 
+## Generators: programs with list semantics (done: `XLang`, `XSpec`, `GLang`, `GSpec`,
+## `GMachine`)
+
+Writing the reduction directly as `Stm` would require frame reasoning about registers in
+every proof. Instead there is a stack language whose semantics is a *pure list function*,
+compiled once and for all:
+* `Xp` (`XLang`): expressions over a stack `ρ : List ℕ` (`var i` = `ρ.getD i 0`), with
+  `add, lt, half, odd` and loop-based `mulB a b k = a * (b % 2^k)`, `shl a k = a * 2^k`,
+  `shr a k = a / 2^k`, `xorM a b k = (a ^^^ b) % 2^k` (cost ~ value of `k`). `Xp.eval`,
+  `Xp.Fits B ρ` (all values `< B`, plus `a 2^k < B` for `mulB/shl`, `2^k < B` for `xorM`),
+  `Xp.cost` (units of `κ w = 32 nodeCost w`). `Xp.spec` (`XSpec`): the compiled statement is
+  `Good` and leaves the value in the target register. No subtraction yet (add a `sub`
+  constructor via `SArith.subS` if needed, or count with `Gn.count`).
+* `Gn` (`GLang`): `skip, emit e, seq, ite c g h, bind e g` (push), `loop lim g` (pushes
+  `L, k`), `loopX lim g` (pushes `L, k, inBit x k`), `len g` (pushes `|x|`), `log e g`
+  (pushes `Nat.log 2 e`), `count g h` (runs `g` with a `0` pushed, pushes the *length of its
+  output* and runs `h`). Semantics `Gn.out x g ρ` is a plain recursive list function, e.g.
+  `out (loop lim g) ρ = (range L).flatMap fun k => out g (ρ ++ [L, k])`; `Gn.Fits x B g ρ`,
+  `Gn.cost x g ρ` likewise.
+* `Gn.spec` (`GSpec`) and `Gn.computesWithin` (`GMachine`): for any `g` (independent of
+  `x`) with `g.need ≤ R`, `g.WFX` (no `loopX/len` inside `loopX` bodies),
+  `g.Fits x B []`, `2 B ≤ 2^w`, `2 ≤ w`, `|x| ≤ |encodeNats (g.out x [])|`:
+  `ComputesWithin (Gn.machine R g) x (encodeNats (g.out x [])) (κ w * g.cost x [] + 20 |…| + 4)`
+  with `Gn.machine_deterministic`.
+
+So the remaining work is: write one generator `prog` (depending only on `M, s, C₀`), prove
+`prog.out x [] = graphDescription G₀ ++ graphDescription G₁` (pure list mathematics),
+`prog.Fits x (2^(w-1)) []` and `prog.cost x [] ≤ C n L^c'` with `w = O(log n)`.
+
 ## Remaining work (in order)
+
+A. Generator toolkit (small): `Gn` combinators with `out` lemmas (`seqList` over a static
+   list, `dispatch v n f` = `if v < n then f v`, `when c g`), derived `Xp` operations
+   (`eq`, `not`, `and` on `0/1`; `sub` if needed), a sufficient condition for `Fits`
+   (all values `< 2^W`, all `k`-arguments `≤ W` ⇒ `Fits (2^(2W))`) and cost bounds
+   (`Xp.cost ≤ size * (W + 3)`; loops: `cost (loop) ≤ L * max body + …`).
+B. Code-ordered verifier program (math, avoids running indices): the commands of
+   `timeProgram` are in `allLocs` order, so the index `j` of a command is a running count.
+   Simplest fix: a register program `timeProgram'` with the same locations/code but command
+   list `progCmds ℓ locs' moves` for `locs' = (range numLoc).filterMap decodeLoc` (code
+   order). `verifier_accepts_iff` holds for any covering location list, so acceptance and
+   the size bounds (`timeProgram_commands_le` argument) carry over; restate
+   `Assembly.timeProgram_graphs` for it. Then the index of the command `(c, k)` (code `c`,
+   move number `k`) is `#{(c', k') < (c, k) real}`, computable by a `count` over the code
+   space (quadratic in the polylogarithmic command count, which is fine: any polylog
+   overhead is absorbed by `n L^c` for a large absolute `c`). Same for schema indices `e`
+   (each command has 4 or 9 schemas).
+C. Symbolic moves: for each location kind (12) and static fields (unrolled by `dispatch`),
+   with runtime `d, u, H` branches (`d = 0`, `d < H`, `u < H - d`, …), the data of the
+   `k`-th move as `Xp` expressions (field position/width/value, mask
+   `fieldMask k q v = (q ^^^ v) <<< k`, guard kind: field/hit/miss, target codes
+   `Loc.code = tag + 16 (t1 + radix (t2 + …))`), proven equal to `(moves L)[k]`.
+D. Command enumerator `Gn`: loops over the code digits (`tag < 16` static, `t1..t5 < radix`),
+   `k < movBound`, pushing the command data and running a body; output lemma
+   `= cmds'.flatMap body-output`.
+E. Schema data per command (4 or 9 schemas, `compiledSchemas` order), `e` by prefix count,
+   `dom` membership test `i = s ∨ guard i (regVal b)` (hit guard needs `x[b]`: use
+   `loopX` over `b`), `permU` (`regVal (b + δᵢ) = regVal b ^^^ field mask (iℓ) ℓ` for the
+   first two schemas of an assignment gadget), location numbers (`TernOrder.loc_slot_val`).
+F. Family passes (`OutGraph` order: `upd, junc, link, coord, sum, track, coef`, each over
+   `i ≤ s`, `b < 2^ℓ`, `lab < 4`): colors `outColor`, and for hubs the numbers of
+   `hubNbrs` (`trackAt` via a scan for `prevStep`, `ent_eq` in `OutDecode`); the edge count
+   by `count` of the edge pass.
+G. Assembly: `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges`
+   (`edgeList_outGraph`, `upNbrs_hub/nonhub/invalid`), `distinguishes_outGraph_iff`, sizes,
+   `Gn.computesWithin`; final file with the Lax frontmatter
+   (`conclusion: Lax119563.TimeReduction.time_reduction`).
+
+## Older notes (superseded by the generator approach where they conflict)
+
+
+Old remaining-work list:
 
 1. Arithmetic library on `Stm` (file `SArith`). Done: accumulating loops `accum`
    (`exec_accum`: `acc + Σ f k`), `mulS` (`a * b`), `subS` (truncated `a - b`), `shlS`
