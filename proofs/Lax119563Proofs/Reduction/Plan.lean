@@ -144,22 +144,31 @@ So the remaining work is: write one generator `prog` (depending only on `M, s, C
 
 ## Remaining work (in order)
 
-A. Generator toolkit (small): `Gn` combinators with `out` lemmas (`seqList` over a static
-   list, `dispatch v n f` = `if v < n then f v`, `when c g`), derived `Xp` operations
-   (`eq`, `not`, `and` on `0/1`; `sub` if needed), a sufficient condition for `Fits`
-   (all values `< 2^W`, all `k`-arguments `≤ W` ⇒ `Fits (2^(2W))`) and cost bounds
-   (`Xp.cost ≤ size * (W + 3)`; loops: `cost (loop) ≤ L * max body + …`).
-B. Code-ordered verifier program (math, avoids running indices): the commands of
-   `timeProgram` are in `allLocs` order, so the index `j` of a command is a running count.
-   Simplest fix: a register program `timeProgram'` with the same locations/code but command
-   list `progCmds ℓ locs' moves` for `locs' = (range numLoc).filterMap decodeLoc` (code
-   order). `verifier_accepts_iff` holds for any covering location list, so acceptance and
-   the size bounds (`timeProgram_commands_le` argument) carry over; restate
-   `Assembly.timeProgram_graphs` for it. Then the index of the command `(c, k)` (code `c`,
-   move number `k`) is `#{(c', k') < (c, k) real}`, computable by a `count` over the code
-   space (quadratic in the polylogarithmic command count, which is fine: any polylog
-   overhead is absorbed by `n L^c` for a large absolute `c`). Same for schema indices `e`
-   (each command has 4 or 9 schemas).
+A. Generator toolkit (done: `GTools`): `Xp.eq/not/and/or/mulC/pow2` with `eval` lemmas,
+   `Gn.seqL/when/dispatch` with `out_seqL/out_when/out_dispatch`, `fits_*`, `cost_*_le`
+   (uniform bounds for loops/dispatch), `Xp.Small W` (values `< 2^W`, loop counts `≤ W`)
+   with `Small.fits : Fits (2^(2W))` and `Small.cost_le : cost ≤ size (W + 3)`.
+   Pitfall: `simp only [Xp.eval]` on an `if` over `Xp` values keeps the old `Decidable`
+   instance and then `split_ifs`/`rw [if_pos]` fail; state the unfolded form with `show`
+   first (see `eval_eq_const`).
+B. Code-ordered verifier program (done: `CodeOrder`): `decodeLoc`, `locsByCode`,
+   `timeProgram'`, `timeQuery'`, `timeProgram'_accepts_iff`, `time_simulation'`,
+   `timeProgram'_graphs` (use this program from now on), `verifierCmds'_eq` (the command
+   list is `(range numLoc).flatMap` of the moves of the decoded locations).
+   The index `j` of a command is the number of commands at smaller codes / earlier moves:
+   compute it with `Gn.count` over the code space (polylog² overhead is fine). Same for
+   schema indices `e` (4 per assignment, 9 per fork). `Xp` has no subtraction: use
+   `count` (`a - b = #{t < a | b ≤ t}`) or add an `Xp.sub` constructor via `SArith.subS`
+   (each `Xp` constructor needs a case in `XLang/XSpec/GTools`).
+E'. Schema data (started: `SchemaData`): `mem_guardDomain_toGuard` (block `< s`: the address
+   guard on `regVal b`; block `s`: `executable`), `updatePerm_toUpdate_apply` (block kept,
+   `regVal` XOR `shiftVal s ℓ m i` = `field m (iℓ) ℓ` or `xorFields`), `commandSchemas_assign/
+   fork`, `loc_prog_val` (with `TernOrder.loc_slot_val/loc_det_val`). Useful formulas for the
+   bodies: bit `j` of `v` with `j = k + t - iℓ` is `odd (shr (shl v (iℓ)) (k + t))` (no
+   subtraction); `field (2^H) (iℓ) ℓ = xorM (shr (pow2 H) (iℓ)) 0 ℓ`; `ent` (`OutDecode.ent_eq`)
+   by splitting the step loop `σ = q (s+ℓ) + j` into `j < s` (static) and `j = s + j'`;
+   `prevStep c σ + 1 = #{σ' < σ | some σ'' ∈ [σ', σ) has ent ≠ 0}` (a nested `count`);
+   `hitGuard` on register `0` needs `cfgCell (init M x) ν v` from `inBit x v` (`loopX`).
 C. Symbolic moves: for each location kind (12) and static fields (unrolled by `dispatch`),
    with runtime `d, u, H` branches (`d = 0`, `d < H`, `u < H - d`, …), the data of the
    `k`-th move as `Xp` expressions (field position/width/value, mask
