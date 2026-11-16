@@ -120,3 +120,6 @@ import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.RowSpace.OneVertex
 import Lax119563Proofs.RowSpace.TreeLike
+import Lax119563Proofs.RowSpace.Construction
+import Lax119563Proofs.RowSpace.Shifts
+import Lax119563Proofs.RowSpace.Extension
