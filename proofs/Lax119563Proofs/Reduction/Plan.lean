@@ -197,51 +197,71 @@ D. Command enumerator (done: `CmdEnum`). `cmdEnum M s b HX RX body` (`b` = stack
    (r ↦ body.out (stkL ρ L ++ r)) | none ↦ [])` (compare `verifierCmds'_eq`).
    **`desc_recsOf`**: `recsOf L = rs.zipIdx.map (k :: ·)` with
    `Forall₂ (CmdDesc ∘ toACmd ℓ L) (moves L) rs`.
-E. (started: `SchList`) `schemas_match`: the schema list of `(compile N code acc rej hne
-   cmds).compile p₀ a₀` is `Forall₂ SchMatch` to the explicit numeric list
-   `cmds.zipIdx.flatMap (cmdN …) ++ detN …` with domains (`cmdDom`, query guard):
-   `SchNum = (tern, u, v, en, msk)`, `PermDesc` (block kept, `regVal` XOR
-   `shiftVal s ℓ msk`), `PermId` for `permV/permEnd`. Slot location numbers are
-   `N + (t + 8 j)`, detector `N + r*8 + t`.
-   Done for the counts: `CountIdx.length_filter_lt_getElem` (with strictly increasing keys,
-   the index of an entry = number of entries with smaller key, `lexLt`) and
-   `SchEnum.keys_pairwise` (the keys `(code, k)` of `recKeys`, the records of `cmdEnum` in
-   order, strictly increase).
-   Next: the schema enumerator. Inside the `cmdEnum` body (depth `b+25`) push
-   `j = count (cmdEnum (b+26) … (when before (emit 0)))` with
-   `before = c' < c ∨ (c' = c ∧ k' < k)` (inner `c'` at `(b+26)+15`, `k'` at `+16`) and
-   `e₀ = count (…emit 4 or 9 zeros…)`; the counts equal the index in the command list
-   because the records are strictly increasing in `(code, k)` (from `out_cmdEnum` +
-   `desc_recsOf`: `recsOf` heads are `0, 1, …`). Then `ite fk` over the 4 resp. 9 schemas,
-   each pushing `[e₀ + i, tern, u, v, en, msk]` + guard numbers at one fixed depth (pad the
-   detector branch with zeros to the same depth) and running the schema body. Every
-   command source is executable (`moves accept = moves reject = []`), so `cmdDom` is
-   `i = s ∨ guard i (regVal b)`.
-   Design notes (from reduction5): keep every generator a Lean function of its base depth
-   `b` and state output lemmas for arbitrary stacks of length `b` (junk below is fine, the
-   body only reads globals `< b` and its own pushes); prove `Bnd` side conditions with the
-   `allB_*`/`allBr_*` helpers (`CmdEnum`) using `refine`, never `apply` (apply adds
-   arguments to `∀`-conclusions); avoid big `simp` calls on goals containing `allRows`
-   lists (timeouts) — resolve `if`s with `rw [if_pos h]` first and use
-   `List.map_congr_left`/`List.flatMap_congr`. Costs: all counting runs cost
-   `O(numLoc² movBound²)` = `O(log^10)` per pass, independent of `s` in the exponent;
-   `loopX` costs `|x|` per call, so call it only `polylog` times (once per schema/step/block).
-   A family pass is then: schema enumerator, `σ < NS` as `q < s+2, j < s+ℓ` (so the row
-   `σ % (s+ℓ) = j` needs no division), `i ≤ s`, `loopX` over `b < 2^ℓ` (gives `inBit x b`
-   for `hitGuard`: `cfgCell (init M x) 0 b = (inBit-coded symbol, b = 0)`, cf.
-   `TuringMachine.init`), `lab < 4`.
-   Old notes for E: schema data per command (4 or 9 schemas, `compiledSchemas` order), `e` by prefix count,
-   `dom` membership test `i = s ∨ guard i (regVal b)` (hit guard needs `x[b]`: use
-   `loopX` over `b`), `permU` (`regVal (b + δᵢ) = regVal b ^^^ field mask (iℓ) ℓ` for the
-   first two schemas of an assignment gadget), location numbers (`TernOrder.loc_slot_val`).
-F. Family passes (`OutGraph` order: `upd, junc, link, coord, sum, track, coef`, each over
-   `i ≤ s`, `b < 2^ℓ`, `lab < 4`): colors `outColor`, and for hubs the numbers of
-   `hubNbrs` (`trackAt` via a scan for `prevStep`, `ent_eq` in `OutDecode`); the edge count
-   by `count` of the edge pass.
-G. Assembly: `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges`
-   (`edgeList_outGraph`, `upNbrs_hub/nonhub/invalid`), `distinguishes_outGraph_iff`, sizes,
-   `Gn.computesWithin`; final file with the Lax frontmatter
+E. Schema enumerator (done: `SchList`, `CountIdx`, `SchEnum`, `CmdStk`, `SchGen`, `SchOut`,
+   `SchFinal`).
+   * `CmdStk`: `cmdStks` (the stacks of the `cmdEnum` body, one per command, in order),
+     `out_cmdEnum'` (output = `cmdStks.flatMap body.out`), `cmdStks_forall₂` (relation
+     `StkCmd`: length `b+25`, prefix `ρ`, source number at `b+15`, `CmdDesc` of `drop (b+17)`)
+     to `verifierCmds'`, `keys_cmdStks` (keys `(b+15, b+16)` = `keyList`, independent of
+     `b, ρ`), `filter_lexLt_eq_take`, **`length_out_before`** (a nested enumerator with body
+     `when (beforeX b b') g` outputs `Σ_{first j stacks} |g.out|`).
+   * `SchGen`: `SchNum.toL`, `gadgetX`, `GDescQ` (`GDesc` or kind `3` = query guard `v = 0`),
+     **`SchRec`** (record `[tern, u, v, en, msk, gk, g1, g2, g3]` describes a schema),
+     `blkGen`, `cmdBody` (counts `j` at `b+25`, `e₀` at `b+26`, then the 4/9 records),
+     `detGen` (padded by 27 zeros), **`schEnum M s b HX RX NX rX p0X EcX body`**.
+   * `SchFinal.out_schEnum`: with globals `HX ↦ H`, `RX ↦ radix M H`, `NX ↦ numLoc M H`,
+     `rX ↦ |verifierCmds'|`, `p0X ↦ code query`, `EcX ↦ Σ cmdSz` (all `Bnd b`, `ρ.length = b`):
+     `Forall₂ (τ.length = b+37 ∧ τ.take b = ρ ∧ SchRec sc (τ.drop (b+28)))
+       ((AP … (verifierCmds' M x s ℓ H)).compiledSchemas query.code 0) schStks`,
+     `schStks.map (getD (b+27)) = range schStks.length` (the index), and
+     `(schEnum …).out x ρ = schStks.flatMap body.out`. (`ℓ, H` arbitrary; `timeProgram'` is
+     this `AP` with `ℓ = timeWidth`, `H = timeHorizon` by `rfl`.)
+   Math for F (done): `GuardEval` (`gEval x ℓ H gd i v` numeric guard, `gEval_spec`,
+   `initCV`/`encCV_init`: the hit guard needs only `inBit x v`; **`mem_domain_of_schRec`**:
+   `c ∈ sc.domain ↔ c.1 = s ∨ gEval (rec.drop 5) c.1 (regVal c.2)`), `OutNum` (`slotNum F i v t
+   = t + 4((i + (s+1)F)2^ℓ + v)`, `slotNum_inj`, `ClsBnd`, `famNum_injective'`,
+   **`outValid_slotNum`** (slot of a bounded class `X` at `(i,b)` valid ↔ `Valid (X, l)`),
+   `not_outValid_slotNum` (for `coef` at `(i,b) ≠ (0,0)`), `outColor_slotNum`), `EntNum`
+   (`entB s j i v`, **`ent_ne_zero_iff`** (`j = σ % (s+ℓ)`), `prevCnt`,
+   **`prevStep_eq_count`**: `prevStep c σ = if P = 0 then none else some (P-1)` with
+   `P = #{σ' < σ | ∃ σ'' < σ, σ' ≤ σ'' ∧ ent σ'' c ≠ 0}`).
+F. Family passes (next). Design:
+   * Validity per kind (unfold `Valid/ClsValid/LabelOK`, `I.domain v = univ`, `init` =
+     `compiledInit`: `some 0` at `code accept`, `some 1` at `N + 8r + 3`): upd `c ∈ dom ∧ ent ≠ 0`
+     (any label), junc `tern ∧ c ∈ dom` (any label), link `c ∈ dom ∧ l.2 = 0`, coord
+     `l.2 = 0 ∧ (singleton → l.1 = 0)`, sum `tern ∧ c ∈ dom ∧ l.2 = 0`, track like upd with
+     `l.2 = 0`, coef `l.2 = 0` (always valid: every domain contains block `s`) but only at
+     coordinate `(0,0)`.
+   * Colors: `range nOut` = families `F` × `i ≤ s` × `b < 2^ℓ` × `lab < 4` (`flatMap_range_mul`),
+     `outColor (slotNum F i b t)` by `outColor_slotNum`/`outValid_slotNum`. Families in kind order;
+     `E·NS` kinds: `schEnum` (index `e` at `b+27`) then the step loop as `q < s+2`, `j < s+ℓ`
+     (`σ = q (s+ℓ) + j`, `σ % (s+ℓ) = j`); `coord`: loop `v < W`. `b`-loop by `loopX` (gives
+     `inBit x b` for the hit guard). Domain test as a generator: `count` of violations
+     (`fieldOK`: loop `t < m`; window `iℓ ≤ k+t < iℓ+ℓ`; bit `k+t-iℓ` of `v` is
+     `odd (shr (shl v (iℓ)) (k+t))`), result `0` iff in the domain. `entB` without
+     subtraction: bit `j - s` of `v` is `odd (shr (shl v s) j)`.
+   * Edges: only hub kinds (`upd, junc, link`, numbered first) emit (`edgeList_outGraph`,
+     `upNbrs_hub/nonhub/invalid`); neighbors per `nbrCand`, names `nameOfEff` (label
+     `r + ε·initBit`, `initBit = 1` only for `coord (N+8r+3)` at block `0`), filtered by
+     validity (only singleton coords can fail). `trackAt` via `prevStep_eq_count` (nested
+     counts over `(q', j')` pairs); `permU` shift: `regVal ^^^ shiftVal msk i` with
+     `field m (iℓ) ℓ = xorM (shr m (iℓ)) 0 ℓ` and `xorFields` unrolled over the constant `s`.
+     Edge count `m` = `half` of the `count` of the edge pass.
+G. Assembly: globals prelude (`n = |x|` by `len`, `ℓ = log n + C₀ + 4` by `log`, `H = sℓ-2`,
+   `R`, `N = 16 R^5`, `r` and `Ec` by counting `cmdEnum`, `p0` by `codeX` of the query
+   location, `E = Ec + 4`, `NS = (s+2)(s+ℓ)`, `W = N + 8r + 4`, `famCount`, `nOut`);
+   `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges`,
+   `distinguishes_outGraph_iff`, sizes (`timeProgram'_graphs`), `Gn.computesWithin`; Fits and
+   cost lemmas (none exist yet for `cmdEnum`/`schEnum`: prove per-generator bounds
+   compositionally with `cost_loop_le`-style uniform bounds; only the `b`-loop is `Θ(n)`, all
+   other loops polylog); final file with Lax frontmatter
    (`conclusion: Lax119563.TimeReduction.time_reduction`).
+   Pitfalls (reduction6): `List.Forall₂.exists_of_mem_left`, `List.getD_take`,
+   `List.map_fst_zipIdx` do not exist (local versions `forall₂_exists_of_mem_left`,
+   `getD_take'`, `map_fst_zipIdx'`); `simp_all` loops on goals with `lexLt`; `split_ifs` also
+   splits nested `if`s (use `by_cases` + `rw [if_pos]`); Xp `Bnd` of `var i` is `i < n` but
+   must be given as `bnd_var h` when the expected type is a metavariable; `include`d section
+   hypotheses become explicit arguments of every lemma in the section (move helpers out).
 
 ## Older notes (superseded by the generator approach where they conflict)
 
