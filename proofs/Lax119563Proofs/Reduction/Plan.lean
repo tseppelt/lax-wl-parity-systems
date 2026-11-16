@@ -225,6 +225,11 @@ E. Schema enumerator (done: `SchList`, `CountIdx`, `SchEnum`, `CmdStk`, `SchGen`
    (`entB s j i v`, **`ent_ne_zero_iff`** (`j = σ % (s+ℓ)`), `prevCnt`,
    **`prevStep_eq_count`**: `prevStep c σ = if P = 0 then none else some (P-1)` with
    `P = #{σ' < σ | ∃ σ'' < σ, σ' ≤ σ'' ∧ ent σ'' c ≠ 0}`).
+   Also done: `DomGen` (**`violGen`**: the domain test as a generator, `violGen_out_eq_nil_iff`
+   and **`violGen_nil_iff_mem`**: on a stack extending a schema stack of `out_schEnum`, with
+   `iX ↦ c.1`, `vX ↦ regVal c.2`, `xbX ↦ inBit x (regVal c.2)`, `ℓX ↦ ℓ > 0`, `HX ↦ H`, the
+   output is `[]` iff `c ∈ sc.domain`; derived Xp `le` and `eval_and'/or'/not'` for 0/1
+   values), `ValidKinds` (`valid_*_iff` per kind, `coef_exists`).
 F. Family passes (next). Design:
    * Validity per kind (unfold `Valid/ClsValid/LabelOK`, `I.domain v = univ`, `init` =
      `compiledInit`: `some 0` at `code accept`, `some 1` at `N + 8r + 3`): upd `c ∈ dom ∧ ent ≠ 0`
