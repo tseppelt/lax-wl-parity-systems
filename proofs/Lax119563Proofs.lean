@@ -210,3 +210,5 @@ import Lax119563Proofs.Compiler.CStack
 import Lax119563Proofs.Compiler.CParse
 import Lax119563Proofs.Compiler.Order
 import Lax119563Proofs.Compiler.CSortList
+import Lax119563Proofs.Compiler.OrderEdges
+import Lax119563Proofs.Compiler.CSortLoop
