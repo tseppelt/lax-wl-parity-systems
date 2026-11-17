@@ -138,6 +138,8 @@ import Lax119563Proofs.Reduction.CostGn
 import Lax119563Proofs.Reduction.CostMachine
 import Lax119563Proofs.Reduction.CostCmd
 import Lax119563Proofs.Reduction.CostSch
+import Lax119563Proofs.Reduction.CostDom
+import Lax119563Proofs.Reduction.CostPrelude
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.UpperBound.Rounds

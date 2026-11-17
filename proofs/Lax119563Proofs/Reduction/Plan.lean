@@ -268,6 +268,38 @@ G. Assembly: globals prelude (`n = |x|` by `len`, `ℓ = log n + C₀ + 4` by `l
    must be given as `bnd_var h` when the expected type is a metavariable; `include`d section
    hypotheses become explicit arguments of every lemma in the section (move helpers out).
 
+## Fits/cost (done: `FitsBasic`, `CostTy`, `CostGn`, `CostMachine`, `CostCmd`, `CostSch`,
+## `CostDom`, `CostPrelude`)
+
+Uniform bounds via *growth classes* (`CostTy`): `Ty.P e d` (values `≤ K 2^(eℓ) (ℓ+1)^d`) and
+`Ty.big` (values `≤ 2^(K(ℓ+1))`), at a scale `ℓ` with `|x| ≤ 2^ℓ`; `Ag K ℓ τs ρ` (stack agrees
+with the classes). `Xp.HasTy τs e τ` (∀ stack constant ∃ `K`: value in class `τ`, fits below
+`2^(K(ℓ+1))`, cost `≤ K(ℓ+1)`; loop-based ops need a linear `P 0 1` count), with rules
+`hasTy_var/const/add/addBig/lt/half/odd/mulB/mulBBig/shl/shr/xorM/eq/not/and/or/mulC/mul/pow2`,
+`HasTy.le/ctx/weaken`. `Gn.HasCost τs g e d` (fits below `2^(K(ℓ+1))`, cost
+`≤ K 2^(eℓ) (ℓ+1)^(d+1)`) and `Gn.HasLen` (output length class, for `count`), with rules
+`hasCost_skip/emit/seq/ite/bind/loop/loopX/len/log/count/seqL/when/dispatch/bindL/bindSub`
+(`CostGn`): a loop over a `P e₀ d₀` range adds `(e₀, d₀)`; `loopX`/`len` force `e ≥ 1`.
+* **`Gn.computesWithin_quasiLinear`** (`CostMachine`): `HasCost [] g 1 d`, `g.need ≤ R`,
+  `g.WFX` give `∃ C, ∀ x, 2 ≤ |x| → |x| ≤ |encodeNats out| → ComputesWithin (machine R g) x
+  (encodeNats out) (C |x| (log₂|x|)^(d+3))` (absolute exponent if `d` is; `w = O(log |x|)`).
+* **`hasCost_cmdEnum`** (`CostCmd`): linear `HX, RX` (`LinX`: `P 0 1` and `Bnd`), body
+  `HasCost (τs ++ cmdTys) body e d` ⇒ `HasCost τs (cmdEnum …) e (d+6)`; `cmdTys`: digits and
+  differences `P 0 1`, `rest`, location number `P 0 5`, index `P 0 0`, record `recTys`
+  (`mask` is `big`, `g1` linear). Also `SLoc.codeX_tyB`, `SMv.recX_tyB`, `SKind.brs_ok`.
+* **`hasCost_schEnum`** (`CostSch`): globals `NX, rX, p0X, EcX` of class `P 0 7`, body
+  `HasCost (τs ++ schTys) body e d` ⇒ `HasCost τs (schEnum …) e (d+12)` (`schTys`: `cmdTys`,
+  `j, e₀`, index `P 0 7`, numbers `numTys = [P00, P07, P07, P07, big]`, guard `gdTys`).
+* **`hasCost_violGen`** (`CostDom`): block index `P 0 0`, linear `ℓX, HX, g1X, g2X` ⇒ `(0, 1)`.
+* **`hasCost_lenLog`** (`CostPrelude`): the prelude `len (log (var n) (bind (shl (const 1)
+  (var (n+1))) g))` pushes `|x| : P 1 0`, `L = log₂|x| : P 0 1`, `2^L : P 1 0` (classes forget
+  relations between levels, so `2^L` needs this direct proof); `2^ℓ = mulC (2^c) 2^L` is then
+  `P 1 0`, so the `b`-loop (`hasCost_loopX`) is the only `e = 1` loop.
+Use for G: type the remaining globals (`H, R` linear; `N, r, E, …` polylog `P 0 k`), the family
+passes with `hasCost_schEnum`/`hasCost_violGen`/`hasCost_loopX`, then
+`computesWithin_quasiLinear`.
+Pitfall: `++` is left-associative (`τs ++ l ++ [a]` is `(τs ++ l) ++ [a]`), so weaken in steps.
+
 ## Older notes (superseded by the generator approach where they conflict)
 
 
