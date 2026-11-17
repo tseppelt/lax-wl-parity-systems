@@ -247,24 +247,39 @@ F. Family passes (reduction7). Done:
    * `SlotPass` (`schSlots`/`stepSlots` for arbitrary bodies), `EdgeCand` (`candOut`,
      `plainGen`, `coordGen` with the seed of `Iv`), `EdgeJunc` (`shiftX`/`permVX`,
      **`out_edgeJunc`**), `EdgePrev` (`prevGen`, `length_out_prevGen = prevCnt`), `EdgeLink`
-     (**`out_edgeLink`**), `EdgeUpd` (`edgeUpd` generator; `out_edgeUpd` in progress).
-   Remaining for F: finish `out_edgeUpd`; `edgePass ε := seqL [edgeUpd, edgeJunc, edgeLink]`
-   with `out = (edgeList (outGraph Iv ε)).flatMap (fun e => [e.1, e.2])` from `edges_flat`;
-   the edge count by `count edgePass (emit (half (var b)))`.
+     (**`out_edgeLink`**), `EdgeUpd` (**`out_edgeUpd`**).
+   * `DescGen`: `edgePass`, **`out_edgePass`** (flattened edge list of `outGraph (Iv …) ε`),
+     `descGen M s ε b = seqL [emit gnOut, colPass, count edgePass (seq (emit (half (var b)))
+     edgePass)]` and **`out_descGen`**: on a stack `ρ` with `ρ.length = b`, `GlobOK ρ`,
+     `0 < ℓ`, `1 ≤ s`, `ε ≤ 1`: `(descGen M s ε b).out x ρ = graphDescription (outGraph (Iv …) ε)`.
    Pitfalls: anything that makes Lean whnf `sch (Iv …) e` (implicit-argument unification of
    validity facts with `Iv`, `rfl` closing `rw`, `congr 1`, `if_pos` on `isTern (sch …)`) times
    out; state such facts as generic lemmas over `I` and apply them with explicit arguments
    (`valid_sum_of_junc`, `valid_track_of_link`, `valid_*_of_upd`, `startCls_of_tern`); do not
    `set` terms containing `Iv`; use `List.append_left_inj` instead of `congr 1`.
-G. Assembly: globals prelude (`n = |x|` by `len`, `ℓ = log n + C₀ + 4` by `log`, `H = sℓ-2`,
-   `R`, `N = 16 R^5`, `r` and `Ec` by counting `cmdEnum`, `p0` by `codeX` of the query
-   location, `E = Ec + 4`, `NS = (s+2)(s+ℓ)`, `W = N + 8r + 4`, `famCount`, `nOut`);
-   `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges`,
-   `distinguishes_outGraph_iff`, sizes (`timeProgram'_graphs`), `Gn.computesWithin`; Fits and
-   cost lemmas (none exist yet for `cmdEnum`/`schEnum`: prove per-generator bounds
-   compositionally with `cost_loop_le`-style uniform bounds; only the `b`-loop is `Θ(n)`, all
-   other loops polylog); final file with Lax frontmatter
-   (`conclusion: Lax119563.TimeReduction.time_reduction`).
+G. Assembly (next). The output part is `descGen` (F). Remaining:
+   * Prelude pushing exactly `globs M x s ℓ H` (levels `0 … 16`, `ℓ = timeWidth C₀ |x|`,
+     `H = timeHorizon s C₀ |x|`; check both definitions in `Circuits`): `len`; `log (var 0)`;
+     `ℓ` and `H` by `bind`; `R = H + 1 + cM M`; `N = 16 R^5` (`mulC`, `mul`); `r` = length of
+     `count (cmdEnum … (emit 0))` (`out_cmdEnum'`, `cmdStks_forall₂` length); `Ec` = count of
+     a `cmdEnum` body emitting `cmdSz` zeros (`szAt_of_stkCmd`, `emitN`); `p0`, `acc` by
+     `SLoc.codeX` of the query/accept locations; `E` = count of `schEnum … (emit 0)` (use
+     `out_schEnum` directly: `schEnum_ctx` needs all 17 globals); `NS = mulC (s+2) (s + ℓ)`;
+     `W = N + 8r + 4` (`= (Iv …).numLocations`, `compiledSize`, `AP_commands`); `E·NS` by
+     `mul`; `famCount`; `nOut = mulC 4 (shl (mulC (s+1) fam) ℓ)`; `det = N + 8r + 3`.
+     Then `GlobOK` of the prelude stack.
+   * `prog := prelude (seq (descGen M s 0 17) (descGen M s 1 17))`, output
+     `graphDescription G₀ ++ graphDescription G₁` (encodeGraphPair after `encodeNats`), with
+     `distinguishes_outGraph_iff` + `timeProgram'_graphs` (`Iv` with `ℓ = timeWidth`,
+     `H = timeHorizon` is `(timeProgram' …).compile (timeQuery' …) _` by `rfl`/`Iv` unfolding),
+     sizes `nOut ≤ C n log^c n` (from the matrix-graph bound: `nOut = 4·2^ℓ(s+1)famCount`),
+     `|x| ≤ |encodeNats out|` (nOut ≥ |x|).
+   * Fits/cost: `HasCost` for `slotLoops` (the `loopX` over `pow2 gℓ`: the cost note above says
+     `2^ℓ` needs a direct class; consider adding a global `2^ℓ` and using it as the `loopX`
+     limit), `violAt` (`hasCost_violGen`), `colBody`, `entX`, `prevGen` (two nested step
+     loops, polylog), `coordGen/plainGen`, `edge*`, `descGen`, prelude; then
+     `computesWithin_quasiLinear` and the final file with Lax frontmatter
+     (`conclusion: Lax119563.TimeReduction.time_reduction`, style of `Counter/Main.lean`).
    Pitfalls (reduction6): `List.Forall₂.exists_of_mem_left`, `List.getD_take`,
    `List.map_fst_zipIdx` do not exist (local versions `forall₂_exists_of_mem_left`,
    `getD_take'`, `map_fst_zipIdx'`); `simp_all` loops on goals with `lexLt`; `split_ifs` also
