@@ -1,0 +1,254 @@
+import Lax119563Proofs.Reduction.CostEdgePass
+import Lax119563Proofs.Reduction.CostWF
+import Lax119563Proofs.Reduction.CostGlob
+
+/-!
+# The prelude: computing the globals
+
+`prelude M s C₀ g` pushes the 18 globals `globs M x s ℓ H` (for `ℓ = timeWidth C₀ |x|`,
+`H = timeHorizon s C₀ |x|`) and runs `g` on them (**`out_prelude`**, for `s ≥ 2`):
+`|x|` (`len`), `log₂ |x|` (`log`), `ℓ`, `H`, `R`, `N = 16 R^5` by expressions, the command
+count `r` and the schema count `Ec` by counting runs of the command enumerator, the codes of
+`query` (`2`) and `accept` (`0`), the number `E` of schemas by a counting run of the schema
+enumerator, `NS, W, E·NS, famCount, nOut, det` by expressions and `2^ℓ` as
+`min (2^ℓ) (2^(C₀+4) (|x| + 1))` (so that it is of class `P 1 0`).
+-/
+
+namespace Lax119563Proofs.Reduction
+
+open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime Xp
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+
+namespace Gn
+
+/-- The size count body: `9` zeros for a fork, `4` for an assignment (record at `b + 17`). -/
+def szBody (b : ℕ) : Gn := .ite (var (b + 17)) (emitN 9) (emitN 4)
+
+/-- **The prelude.** -/
+def prelude (M : Machine) (s C₀ : ℕ) (g : Gn) : Gn :=
+  len <| log (var 0) <|
+  bind (add (var 1) (const (C₀ + 4))) <|
+  bind (add (mulC (s - 2) (var 2)) (mulC 2 (add (var 1) (const (C₀ + 3))))) <|
+  bind (add (var 3) (const (1 + cM M))) <|
+  bind (mulC 16 (mul (mul (mul (mul (var 4) (var 4)) (var 4)) (var 4)) (var 4))) <|
+  count (cmdEnum M s 7 (var 3) (var 4) (emit (const 0))) <|
+  count (cmdEnum M s 8 (var 3) (var 4) (szBody 8)) <|
+  bind (const 2) <|
+  bind (const 0) <|
+  count (schEnum M s 11 gH gR gN gr gp0 gEc (emit (const 0))) <|
+  bind (mulC (s + 2) (add (const s) (var 2))) <|
+  bind (add (add (var 5) (mulC 8 (var 6))) (const 4)) <|
+  bind (mul (var 10) (var 11)) <|
+  bind (add (add (mulC 3 (var 13)) (mulC 3 (var 10))) (var 12)) <|
+  bind (mulC 4 (shl (mulC (s + 1) (var 14)) (var 2))) <|
+  bind (add (add (var 5) (mulC 8 (var 6))) (const 3)) <|
+  bind (minR (pow2 (var 2)) (mulC (2 ^ (C₀ + 4)) (add (var 0) (const 1)))) g
+
+end Gn
+
+/-! ## Steps -/
+
+section Steps
+
+variable {x : List Bool} {G : List ℕ}
+
+lemma take_succ_getD {k : ℕ} (hk : k < G.length) : G.take k ++ [G.getD k 0] = G.take (k + 1) := by
+  rw [List.take_succ, List.getElem?_eq_getElem hk, List.getD_eq_getElem _ _ hk]
+  rfl
+
+lemma out_bind_step {k : ℕ} (hk : k < G.length) {e : Xp} {g : Gn}
+    (he : e.eval (G.take k) = G.getD k 0) :
+    (Gn.bind e g).out x (G.take k) = g.out x (G.take (k + 1)) := by
+  simp only [Gn.out, he, take_succ_getD hk]
+
+lemma out_count_step {k : ℕ} (hk : k < G.length) {g h : Gn}
+    (hl : (g.out x (G.take k ++ [0])).length = G.getD k 0) :
+    (Gn.count g h).out x (G.take k) = h.out x (G.take (k + 1)) := by
+  simp only [Gn.out, hl, take_succ_getD hk]
+
+lemma getD_take_lt {l : List ℕ} {i k : ℕ} (h : i < k) : (l.take k).getD i 0 = l.getD i 0 :=
+  getD_take' h
+
+lemma getD_take_app {l : List ℕ} {i k : ℕ} (h : i < k) (hk : k ≤ l.length) (a : ℕ) :
+    (l.take k ++ [a]).getD i 0 = l.getD i 0 := by
+  rw [List.getD_append _ _ _ _ (by simp; omega), getD_take' h]
+
+end Steps
+
+/-! ## Values -/
+
+variable {M : Machine} {x : List Bool} {s ℓ H : ℕ}
+
+lemma Iv_numLocations :
+    (Iv M x s ℓ H).numLocations = numLoc M H + (verifierCmds' M x s ℓ H).length * 8 + 4 := by
+  have hc : (APv M x s ℓ H).commands.length = (verifierCmds' M x s ℓ H).length := by
+    simp only [AP_commands]; exact List.length_map _
+  show (APv M x s ℓ H).numLocations + (APv M x s ℓ H).commands.length * 8 + 4 = _
+  rw [hc]
+  rfl
+
+lemma code_query_val : (Loc.code (Loc.query : Loc M H)).val = 2 := by
+  simp [Loc.code, Loc.tuple, pack]
+
+lemma code_accept_val : (Loc.code (Loc.accept : Loc M H)).val = 0 := by
+  simp [Loc.code, Loc.tuple, pack]
+
+lemma sum_map_forall₂ {α β : Type} {R : α → β → Prop} {f : α → ℕ} {g : β → ℕ} :
+    ∀ {l₁ : List α} {l₂ : List β}, List.Forall₂ R l₁ l₂ → (∀ a b, R a b → f a = g b) →
+      (l₁.map f).sum = (l₂.map g).sum
+  | _, _, .nil, _ => rfl
+  | _, _, .cons h t, hf => by
+    simp only [List.map_cons, List.sum_cons, hf _ _ h, sum_map_forall₂ t hf]
+
+lemma length_flatMap_emit {α : Type} (l : List α) (f : α → List ℕ) (hf : ∀ a, (f a).length = 1) :
+    (l.flatMap f).length = l.length := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [hf a, ih]; omega
+
+lemma two_pow_timeWidth_le (C₀ n : ℕ) : 2 ^ timeWidth C₀ n ≤ 2 ^ (C₀ + 4) * (n + 1) := by
+  unfold timeWidth
+  rw [show Nat.log 2 n + C₀ + 4 = (C₀ + 4) + Nat.log 2 n by omega, pow_add]
+  refine Nat.mul_le_mul_left _ ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  · exact (Nat.pow_log_le_self 2 hn.ne').trans (Nat.le_succ n)
+
+lemma lt_two_pow_timeWidth (C₀ n : ℕ) : n < 2 ^ timeWidth C₀ n := by
+  unfold timeWidth
+  calc n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by norm_num) n
+    _ ≤ _ := Nat.pow_le_pow_right (by norm_num) (by omega)
+
+/-- **The prelude computes the globals.** -/
+theorem out_prelude {C₀ : ℕ} (hs : 2 ≤ s) (g : Gn) :
+    (Gn.prelude M s C₀ g).out x [] =
+      g.out x (globs M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length)) := by
+  set ℓ := timeWidth C₀ x.length with hℓ
+  set H := timeHorizon s C₀ x.length with hH
+  set G := globs M x s ℓ H with hG
+  have hGl : G.length = 18 := length_globs
+  have eG : ∀ i, G.getD i 0 = (globs M x s ℓ H).getD i 0 := fun _ => rfl
+  -- levels 0, 1
+  have h1 : (Gn.prelude M s C₀ g).out x [] = (Gn.prelude M s C₀ g).out x (G.take 0) := rfl
+  rw [h1, Gn.prelude]
+  have s0 : ∀ g' : Gn, (Gn.len g').out x (G.take 0) = g'.out x (G.take 1) := fun g' => by
+    simp only [Gn.out]; rfl
+  have s1 : ∀ g' : Gn, (Gn.log (var 0) g').out x (G.take 1) = g'.out x (G.take 2) := fun g' => by
+    simp only [Gn.out]; rfl
+  rw [s0, s1]
+  -- level 2: ℓ
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, getD_take_lt (show 1 < 2 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, hℓ, timeWidth]; omega)]
+  -- level 3: H
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 1 < 3 by omega),
+      getD_take_lt (show 2 < 3 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, hH, timeHorizon, ← hℓ]
+    obtain ⟨t, rfl⟩ : ∃ t, s = t + 2 := ⟨s - 2, by omega⟩
+    have : ℓ = Nat.log 2 x.length + C₀ + 4 := rfl
+    rw [this]; simp only [Nat.add_sub_cancel]; ring_nf; omega)]
+  -- level 4: R
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, getD_take_lt (show 3 < 4 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, radix]; omega)]
+  -- level 5: N
+  rw [out_bind_step (by omega) (by
+    simp only [eval_mul, eval_var, eval_mulC, getD_take_lt (show 4 < 5 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, numLoc]; ring)]
+  -- level 6: r
+  have ev6 : ∀ i < 6, (G.take 6 ++ [0]).getD i 0 = G.getD i 0 := fun i hi =>
+    getD_take_app hi (by omega) 0
+  have eH6 : (var 3).eval (G.take 6 ++ [0]) = H := by
+    simp only [eval_var, ev6 3 (by omega)]; rfl
+  have eR6 : (var 4).eval (G.take 6 ++ [0]) = radix M H := by
+    simp only [eval_var, ev6 4 (by omega)]; rfl
+  have hl6 : (G.take 6 ++ [0]).length = 7 := by simp [hGl]
+  rw [out_count_step (by omega) (by
+    rw [out_cmdEnum' (M := M) (s := s) hl6 (show (var 3).Bnd 7 from show 3 < 7 by omega) (show (var 4).Bnd 7 from show 4 < 7 by omega) eH6 eR6,
+      length_flatMap_emit _ _ (fun _ => rfl),
+      (cmdStks_forall₂ hl6 (show (var 3).Bnd 7 from show 3 < 7 by omega) (show (var 4).Bnd 7 from show 4 < 7 by omega) eH6 eR6 ℓ).length_eq]
+    rfl)]
+  -- level 7: Ec
+  have ev7 : ∀ i < 7, (G.take 7 ++ [0]).getD i 0 = G.getD i 0 := fun i hi =>
+    getD_take_app hi (by omega) 0
+  have eH7 : (var 3).eval (G.take 7 ++ [0]) = H := by
+    simp only [eval_var, ev7 3 (by omega)]; rfl
+  have eR7 : (var 4).eval (G.take 7 ++ [0]) = radix M H := by
+    simp only [eval_var, ev7 4 (by omega)]; rfl
+  have hl7 : (G.take 7 ++ [0]).length = 8 := by simp [hGl]
+  rw [out_count_step (by omega) (by
+    rw [out_cmdEnum' (M := M) (s := s) hl7 (show (var 3).Bnd 8 from show 3 < 8 by omega) (show (var 4).Bnd 8 from show 4 < 8 by omega) eH7 eR7,
+      List.length_flatMap]
+    have hF := cmdStks_forall₂ (x := x) (s := s) hl7 (show (var 3).Bnd 8 from show 3 < 8 by omega) (show (var 4).Bnd 8 from show 4 < 8 by omega) eH7 eR7 ℓ
+    rw [sum_map_forall₂ (g := cmdSz) hF (fun τ cmd h => ?_)]
+    · rfl
+    · rw [← szAt_of_stkCmd h]
+      unfold szAt
+      simp only [Gn.szBody, Gn.out, eval_var]
+      split <;> rename_i hc <;> simp only [ne_eq, hc, not_false_eq_true, not_true_eq_false,
+        if_true, if_false, ite_true, ite_false, Decidable.not_not] <;> exact Gn.length_out_emitN _)]
+  -- levels 8, 9: the codes of `query` and `accept`
+  rw [out_bind_step (by omega) (by
+    simp only [eval_const, hG, globs, List.getD_cons_succ, List.getD_cons_zero]
+    exact code_query_val.symm)]
+  rw [out_bind_step (by omega) (by
+    simp only [eval_const, hG, globs, List.getD_cons_succ, List.getD_cons_zero]
+    exact code_accept_val.symm)]
+  -- level 10: E
+  have ev10 : ∀ i < 10, (G.take 10 ++ [0]).getD i 0 = G.getD i 0 := fun i hi =>
+    getD_take_app hi (by omega) 0
+  have hl10 : (G.take 10 ++ [0]).length = 11 := by simp [hGl]
+  have bnd : ∀ i < 11, (var i).Bnd 11 := fun i hi => show i < 11 from hi
+  have hS := out_schEnum (M := M) (s := s) (x := x) (ℓ := ℓ) (H := H) hl10 (bnd 3 (by omega))
+    (bnd 4 (by omega)) (by simp only [eval_var, ev10 3 (by omega)]; rfl)
+    (by simp only [eval_var, ev10 4 (by omega)]; rfl) (bnd 5 (by omega))
+    (by simp only [eval_var, ev10 5 (by omega)]; rfl) (bnd 6 (by omega))
+    (by simp only [eval_var, ev10 6 (by omega)]; rfl) (bnd 8 (by omega))
+    (by simp only [eval_var, ev10 8 (by omega)]; rfl) (bnd 7 (by omega))
+    (by simp only [eval_var, ev10 7 (by omega)]; rfl) (Gn.emit (const 0))
+  rw [out_count_step (by omega) (by
+    rw [hS.2.2, length_flatMap_emit _ _ (fun _ => rfl), ← hS.1.length_eq]
+    rw [hG]
+    simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
+    exact (congrArg List.length (Iv_schemas (M := M) (x := x) (s := s) (ℓ := ℓ) (H := H))).symm)]
+  -- level 11: NS
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 2 < 11 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, numSteps]
+    rw [Nat.add_sub_cancel])]
+  -- level 12: W
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 5 < 12 by omega),
+      getD_take_lt (show 6 < 12 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero]
+    rw [Iv_numLocations]; ring)]
+  -- level 13: E·NS
+  rw [out_bind_step (by omega) (by
+    simp only [eval_mul, eval_var, getD_take_lt (show 10 < 13 by omega),
+      getD_take_lt (show 11 < 13 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero])]
+  -- level 14: famCount
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_mulC, getD_take_lt (show 13 < 14 by omega),
+      getD_take_lt (show 10 < 14 by omega), getD_take_lt (show 12 < 14 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, famCount])]
+  -- level 15: nOut
+  rw [out_bind_step (by omega) (by
+    simp only [eval_shl, eval_var, eval_mulC, getD_take_lt (show 14 < 15 by omega),
+      getD_take_lt (show 2 < 15 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, nOut]; ring)]
+  -- level 16: det
+  rw [out_bind_step (by omega) (by
+    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 5 < 16 by omega),
+      getD_take_lt (show 6 < 16 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero])]
+  -- level 17: 2^ℓ
+  rw [out_bind_step (by omega) (by
+    simp only [eval_minR, eval_pow2, eval_add, eval_var, eval_const, eval_mulC,
+      getD_take_lt (show 2 < 17 by omega), getD_take_lt (show 0 < 17 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero]
+    exact min_eq_left (two_pow_timeWidth_le C₀ x.length))]
+  rw [List.take_of_length_le (by omega)]
+
+end Lax119563Proofs.Reduction
