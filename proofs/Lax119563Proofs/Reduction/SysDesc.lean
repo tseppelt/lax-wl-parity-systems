@@ -27,6 +27,11 @@ variable {s ℓ : ℕ}
 lemma map_val_finRange (n : ℕ) : (List.finRange n).map Fin.val = List.range n :=
   List.ext_getElem (by simp) fun i _ _ => by simp
 
+lemma flatMap_finRange {β : Type} (n : ℕ) (f : ℕ → List β) :
+    (List.finRange n).flatMap (fun v => f v.val) = (List.range n).flatMap f := by
+  rw [← map_val_finRange, List.flatMap_map]
+
+
 lemma ofBits_eq_sum : ∀ (n : ℕ) (f : ℕ → Bool),
     ofBits n f = ∑ t : Fin n, (f t).toNat * 2 ^ (t : ℕ)
   | 0, _ => rfl
@@ -52,6 +57,26 @@ lemma toBlk_regVal (b : BlockCoord ℓ) : toBlk ℓ (regVal b) = b :=
 lemma coordNum_toBlk {k i v : ℕ} (hi : i < k) (hv : v < 2 ^ ℓ) :
     coordNum ((⟨i, hi⟩, toBlk ℓ v) : Coord k ℓ) = i * 2 ^ ℓ + v := by
   simp [coordNum, blockNum_eq_regVal, regVal_toBlk hv]
+
+/-- The fixed-width binary digits `v_0, …, v_{ℓ-1}` of `v`. -/
+def bitsL (ℓ v : ℕ) : List ℕ := (List.range ℓ).map fun t => if v.testBit t then 1 else 0
+
+lemma blockDescription_eq (b : BlockCoord ℓ) : blockDescription b = bitsL ℓ (regVal b) := by
+  refine List.ext_getElem (by simp [blockDescription, bitsL]) fun t h1 h2 => ?_
+  have ht : t < ℓ := by simpa [blockDescription] using h1
+  simp only [blockDescription, bitsL, List.getElem_map, List.getElem_finRange, List.getElem_range,
+    regVal, testBit_ofBits, ht, decide_true, Bool.true_and, dif_pos]
+  rcases zmod2_cases (b ⟨t, ht⟩) with h | h <;> simp [h] <;> rfl
+
+lemma coordNumDescription_eq {i v : ℕ} (hv : v < 2 ^ ℓ) :
+    coordNumDescription ℓ (i * 2 ^ ℓ + v) = i :: bitsL ℓ v := by
+  have h1 : (i * 2 ^ ℓ + v) / 2 ^ ℓ = i := by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by positivity), Nat.div_eq_of_lt hv, zero_add]
+  rw [coordNumDescription, h1, bitsL]
+  congr 1
+  refine List.map_congr_left fun t ht => ?_
+  rw [List.mem_range] at ht
+  rw [Nat.mul_comm, Nat.testBit_two_pow_mul_add _ hv, if_pos ht]
 
 /-! ## Coordinate domains -/
 
@@ -87,10 +112,25 @@ lemma domL_eq_filter (k ℓ : ℕ) (m : ℕ → ℕ → Bool) :
     rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hv]
   rw [h1, h2]
 
+/-- The coordinate descriptions `i, bits v` of the members `(i, v)` with `m i v`. -/
+def cdL (k ℓ : ℕ) (m : ℕ → ℕ → Bool) : List ℕ :=
+  (List.range k).flatMap fun i => (List.range (2 ^ ℓ)).flatMap fun v =>
+    if m i v then i :: bitsL ℓ v else []
+
+lemma domL_flatMap (k ℓ : ℕ) (m : ℕ → ℕ → Bool) :
+    (domL k ℓ m).flatMap (coordNumDescription ℓ) = cdL k ℓ m := by
+  unfold domL cdL
+  rw [List.flatMap_assoc]
+  refine List.flatMap_congr fun i _ => ?_
+  rw [List.flatMap_assoc]
+  refine List.flatMap_congr fun v hv => ?_
+  rw [List.mem_range] at hv
+  split <;> simp [coordNumDescription_eq hv]
+
 /-- **Descriptions of coordinate domains.** -/
 theorem domainDescription_eq_domL {k : ℕ} (D : Finset (Coord k ℓ)) (m : ℕ → ℕ → Bool)
     (hm : ∀ i (hi : i < k), ∀ v < 2 ^ ℓ, m i v = true ↔ ((⟨i, hi⟩, toBlk ℓ v) : Coord k ℓ) ∈ D) :
-    domainDescription D = (domL k ℓ m).length :: domL k ℓ m := by
+    domainDescription D = (domL k ℓ m).length :: cdL k ℓ m := by
   have hsort : (D.image coordNum).sort (· ≤ ·) = domL k ℓ m := by
     have hnd : (domL k ℓ m).Nodup := by
       rw [domL_eq_filter]; exact (List.nodup_range).filter _
@@ -129,7 +169,7 @@ theorem domainDescription_eq_domL {k : ℕ} (D : Finset (Coord k ℓ)) (m : ℕ 
     exact (List.toFinset_sort _ hnd).mpr hpw
   unfold domainDescription
   simp only
-  rw [hsort]
+  rw [hsort, domL_flatMap]
 
 /-- The full domain. -/
 lemma domL_true (k ℓ : ℕ) : domL k ℓ (fun _ _ => true) = List.range (k * 2 ^ ℓ) := by
@@ -137,28 +177,30 @@ lemma domL_true (k ℓ : ℕ) : domL k ℓ (fun _ _ => true) = List.range (k * 2
 
 lemma domainDescription_univ (k ℓ : ℕ) :
     domainDescription (Finset.univ : Finset (Coord k ℓ)) =
-      (k * 2 ^ ℓ) :: List.range (k * 2 ^ ℓ) := by
+      (k * 2 ^ ℓ) :: (List.range k).flatMap fun i => (List.range (2 ^ ℓ)).flatMap fun v =>
+        i :: bitsL ℓ v := by
   rw [domainDescription_eq_domL _ (fun _ _ => true) (fun _ _ _ _ => by simp), domL_true,
     List.length_range]
+  simp [cdL]
 
 /-! ## Permutations -/
 
 /-- The description of a permutation keeping the blocks and shifting by the mask. -/
 lemma permDescription_of_permDesc {π : BlockPerm (s + 1) ℓ} {msk : ℕ} (h : PermDesc π msk) :
     permDescription π =
-      List.range (s + 1) ++ (List.range (s + 1)).map (shiftVal s ℓ msk) := by
+      List.range (s + 1) ++
+        (List.range (s + 1)).flatMap (fun i => bitsL ℓ (shiftVal s ℓ msk i)) := by
   have hp : ∀ i, (π.perm i : ℕ) = i := fun i => by
     have := (h (i, 0)).1
     simp only [BlockPerm.apply] at this
     rw [this]
-  have hs : ∀ i, blockNum (π.shift i) = shiftVal s ℓ msk i := fun i => by
+  have hs : ∀ i, blockDescription (π.shift i) = bitsL ℓ (shiftVal s ℓ msk i) := fun i => by
     have := (h (i, 0)).2
     simp only [BlockPerm.apply, zero_add, regVal_zero, Nat.zero_xor] at this
-    rw [blockNum_eq_regVal, this]
+    rw [blockDescription_eq, this]
   unfold permDescription
   simp only [hp, hs]
-  rw [← map_val_finRange, List.map_map]
-  rfl
+  rw [← map_val_finRange, List.flatMap_map]
 
 lemma permDesc_of_permId {π : BlockPerm (s + 1) ℓ} (h : PermId π) : PermDesc π 0 := by
   intro c
@@ -168,17 +210,18 @@ lemma permDesc_of_permId {π : BlockPerm (s + 1) ℓ} (h : PermId π) : PermDesc
 /-! ## Schemas -/
 
 /-- The emitted description of a schema with numbers `n`, domain list `dl` and mask `msk`. -/
-def schDescN (s : ℕ) (ℓ : ℕ) (n : SchNum) (dl : List ℕ) : List ℕ :=
-  let pd := fun m => List.range (s + 1) ++ (List.range (s + 1)).map (shiftVal s ℓ m)
-  if n.tern then [3, n.u, n.v, n.en] ++ (dl.length :: dl) ++ pd n.msk ++ pd 0 ++ pd 0
-  else [2, n.u, n.v] ++ (dl.length :: dl) ++ pd n.msk ++ pd 0
+def schDescN (s : ℕ) (ℓ : ℕ) (n : SchNum) (dl cd : List ℕ) : List ℕ :=
+  let pd := fun m => List.range (s + 1) ++
+    (List.range (s + 1)).flatMap (fun i => bitsL ℓ (shiftVal s ℓ m i))
+  if n.tern then [3, n.u, n.v, n.en] ++ (dl.length :: cd) ++ pd n.msk ++ pd 0 ++ pd 0
+  else [2, n.u, n.v] ++ (dl.length :: cd) ++ pd n.msk ++ pd 0
 
 /-- **The description of a schema** from its numbers and its domain. -/
 theorem schemaDescription_of_match {N : ℕ} {D : Finset (Coord (s + 1) ℓ)}
     {e : Schema (s + 1) ℓ N} {n : SchNum} (h : SchMatch D e n) (m : ℕ → ℕ → Bool)
     (hm : ∀ i (hi : i < s + 1), ∀ v < 2 ^ ℓ,
       m i v = true ↔ ((⟨i, hi⟩, toBlk ℓ v) : Coord (s + 1) ℓ) ∈ e.domain) :
-    schemaDescription e = schDescN s ℓ n (domL (s + 1) ℓ m) := by
+    schemaDescription e = schDescN s ℓ n (domL (s + 1) ℓ m) (cdL (s + 1) ℓ m) := by
   obtain ⟨ht, hu, hv, hen, hpu, hpv, hpe, -⟩ := h
   have hpv' := permDescription_of_permDesc (permDesc_of_permId hpv)
   have hpe' := permDescription_of_permDesc (permDesc_of_permId hpe)
@@ -206,10 +249,6 @@ theorem schemaDescription_of_match {N : ℕ} {D : Finset (Coord (s + 1) ℓ)}
 
 /-! ## Locations -/
 
-lemma flatMap_finRange {β : Type} (n : ℕ) (f : ℕ → List β) :
-    (List.finRange n).flatMap (fun v => f v.val) = (List.range n).flatMap f := by
-  rw [← map_val_finRange, List.flatMap_map]
-
 /-- The location part of the description of a compiled system. -/
 theorem locsDesc_compile (R : RegisterProgram s ℓ) (p₀ : Fin R.numLocations)
     (a₀ : Fin s → Fin ℓ → ZMod 2) :
@@ -218,7 +257,8 @@ theorem locsDesc_compile (R : RegisterProgram s ℓ) (p₀ : Fin R.numLocations)
       (List.range R.compiledSize).flatMap fun v =>
         ((if v = (R.loc (.prog R.accept)).val then 1 else 0) +
           2 * (if v = (R.loc (.det .out)).val then 1 else 0)) ::
-          ((s + 1) * 2 ^ ℓ) :: List.range ((s + 1) * 2 ^ ℓ) := by
+          ((s + 1) * 2 ^ ℓ) :: (List.range (s + 1)).flatMap fun i =>
+            (List.range (2 ^ ℓ)).flatMap fun w => i :: bitsL ℓ w := by
   have hne : (R.loc (.prog R.accept)).val ≠ (R.loc (.det .out)).val := fun h =>
     absurd (R.loc_inj.mp (Fin.ext h)) (by simp)
   show (List.finRange R.compiledSize).flatMap

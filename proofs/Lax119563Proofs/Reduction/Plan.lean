@@ -8,8 +8,8 @@ proved as in the paper by composing two steps:
 1. a generator `redGen M s C₀ = prelude (sysGen M s)` emits `systemDescription I_x` for the
    implicit parity system `I_x = Iv M x s ℓ H` compiled from the code-ordered time simulation
    program (`out_redGen`), so its machine computes `encodeSystem I_x` from `x` in time
-   `O(n log^23 n)` (`Gn.computesWithin_quasiLinear`, which also bounds the output length,
-   hence `bitLength I_x = O(n log^23 n)`);
+   `O(n log^24 n)` (`Gn.computesWithin_quasiLinear`, which also bounds the output length,
+   hence `bitLength I_x = O(n log^24 n)`);
 2. the matrix compiler, cited as the concept statement
    `Lax119563.MatrixCompiler.matrix_compiler` (no use of the `Matrix` proof internals): its
    machine computes the graph pair from `encodeSystem I_x` in time
@@ -20,7 +20,7 @@ Correctness (`accepts_iff_conflict`, `distinguishes_iff_conflict`): `M` accepts 
 has a conflict (`timeProgram'_accepts_iff`, `conflictRound_compile_lt_top_iff`), and the game
 clauses of the matrix compiler with the game characterization of WL. Size:
 `S(I_x) = O(n log^6 n)` (`sizeParameter_compile_le`, `time_simulation'`, `size_poly`), the
-graphs have `O(S)` vertices. Exponent `c = 23 + c_matrix`.
+graphs have `O(S)` vertices. Exponent `c = 24 + c_matrix`.
 
 ## Files
 
@@ -47,11 +47,13 @@ graphs have `O(S)` vertices. Exponent `c = 23 + c_matrix`.
 On the globals (depth `14`: `|x|, log₂|x|, ℓ, H, R, N, r, Ec, p0, acc, E, W, det, 2^ℓ`),
 `sysGen` emits `s + 1, ℓ, W`, then per location `v < W` its initialization number
 (`1` at `accept`, `2` at the detector output, else `0`) and its full domain
-`(s+1) 2^ℓ, 0, …, (s+1) 2^ℓ - 1` (`locGen`), then `E` and, by the schema enumerator, per schema
+`(s+1) 2^ℓ` followed by `i, v_0, …, v_{ℓ-1}` for all coordinates `(i, v)` (fixed-width block
+coordinates, `bitsL`, `bitsGen`; `locGen`), then `E` and, by the schema enumerator, per schema
 `schBody`: `2, u, v` or `3, u, v, w`, the domain (`domGen`: loops `i ≤ s`, `v < 2^ℓ` by
-`loopX`, emitting `i 2^ℓ + v` when the domain test `violAt` is empty; counted first for the
-length) and the permutations (`permGen`: `0, …, s` and the shifts `shiftVal s ℓ msk i`; only
-the first permutation has a nonzero mask). Cost: `HasCost globTys sysGen 1 20`.
+`loopX`, emitting `i, bits v` when the domain test `violAt` is empty; a first pass emitting
+one number per coordinate counts them) and the permutations (`permGen`: `0, …, s` and the bits
+of the shifts `shiftVal s ℓ msk i`; only
+the first permutation has a nonzero mask). Cost: `HasCost globTys sysGen 1 21`.
 
 ## Generator layers (reference)
 
