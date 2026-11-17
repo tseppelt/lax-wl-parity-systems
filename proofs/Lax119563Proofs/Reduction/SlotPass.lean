@@ -19,11 +19,11 @@ namespace Gn
 
 /-- Slot loops in the schema enumerator (slot loops at depth `b + 37`). -/
 def schSlots (M : Machine) (s b : ℕ) (body : Gn) : Gn :=
-  schEnum M s b gH gR gN gr gp0 gEc (slotLoops s gℓ (violAt s b (b + 37)) body)
+  schEnum M s b gH gR gN gr gp0 gEc (slotLoops s gP (violAt s b (b + 37)) body)
 
 /-- Slot loops in the step loops in the schema enumerator (slot loops at depth `b + 41`). -/
 def stepSlots (M : Machine) (s b : ℕ) (body : Gn) : Gn :=
-  schEnum M s b gH gR gN gr gp0 gEc (stepLoops s (slotLoops s gℓ (violAt s b (b + 41)) body))
+  schEnum M s b gH gR gN gr gp0 gEc (stepLoops s (slotLoops s gP (violAt s b (b + 41)) body))
 
 end Gn
 
@@ -42,7 +42,7 @@ theorem out_schSlots {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobO
   have hc := hctx e he
   have hGτ : GlobOK M x s ℓ H (T e) := hG.of_take hρ hc.2.1
   have hb := hρ ▸ hG.le
-  rw [out_slotLoops (bnd_glob (by omega) (by rw [hc.1]; omega)) hGτ.eℓ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hc.1]; omega)) hGτ.eP]
   unfold slotL
   refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
     List.flatMap_congr fun t ht => ?_
@@ -71,7 +71,7 @@ theorem out_stepSlots {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : Glob
   rw [List.mem_range] at hq hj
   have hGτ' := hGτ.append [s + 2, q, s + ℓ, j]
   have hlen : (T e ++ [s + 2, q, s + ℓ, j]).length = b + 41 := by simp [hc.1]
-  rw [out_slotLoops (bnd_glob (by omega) (by rw [hlen]; omega)) hGτ'.eℓ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hlen]; omega)) hGτ'.eP]
   unfold slotL
   refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
     List.flatMap_congr fun t ht => ?_

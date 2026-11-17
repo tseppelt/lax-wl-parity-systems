@@ -92,7 +92,7 @@ namespace Gn
 /-- The colour pass over the families `off + e` (`e` a schema). -/
 def colSch (M : Machine) (s b : ℕ) (off validX : Xp) : Gn :=
   schEnum M s b gH gR gN gr gp0 gEc
-    (slotLoops s gℓ (violAt s b (b + 37))
+    (slotLoops s gP (violAt s b (b + 37))
       (colBody s validX (add off (var (b + 27))) (var (b + 38)) (var (b + 40))))
 
 end Gn
@@ -114,7 +114,7 @@ theorem out_colSch {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobOK 
   have hc := hctx e he
   have hGτ : GlobOK M x s ℓ H (T e) := hG.of_take hρ hc.2.1
   have hb := hρ ▸ hG.le
-  rw [out_slotLoops (bnd_glob (by omega) (by rw [hc.1]; omega)) hGτ.eℓ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hc.1]; omega)) hGτ.eP]
   unfold slotL
   refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
     List.flatMap_congr fun t ht => ?_
@@ -145,7 +145,7 @@ def stepLoops (s : ℕ) (body : Gn) : Gn :=
 /-- The colour pass over the families `off + e NS + σ`. -/
 def colStep (M : Machine) (s b : ℕ) (off validX : Xp) : Gn :=
   schEnum M s b gH gR gN gr gp0 gEc
-    (stepLoops s (slotLoops s gℓ (violAt s b (b + 41))
+    (stepLoops s (slotLoops s gP (violAt s b (b + 41))
       (colBody s validX (stepFX s b off) (var (b + 42)) (var (b + 44)))))
 
 end Gn
@@ -183,7 +183,7 @@ theorem out_colStep {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobOK
   rw [List.mem_range] at hq hj
   have hGτ' := hGτ.append [s + 2, q, s + ℓ, j]
   have hlen : (T e ++ [s + 2, q, s + ℓ, j]).length = b + 41 := by simp [hc.1]
-  rw [out_slotLoops (bnd_glob (by omega) (by rw [hlen]; omega)) hGτ'.eℓ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hlen]; omega)) hGτ'.eP]
   unfold slotL
   refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
     List.flatMap_congr fun t ht => ?_
