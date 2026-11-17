@@ -210,3 +210,4 @@ import Lax119563Proofs.Reduction.CostGlob
 import Lax119563Proofs.Reduction.CostWF
 import Lax119563Proofs.Reduction.CostPassBase
 import Lax119563Proofs.Reduction.CostColPass
+import Lax119563Proofs.Reduction.CostEdgePass

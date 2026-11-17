@@ -64,6 +64,10 @@ lemma tp_or {a b : Xp} (ha : Tp Γ a) (hb : Tp Γ b) : Tp Γ (Xp.or a b) :=
   ⟨⟨_, hasTy_or ha.ex.choose_spec hb.ex.choose_spec⟩⟩
 lemma tp_not {a : Xp} (ha : Tp Γ a) : Tp Γ (Xp.not a) := ⟨⟨_, hasTy_not ha.ex.choose_spec⟩⟩
 
+lemma tp_xfX {mX : Xp} (hℓ : HasTy Γ gℓ (P 0 1)) (hm : Tp Γ mX) : ∀ k, Tp Γ (xfX mX k)
+  | 0 => tp_const 0
+  | k + 1 => tp_xorM (tp_xfX hℓ hm k) (tp_xorM (tp_shr hm (hasTy_mulC hℓ k)) (tp_const 0) hℓ) hℓ
+
 lemma hasTy_var_lin {i : ℕ} (h : Γ.getD i (P 0 0) = P 0 0) : HasTy Γ (var i) (P 0 1) :=
   (hasTy_var' h).le ⟨le_rfl, Nat.zero_le _⟩
 
@@ -95,6 +99,7 @@ macro "tp" : tactic => `(tactic| repeat' (first
   | apply hasTy_lin_not
   | apply hasTy_lin_lt
   | apply hasTy_lin_mul0
+  | apply tp_xfX
   | apply tp_mulC
   | apply hasTy_lin_mulC))
 
