@@ -137,6 +137,8 @@ import Lax119563Proofs.Reduction.PassBase
 import Lax119563Proofs.Reduction.ColPass
 import Lax119563Proofs.Reduction.ColAll
 import Lax119563Proofs.Reduction.EdgeMath
+import Lax119563Proofs.Reduction.SlotPass
+import Lax119563Proofs.Reduction.EdgeCand
 import Lax119563Proofs.Reduction.FitsBasic
 import Lax119563Proofs.Reduction.CostTy
 import Lax119563Proofs.Reduction.CostGn
