@@ -16,43 +16,37 @@ computing `encodeGraphPair (compile I)` from `encodeSystem I` within
   version of `Compiler.Transfer.duplicatorWins_iff_of_corr`, moved from the deleted `Reduction/Transfer`; `survivesFrom_transfer` is round by
   round) and `numEdges_reGraph`. So `compile I := (reGraph I (L I) 0, reGraph I (L I) 1)` for an
   order `L I` chosen to suit the machine; `matrixGraph` is the case `L = vertexList`.
-* (b) is **not started** beyond the analysis below. `Matrix/Main.lean` still proves the old
+* (b) is **in progress** (infrastructure, see the architecture below). `Matrix/Main.lean` still proves the old
   form and cannot be rewritten before (b) is done (it would need a `sorry`).
 
-## Obstacle: the bound of (b) when `ℓ` is large
+## The bound of (b) and the size of `ℓ` (resolved)
 
-`H` counts bits of the input and `S = Σ_v |𝔠_v| + (k+1) Σ_e nnz(B_e)` counts coordinates
-and nonzero entries, but neither charges for the bit length `ℓ` of block coordinates that the
-compiler has to *compute*. Example (`k = 3`, `ℓ = L`, `m` columns, `E` schemas):
-location `u` with `𝔠_u = {(0, j + 2^(L-1)) | j < m}`; locations `v_e` with
-`𝔠_{v_e} = {(0, j) | j < m}`; binary schemas `e = (u, v_e, {(0, j) | j < m}, σ, id)` with
-`σ = (id; δ₀ = δ₁ = 2^(L-1), δ₂ = 0)` (well formed, pairwise sharing only `u`).
-Then `H ≈ mL + E m log m + E L` and `S ≈ E m log m`, but the compiler must identify, for each of
-the `E m` pairs `(e, j)`, the coordinate `σ_e(0, j) = (0, j + 2^(L-1))` in `𝔠_u` (the edge to the
-coordinate vertex of `u`). Writing these targets costs `E m L`, which for `E = m = L = t` is
-`t³` against a budget `t² polylog t`. The paper's sketch (records with `O(log)`-bit names)
-silently assumes `ℓ = O(log(H + S))` (true in all applications, where `ℓ = O(log n)`).
+With the first encoding (a block coordinate as the number `Σ b_t 2^t`) the bound was out of
+reach of the paper's method: computing the targets `σ_e(c) = (f(i), b + δ_i)` of the columns
+costs `Ω(ℓ)` per column, which `H` did not pay for (example: `𝔠_u = {(0, j + 2^(L-1))}`, `E`
+binary schemas with domain `{(0, j) | j < m}` and shift `2^(L-1)`, `E m L` against
+`(mL + E m log m + E L) polylog`). Concepts commit `a612ac6` (merged) writes block
+coordinates and shifts with fixed width `ℓ` (`blockDescription`, `coordNumDescription`), so
+every listed coordinate and every shift costs `≥ ℓ` bits of `H`, and the bound stays
+`C (H + S) log₂(H + S + 2)^c` (statement unchanged).
 
-Consequences:
-1. Every cost model with a uniform word size (the `HProg`/`Stm`/`Gn` layers of `Reduction`,
-   `unitCost w` per primitive, all registers `< 2^w`) needs `w ≥ ℓ`, hence costs
-   `Ω(ℓ)` per primitive, and the number of primitives is at least `S`: total `Ω(S ℓ)`,
-   which is not `Õ(H + S)` when `ℓ ≫ log(H + S)`. A proof of (b) as stated needs
-   operations whose cost is the *actual* length of the operands, and
-2. a *compressed join*: never materialise `σ_e(c) = (f(i), b + δ_i)` per column. A plausible
-   algorithm: for each schema block `(e, i)` and each dyadic level `P = 2^λ` used by the
-   columns of that block (`λ = ⌈log₂ bitlen(b)⌉`), locate the range of `𝔠_u` (block `f(i)`)
-   whose elements agree with `δ_i` above bit `P` by one sort of range keys (cost
-   `bitlen(δ_i) log` per block, i.e. `O(H log)`), give that range the id "rank of its first
-   element", key every element of every `𝔠_v` once per level `P ≤ bitlen` by
-   `(v, block, id at level P, low P bits)` (cost `O(bitlen · log)` per element) and every
-   column by `(u, f(i), id, (δ_i mod 2^P) + b)` (cost `O(bitlen(b) + log)`), and join by one
-   sort. This is far beyond the paper and the existing machine infrastructure.
+**Cost accounting with the new encoding.** Unless the system is *trivial* (no schema and all
+domains empty: then both graphs are empty), `ℓ ≤ H`, `W, E ≤ H`, `k ≤ H` if `E > 0`, and
+`S ≤ poly(H)`, so `log(H + S + 2) = Θ(log H)`. Hence a *uniform* word size
+`w = O(log(H + S + 2))` suffices for all registers **provided `ℓ`-bit vectors are never held
+in a register**: a block coordinate is always processed bitwise, as the list of its `ℓ` bits
+`b₀, …, b_{ℓ-1}` (exactly as it is written in the input), each bit operation costing `O(w)`.
+Operations on vectors happen once per coordinate or shift listed in the input (or a constant
+number of times per column of a schema domain), so they cost `O(H w)`; all per-vertex work
+(`upd`, `track`, `coef`, indices) uses `O(1)` word operations, `O(S w)`. Exceptional
+inputs: `k` (if `E = 0`) and `ℓ` (if the system is trivial) may be exponential in `H`; the
+program first checks triviality and reads `k, ℓ` into registers only afterwards (skipping a
+number costs its length).
 
-**Recommendation (needs the user, concepts are frozen):** weaken clause (b) to
-`C (H + S) (ℓ + 1) log₂(H + S + 2)^c` (or `C (H + S) (log₂(H + S + 2) + ℓ)^c`); this is still
-`Õ(H + S)` in every application (`ℓ = O(log n)`) and makes the uniform word-size approach below
-sound with `w = O(ℓ + log(H + S))`.
+Sorting: records of `ℓ + O(1)` words (join keys `(u, f(i), bits of b + δ_i)`), merge sort
+written in the language itself on number stacks: `O(R (ℓ + 1) w log R)` for `R` records,
+paid by `H` (one record per column of a schema domain, which costs `≥ ℓ` input bits) up to
+the `log` factor.
 
 ## Why the `Gn` generator framework cannot be reused directly
 
@@ -73,13 +67,18 @@ sequentially, rewound, read sequentially), (iii) a sort of a stream of fixed-ari
 code of numbers, e.g. `1^(bitlen m) 0 (bits m, most significant first)`, so that `recLE` on
 concatenated codes is the lexicographic order of tuples), (iv) final `finish`.
 
-## Proposed architecture (for the amended bound; uniform words `w = O(ℓ + log(H + S))`)
+## Architecture
 
-A *stream register language* `SProg` (copy-generalise `HProg` into `Compiler/`): registers,
-the input cursor (`rdNum r`: parse the next `encodeNat`), streams `s` with `push s e`,
-`rewind s`, `pop s r` (with an end test), `clear s`, `sortS s a` (sort as `a`-tuples), `emit e`;
-total denotational semantics as for `Stm` (`exec`, `cost`, `Fits`), compiled to a `TM` from the
-`Machines` combinators, and `computesWithin` through `finish`.
+**Language** (`Compiler/…`, copy-generalising `Reduction.HProg/HCompile/HMachine` and the
+`Stm` layer): `HProg` with `Q` *number stacks* in addition to the registers:
+`spush q r` (push the value of `r`), `spop q r` (`r :=` top or `0`, pop), and conditions that
+also see whether each stack is empty; uniform cost `unitCost w` per primitive. On the stack
+machine (`Hierarchy.Prog`, alphabet `Fin 2`) stack `q` holds `bs (encodeNats vs)` with the top
+number first — the same format as the input stack — so `spop` is the input parser
+(`Compiler/NumStack`: `nsPush_runs`, `nsPop_runs`). Queues are two stacks; the input is
+parsed with `rd` into numbers. Merge sort of fixed-arity tuples is a program in the language
+(proved at the list level). `computesWithin` through `Machines.TM.computesWithin_finish`-style
+erasing (no `|x| ≤ |out|` condition: the output may be much shorter than the input).
 
 Vertex order `L I` (chosen so that every edge goes from a hub to a later vertex):
 `L = (schemas e in order: hubs(e) ++ nonhubs(e)) ++ (locations v in order: coordVerts v)` with,
@@ -103,13 +102,14 @@ are adjacent only to hubs, `hubB_hub`), and all numbers are local except:
   `(v, coordNum c', first vertex number, ι(v))` for all locations (already sorted); pass B
   writes requests `(u, coordNum σ(c))` in emission order; sort requests by key with their
   sequence number, merge with pass A, sort answers by sequence number; the emission pass pops
-  the answers in order. (Keys of `ℓ + log k` bits: fine only under the amended bound.)
+  the answers in order. (Keys are tuples `(u, f(i), bits of b + δ_i)`, built bitwise.)
 Totals (`n`, offsets of the schema blocks and of the coordinate section) by a counting pass;
 the edge count `m` by emitting the edges of `G_ε` to a stream while counting, then
 `n, colors, m, edges` for `ε = 0, 1`.
 
-Remaining work, in order: `SProg` with semantics/compiler/cost (largest part, ~3–5k lines by
-analogy with `HProg/Stm/Gn`); the stream join lemma (sorted merge semantics); the program;
+Remaining work, in order: number-stack routines (`NumStack`); the language with number
+stacks (semantics, compiler to `Hierarchy.Prog`, machine, `computesWithin`; ~2–3k lines by
+analogy with `HProg/HCompile/HMachine` and `Stm`); the stream join lemma (sorted merge semantics); the program;
 the list-level proof that its output is `graphDescription (reGraph I (L I) ε)` (relate the
 column-major order to `vertexList` by a permutation, `reGraph_spec` does the rest); cost
 bounds; `Matrix/Main.lean`.

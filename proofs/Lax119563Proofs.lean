@@ -197,3 +197,4 @@ import Lax119563Proofs.Reduction.Main
 import Lax119563Proofs.Compiler.Plan
 import Lax119563Proofs.Compiler.Transfer
 import Lax119563Proofs.Compiler.Clauses
+import Lax119563Proofs.Compiler.NumStack
