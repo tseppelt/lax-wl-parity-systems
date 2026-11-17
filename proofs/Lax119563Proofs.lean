@@ -206,3 +206,10 @@ import Lax119563Proofs.HomChar.Det
 import Lax119563Proofs.HomChar.Forest
 import Lax119563Proofs.HomChar.Tensor
 import Lax119563Proofs.HomChar.Main
+import Lax119563Proofs.Reduction.CostGlob
+import Lax119563Proofs.Reduction.CostWF
+import Lax119563Proofs.Reduction.CostPassBase
+import Lax119563Proofs.Reduction.CostColPass
+import Lax119563Proofs.Reduction.CostEdgePass
+import Lax119563Proofs.Reduction.Prelude
+import Lax119563Proofs.Reduction.Main

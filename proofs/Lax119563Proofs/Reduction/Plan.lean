@@ -3,6 +3,20 @@
 
 Goal: `Lax119563.TimeReduction.time_reduction`.
 
+**Status: DONE** (reduction8). `Reduction/Main.lean`: `Lax119563Proofs.Reduction.time_reduction`
+(axioms `propext, Classical.choice, Quot.sound`), with exponent `c = 24`. Final pieces:
+* `PassBase`: an 18th global `2^ℓ` at level 17 (`gP`); `slotLoops s PX V body` takes the `loopX`
+  limit expression (`gP`, class `P 1 0`), `out_slotLoops` needs `PX.eval τ = 2^ℓ`.
+* `CostGlob`: `globTys` (classes of the 18 globals), `Xp.minR` with `hasTy_minR`.
+* `CostWF`: closure lemmas for `WFX/NoX` (`Gn.Cl`), `wfx_descGen`.
+* `CostPassBase`, `CostColPass`, `CostEdgePass`: **`Gn.hasCost_descGen`**:
+  `HasCost globTys (descGen M s ε 18) 1 21`.
+* `Prelude`: `Gn.prelude M s C₀ g` (levels `0 … 17`), **`out_prelude`** (`= g.out x globs` with
+  `ℓ = timeWidth`, `H = timeHorizon`, `s ≥ 2`), `Gn.hasCost_prelude`, `Gn.wfx_prelude`.
+* `Main`: `redGen = prelude (descGen 0 18 ; descGen 1 18)`, `out_redGen`
+  (`graphDescription G'_0 ++ graphDescription G'_1`), `nOut_le` (size `O(n L^6)`), and the
+  final theorem via `Gn.computesWithin_quasiLinear` (`d = 21`, time `C n L^24`).
+
 ## Mathematical assembly (`Assembly`, done)
 
 For a register program `P` with `s ≥ 2` registers and a query, the matrix graphs
@@ -257,7 +271,7 @@ F. Family passes (reduction7). Done:
    out; state such facts as generic lemmas over `I` and apply them with explicit arguments
    (`valid_sum_of_junc`, `valid_track_of_link`, `valid_*_of_upd`, `startCls_of_tern`); do not
    `set` terms containing `Iv`; use `List.append_left_inj` instead of `congr 1`.
-G. Assembly (next). The output part is `descGen` (F). Remaining:
+G. Assembly (done, see the status above; the notes below are the original plan). The output part is `descGen` (F). Remaining:
    * Prelude pushing exactly `globs M x s ℓ H` (levels `0 … 16`, `ℓ = timeWidth C₀ |x|`,
      `H = timeHorizon s C₀ |x|`; check both definitions in `Circuits`): `len`; `log (var 0)`;
      `ℓ` and `H` by `bind`; `R = H + 1 + cM M`; `N = 16 R^5` (`mulC`, `mul`); `r` = length of

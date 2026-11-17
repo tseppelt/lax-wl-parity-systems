@@ -35,18 +35,19 @@ lemma Iv_schemas {M : Machine} {x : List Bool} {s ℓ H : ℕ} : (Iv M x s ℓ H
 
 /-! ## Globals -/
 
-/-- The global values, at the stack levels `0 … 16`. -/
+/-- The global values, at the stack levels `0 … 17` (`2^ℓ` at level `17`, so that the
+`loopX` over register values has a limit of class `P 1 0`). -/
 noncomputable def globs (M : Machine) (x : List Bool) (s ℓ H : ℕ) : List ℕ :=
   [x.length, Nat.log 2 x.length, ℓ, H, radix M H, numLoc M H, (verifierCmds' M x s ℓ H).length,
     ((verifierCmds' M x s ℓ H).map cmdSz).sum, (Loc.code (Loc.query : Loc M H)).val,
     (Loc.code (Loc.accept : Loc M H)).val, (Iv M x s ℓ H).schemas.length, numSteps (s + 1) ℓ,
     (Iv M x s ℓ H).numLocations, (Iv M x s ℓ H).schemas.length * numSteps (s + 1) ℓ,
     famCount (Iv M x s ℓ H), nOut (Iv M x s ℓ H),
-    numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3]
+    numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3, 2 ^ ℓ]
 
 /-- The stack starts with the globals. -/
 def GlobOK (M : Machine) (x : List Bool) (s ℓ H : ℕ) (ρ : List ℕ) : Prop :=
-  ρ.take 17 = globs M x s ℓ H
+  ρ.take 18 = globs M x s ℓ H
 
 /-- Global expressions. -/
 abbrev gℓ : Xp := var 2
@@ -64,12 +65,13 @@ abbrev gENS : Xp := var 13
 abbrev gFam : Xp := var 14
 abbrev gnOut : Xp := var 15
 abbrev gdet : Xp := var 16
+abbrev gP : Xp := var 17
 
 variable {M : Machine} {x : List Bool} {s ℓ H : ℕ}
 
-lemma length_globs : (globs M x s ℓ H).length = 17 := rfl
+lemma length_globs : (globs M x s ℓ H).length = 18 := rfl
 
-lemma GlobOK.le {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) : 17 ≤ ρ.length := by
+lemma GlobOK.le {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) : 18 ≤ ρ.length := by
   have := congrArg List.length h
   rw [List.length_take, length_globs] at this
   omega
@@ -80,11 +82,11 @@ lemma GlobOK.append {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) (l : List ℕ) :
   rw [List.take_append_of_le_length h.le]
   exact h
 
-lemma GlobOK.getD {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) {k : ℕ} (hk : k < 17) :
+lemma GlobOK.getD {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) {k : ℕ} (hk : k < 18) :
     ρ.getD k 0 = (globs M x s ℓ H).getD k 0 := by
   rw [← h, getD_take' hk]
 
-lemma GlobOK.var {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) {k : ℕ} (hk : k < 17) :
+lemma GlobOK.var {ρ : List ℕ} (h : GlobOK M x s ℓ H ρ) {k : ℕ} (hk : k < 18) :
     (Xp.var k).eval ρ = (globs M x s ℓ H).getD k 0 := h.getD hk
 
 section GlobEval
@@ -122,10 +124,12 @@ lemma GlobOK.enOut : gnOut.eval ρ = nOut (Iv M x s ℓ H) := by
   show (Xp.var _).eval ρ = _; rw [h.var (by omega)]; simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
 lemma GlobOK.edet : gdet.eval ρ = numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3  := by
   show (Xp.var _).eval ρ = _; rw [h.var (by omega)]; simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
+lemma GlobOK.eP : gP.eval ρ = 2 ^ ℓ := by
+  show (Xp.var _).eval ρ = _; rw [h.var (by omega)]; simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
 
 end GlobEval
 
-lemma bnd_glob {k b : ℕ} (hk : k < 17) (hb : 17 ≤ b) : (Xp.var k).Bnd b :=
+lemma bnd_glob {k b : ℕ} (hk : k < 18) (hb : 18 ≤ b) : (Xp.var k).Bnd b :=
   show k < b by omega
 
 /-! ## Stacks -/
@@ -176,7 +180,7 @@ theorem schEnum_ctx {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobOK
         (List.range (Iv M x s ℓ H).schemas.length).flatMap fun e => body.out x (T e)) ∧
       ∀ e (he : e < (Iv M x s ℓ H).schemas.length),
         SchCtx M x s ℓ H b ρ (T e) e (sch (Iv M x s ℓ H) ⟨e, he⟩) := by
-  have hb : 17 ≤ b := hρ ▸ hG.le
+  have hb : 18 ≤ b := hρ ▸ hG.le
   have hS := fun body => out_schEnum (M := M) (s := s) (x := x) (ℓ := ℓ) (H := H)
     hρ (bnd_glob (by omega) hb) (bnd_glob (by omega) hb) hG.eH hG.eR (bnd_glob (by omega) hb) hG.eN
     (bnd_glob (by omega) hb) hG.er (bnd_glob (by omega) hb) hG.ep0 (bnd_glob (by omega) hb) hG.eEc body
@@ -195,9 +199,10 @@ theorem schEnum_ctx {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobOK
 
 namespace Gn
 
-/-- Loops over `i ≤ s`, `v < 2^ℓ` (with `inBit x v`), the count of `V`, and `t < 4`. -/
-def slotLoops (s : ℕ) (ℓX : Xp) (V body : Gn) : Gn :=
-  .loop (const (s + 1)) (.loopX (pow2 ℓX) (.count V (.loop (const 4) body)))
+/-- Loops over `i ≤ s`, `v < 2^ℓ` (with `inBit x v`; `PX` evaluates to `2^ℓ`), the count of
+`V`, and `t < 4`. -/
+def slotLoops (s : ℕ) (PX : Xp) (V body : Gn) : Gn :=
+  .loop (const (s + 1)) (.loopX PX (.count V (.loop (const 4) body)))
 
 end Gn
 
@@ -206,12 +211,12 @@ def slotStk (s ℓ : ℕ) (x : List Bool) (τ : List ℕ) (V : Gn) (i v t : ℕ)
   τ ++ [s + 1, i, 2 ^ ℓ, v, inBit x v, (V.out x (τ ++ [s + 1, i, 2 ^ ℓ, v, inBit x v, 0])).length,
     4, t]
 
-lemma out_slotLoops {τ : List ℕ} {ℓX : Xp} (hℓb : ℓX.Bnd τ.length) (hℓ : ℓX.eval τ = ℓ)
+lemma out_slotLoops {τ : List ℕ} {PX : Xp} (hPb : PX.Bnd τ.length) (hP : PX.eval τ = 2 ^ ℓ)
     (V body : Gn) :
-    (Gn.slotLoops s ℓX V body).out x τ =
+    (Gn.slotLoops s PX V body).out x τ =
       slotL s ℓ fun i v t => body.out x (slotStk s ℓ x τ V i v t) := by
-  have key : ∀ l, ℓX.eval (τ ++ l) = ℓ := fun l => by rw [eval_append rfl l hℓb, hℓ]
-  simp only [Gn.slotLoops, Gn.out, slotL, eval_const, eval_pow2, key, List.append_assoc,
+  have key : ∀ l, PX.eval (τ ++ l) = 2 ^ ℓ := fun l => by rw [eval_append rfl l hPb, hP]
+  simp only [Gn.slotLoops, Gn.out, slotL, eval_const, key, List.append_assoc,
     List.cons_append, List.nil_append, slotStk]
 
 lemma slotStk_getD {τ : List ℕ} (V : Gn) (i v t : ℕ) :

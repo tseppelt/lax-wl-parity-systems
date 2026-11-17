@@ -103,7 +103,7 @@ def colCoef (M : Machine) (s b : ℕ) : Gn :=
 
 /-- The `coord` families (loop over locations `w < W`, slot loops at depth `b + 2`). -/
 def colCoord (s b : ℕ) : Gn :=
-  .loop gW (slotLoops s gℓ skip
+  .loop gW (slotLoops s gP skip
     (colBody s (and (lt (var (b + 9)) (const 2))
         (or (eq (var (b + 9)) (const 0)) (not (or (eq (var (b + 1)) gacc) (eq (var (b + 1)) gdet)))))
       (add (add gENS (mulC 2 gE)) (var (b + 1))) (var (b + 3)) (var (b + 5))))
@@ -118,7 +118,7 @@ end Gn
 /-! ## The kinds -/
 
 lemma bnd_g {ρ : List ℕ} {b : ℕ} (hρ : ρ.length = b) (hG : GlobOK M x s ℓ H ρ) {k : ℕ}
-    (hk : k < 17) : (Xp.var k).Bnd b := bnd_glob hk (hρ ▸ hG.le)
+    (hk : k < 18) : (Xp.var k).Bnd b := bnd_glob hk (hρ ▸ hG.le)
 
 lemma mod_step {q j : ℕ} (hj : j < s + ℓ) : (q * (s + ℓ) + j) % (s + ℓ) = j := by
   rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
@@ -263,7 +263,7 @@ theorem out_colCoord :
   rw [List.mem_range] at hw
   have hGτ := hG.append [(Iv M x s ℓ H).numLocations, w]
   have hl : (ρ ++ [(Iv M x s ℓ H).numLocations, w]).length = b + 2 := by simp [hρ]
-  rw [out_slotLoops (bnd_glob (by omega) (by rw [hl]; have := hρ ▸ hG.le; omega)) hGτ.eℓ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hl]; have := hρ ▸ hG.le; omega)) hGτ.eP]
   unfold slotL
   refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
     List.flatMap_congr fun t ht => ?_
@@ -282,7 +282,7 @@ theorem out_colCoord :
   · rw [eval_and' (eval_lt_eq _ _) (eval_or' (eval_eq' _ _) (eval_not' (eval_or' (eval_eq' _ _)
       (eval_eq' _ _)))), ite_ne_zero_iff]
     simp only [eval_var, eval_const, hS.2.2.2.2, hw']
-    rw [hGσ.getD (by norm_num : 9 < 17), hGσ.getD (by norm_num : 16 < 17)]
+    rw [hGσ.getD (by norm_num : 9 < 18), hGσ.getD (by norm_num : 16 < 18)]
     simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
     rw [outValid_coord (Iv M x s ℓ H) hi hv ht ⟨w, hw⟩ rfl, Iv_init_isSome]
     constructor
