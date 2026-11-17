@@ -14,14 +14,14 @@ As in the paper, the reduction is the composition of two steps:
 1. the compilation of the time simulation program into the implicit parity system
    `I_x = Iv M x s ℓ H` (`ℓ = timeWidth`, `H = timeHorizon`), whose explicit description is
    emitted by the generator `redGen M s C₀ = prelude (sysGen M s)` (`out_redGen`) in time
-   `O(n log^23 n)` (`Gn.computesWithin_quasiLinear`), and
+   `O(n log^24 n)` (`Gn.computesWithin_quasiLinear`), and
 2. the matrix compiler (`Lax119563.MatrixCompiler.matrix_compiler`), which computes the graph
    pair from the encoding of `I_x` in time `O((H + S) log^c (H + S + 2))`.
 The two machines are composed by `Main.Compose.compose_computesWithin`.
 Correctness: `M` accepts `x` iff `I_x` has a conflict (`timeProgram'_accepts_iff`,
 `conflictRound_compile_lt_top_iff`), and the game clauses of the matrix compiler with the
 game characterization of WL. Size: `S(I_x) = O(n log^6 n)` (`sizeParameter_compile_le` and
-the bounds of `time_simulation'`), and the encoding of `I_x` has `O(n log^23 n)` bits.
+the bounds of `time_simulation'`), and the encoding of `I_x` has `O(n log^24 n)` bits.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings
@@ -62,6 +62,15 @@ lemma length_le_encodeNats (l : List ℕ) : l.length ≤ (encodeNats l).length :
     have : 1 ≤ (encodeNat a).length := by simp [encodeNat]
     omega
 
+lemma length_le_flatMap {α β : Type} (l : List α) (f : α → List β) (hf : ∀ a, f a ≠ []) :
+    l.length ≤ (l.flatMap f).length := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    simp only [List.flatMap_cons, List.length_append, List.length_cons]
+    have := List.length_pos_iff.mpr (hf a)
+    omega
+
 /-- The description of the system is longer than the input. -/
 lemma length_le_desc {C₀ : ℕ} :
     x.length ≤ (systemDescription (sysI M s C₀ x)).length := by
@@ -75,7 +84,14 @@ lemma length_le_desc {C₀ : ℕ} :
   have hdom : (Iv M x s ℓ H).domain ⟨0, hW⟩ = Finset.univ := rfl
   simp only [hdom, domainDescription_univ, List.length_cons, List.length_range] at h1
   have h2 : x.length < 2 ^ ℓ := lt_two_pow_timeWidth C₀ x.length
-  have h3 : 2 ^ ℓ ≤ (s + 1) * 2 ^ ℓ := Nat.le_mul_of_pos_left _ (by omega)
+  have h3 : 2 ^ ℓ ≤ ((List.range (s + 1)).flatMap fun i =>
+      (List.range (2 ^ ℓ)).flatMap fun v => i :: bitsL ℓ v).length := by
+    rw [List.length_flatMap]
+    refine le_trans ?_ (List.le_sum_of_mem (List.mem_map_of_mem
+      (f := fun i => ((List.range (2 ^ ℓ)).flatMap fun v => i :: bitsL ℓ v).length)
+      (List.mem_range.mpr (Nat.succ_pos s))))
+    simpa using length_le_flatMap (List.range (2 ^ ℓ)) (fun v => 0 :: bitsL ℓ v)
+      (fun _ => List.cons_ne_nil _ _)
   show x.length ≤ (systemDescription (Iv M x s ℓ H)).length
   unfold systemDescription
   simp only [List.length_append, List.length_cons, List.length_flatMap]
@@ -221,25 +237,25 @@ lemma log_le_mul_log {K n c : ℕ} (hL : 1 ≤ Nat.log 2 n) :
   omega
 
 /-- The arithmetic of the running time. -/
-lemma time_arith {n L HS lg C₁ Cn KS Kh Cc cc lk : ℕ} (hL : 1 ≤ L) (hHS : HS ≤ Kh * n * L ^ 23)
+lemma time_arith {n L HS lg C₁ Cn KS Kh Cc cc lk : ℕ} (hL : 1 ≤ L) (hHS : HS ≤ Kh * n * L ^ 24)
     (hlog : lg ≤ lk * L) (hn : 1 ≤ n) :
-    2 * (C₁ * n * L ^ (20 + 3)) + Cc * HS * lg ^ cc + 3 ≤
-      (Cn * KS + 2 * C₁ + Cc * Kh * lk ^ cc + 3) * n * L ^ (23 + cc) := by
-  have hL23 : L ^ 23 ≤ L ^ (23 + cc) := Nat.pow_le_pow_right hL (by omega)
-  have hT2 : Cc * HS * lg ^ cc ≤ Cc * Kh * lk ^ cc * n * L ^ (23 + cc) :=
-    calc Cc * HS * lg ^ cc ≤ Cc * (Kh * n * L ^ 23) * (lk * L) ^ cc :=
+    2 * (C₁ * n * L ^ (21 + 3)) + Cc * HS * lg ^ cc + 3 ≤
+      (Cn * KS + 2 * C₁ + Cc * Kh * lk ^ cc + 3) * n * L ^ (24 + cc) := by
+  have hL23 : L ^ 24 ≤ L ^ (24 + cc) := Nat.pow_le_pow_right hL (by omega)
+  have hT2 : Cc * HS * lg ^ cc ≤ Cc * Kh * lk ^ cc * n * L ^ (24 + cc) :=
+    calc Cc * HS * lg ^ cc ≤ Cc * (Kh * n * L ^ 24) * (lk * L) ^ cc :=
           Nat.mul_le_mul (Nat.mul_le_mul_left _ hHS) (Nat.pow_le_pow_left hlog _)
-      _ = Cc * Kh * lk ^ cc * n * L ^ (23 + cc) := by ring
-  have hT1 : C₁ * n * L ^ (20 + 3) ≤ C₁ * n * L ^ (23 + cc) := Nat.mul_le_mul_left _ hL23
-  have h3 : 3 ≤ 3 * n * L ^ (23 + cc) := by
-    have : 1 ≤ L ^ (23 + cc) := Nat.one_le_pow _ _ hL
-    have : 1 ≤ n * L ^ (23 + cc) := Nat.one_le_iff_ne_zero.mpr (by positivity)
+      _ = Cc * Kh * lk ^ cc * n * L ^ (24 + cc) := by ring
+  have hT1 : C₁ * n * L ^ (21 + 3) ≤ C₁ * n * L ^ (24 + cc) := Nat.mul_le_mul_left _ hL23
+  have h3 : 3 ≤ 3 * n * L ^ (24 + cc) := by
+    have : 1 ≤ L ^ (24 + cc) := Nat.one_le_pow _ _ hL
+    have : 1 ≤ n * L ^ (24 + cc) := Nat.one_le_iff_ne_zero.mpr (by positivity)
     nlinarith
-  have hC : (Cn * KS + 2 * C₁ + Cc * Kh * lk ^ cc + 3) * n * L ^ (23 + cc) =
-      Cn * KS * n * L ^ (23 + cc) + 2 * (C₁ * n * L ^ (23 + cc)) +
-        Cc * Kh * lk ^ cc * n * L ^ (23 + cc) + 3 * n * L ^ (23 + cc) := by ring
+  have hC : (Cn * KS + 2 * C₁ + Cc * Kh * lk ^ cc + 3) * n * L ^ (24 + cc) =
+      Cn * KS * n * L ^ (24 + cc) + 2 * (C₁ * n * L ^ (24 + cc)) +
+        Cc * Kh * lk ^ cc * n * L ^ (24 + cc) + 3 * n * L ^ (24 + cc) := by ring
   rw [hC]
-  have : 0 ≤ Cn * KS * n * L ^ (23 + cc) := Nat.zero_le _
+  have : 0 ≤ Cn * KS * n * L ^ (24 + cc) := Nat.zero_le _
   omega
 
 /-! ## The final theorem -/
@@ -255,9 +271,9 @@ code-ordered time simulation program (`ℓ = log₂ n + C₀ + 4`): a prelude co
 parameters (the numbers of locations, commands and schemas), then the locations with their
 initializations and domains and, by the schema enumerator, the schemas with their locations,
 domains and permutations are emitted. All values have `O(log n)` bits and the generator has
-cost `O(n log^21 n)`, so `encodeSystem I_x` is computed in time `O(n log^23 n)`. Second, the
+cost `O(n log^22 n)`, so `encodeSystem I_x` is computed in time `O(n log^24 n)`. Second, the
 machine of the matrix compiler computes the graph pair from `encodeSystem I_x` in time
-`O((H + S) log^c (H + S + 2))` with `H = O(n log^23 n)` and `S = O(n log^6 n)`. The two
+`O((H + S) log^c (H + S + 2))` with `H = O(n log^24 n)` and `S = O(n log^6 n)`. The two
 machines are composed (simulate the first, rewind, simulate the second). Correctness: `M`
 accepts `x` iff `I_x` has a conflict, and by the game clauses of the matrix compiler and the
 game characterization this holds iff `(s+1)`-WL distinguishes the two graphs; they have
@@ -271,15 +287,15 @@ theorem time_reduction : ∃ c : ℕ, ∀ s : ℕ, 2 ≤ s → ∀ M : Machine, 
         G₀.n + G₁.n ≤ C * x.length * Nat.log 2 x.length ^ c ∧
         ComputesWithin R x (encodeGraphPair G₀ G₁) (C * x.length * Nat.log 2 x.length ^ c) := by
   obtain ⟨compile, ⟨Cn, hgame⟩, ⟨Mc, -, Cc, cc, hMc⟩⟩ := matrix_compiler
-  refine ⟨23 + cc, fun s hs M _ ⟨C₀, hC₀⟩ => ?_⟩
-  have hcost : Gn.HasCost [] (Gn.redGen M s C₀) 1 20 :=
+  refine ⟨24 + cc, fun s hs M _ ⟨C₀, hC₀⟩ => ?_⟩
+  have hcost : Gn.HasCost [] (Gn.redGen M s C₀) 1 21 :=
     Gn.hasCost_prelude M s C₀ (by norm_num) (hasCost_sysGen M s)
   have hwf : (Gn.redGen M s C₀).WFX := Gn.wfx_prelude M s C₀ (wfx_sysGen M s)
   obtain ⟨C₁, hC₁⟩ := Gn.computesWithin_quasiLinear hcost le_rfl hwf
   obtain ⟨KS, hKS⟩ := sizeParameter_sysI_le hs hC₀
   obtain ⟨Ck, hCk⟩ := hgame (s + 1) (by omega)
   obtain ⟨Kh, hKh⟩ : ∃ K, K = C₁ + KS := ⟨_, rfl⟩
-  obtain ⟨lk, hlk⟩ : ∃ l, l = Nat.log 2 (Kh + 2) + 2 * 23 + 4 := ⟨_, rfl⟩
+  obtain ⟨lk, hlk⟩ : ∃ l, l = Nat.log 2 (Kh + 2) + 2 * 24 + 4 := ⟨_, rfl⟩
   refine ⟨(Main.Compose.comp (Gn.machine (Gn.redGen M s C₀).need (Gn.redGen M s C₀)) Mc false
       fun _ => false).toMachine, Main.AMachine.toMachine_deterministic _,
     Cn * KS + 2 * C₁ + Cc * Kh * lk ^ cc + 3, fun x hx => ?_⟩
@@ -287,18 +303,18 @@ theorem time_reduction : ∃ c : ℕ, ∀ s : ℕ, 2 ≤ s → ∀ M : Machine, 
   have hℓ1 : 1 ≤ timeWidth C₀ x.length := by unfold timeWidth; omega
   obtain ⟨hsp, hdu, hsize, -⟩ := hCk (timeWidth C₀ x.length) hℓ1 (sysI M s C₀ x)
   have hS := hKS x hx
-  have hL6 : Nat.log 2 x.length ^ 6 ≤ Nat.log 2 x.length ^ (23 + cc) :=
+  have hL6 : Nat.log 2 x.length ^ 6 ≤ Nat.log 2 x.length ^ (24 + cc) :=
     Nat.pow_le_pow_right hL (by omega)
-  have hL23 : Nat.log 2 x.length ^ 23 ≤ Nat.log 2 x.length ^ (23 + cc) :=
+  have hL23 : Nat.log 2 x.length ^ 24 ≤ Nat.log 2 x.length ^ (24 + cc) :=
     Nat.pow_le_pow_right hL (by omega)
   refine ⟨(compile (sysI M s C₀ x)).1, (compile (sysI M s C₀ x)).2, ?_, ?_, ?_⟩
   · exact (accepts_iff_conflict hs hC₀ hx).trans
       (distinguishes_iff_conflict (by omega) _ hsp hdu).symm
   · calc _ ≤ Cn * sizeParameter (sysI M s C₀ x) := hsize
       _ ≤ Cn * (KS * x.length * Nat.log 2 x.length ^ 6) := Nat.mul_le_mul_left _ hS
-      _ ≤ Cn * (KS * x.length * Nat.log 2 x.length ^ (23 + cc)) :=
+      _ ≤ Cn * (KS * x.length * Nat.log 2 x.length ^ (24 + cc)) :=
           Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hL6)
-      _ = Cn * KS * x.length * Nat.log 2 x.length ^ (23 + cc) := by ring
+      _ = Cn * KS * x.length * Nat.log 2 x.length ^ (24 + cc) := by ring
       _ ≤ _ := Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
   · have hout := out_redGen (M := M) (x := x) (C₀ := C₀) hs
     have hlen : x.length ≤ (encodeNats ((Gn.redGen M s C₀).out x [])).length := by
@@ -308,19 +324,19 @@ theorem time_reduction : ∃ c : ℕ, ∀ s : ℕ, 2 ≤ s → ∀ M : Machine, 
     have h2 := hMc (s + 1) (by omega) _ hℓ1 (sysI M s C₀ x)
     have hc := Main.Compose.compose_computesWithin _ Mc false (fun _ => false) hx h1 h2
     refine ComputesWithin.mono hc ?_
-    have hHb : bitLength (sysI M s C₀ x) ≤ C₁ * x.length * Nat.log 2 x.length ^ 23 := hH
+    have hHb : bitLength (sysI M s C₀ x) ≤ C₁ * x.length * Nat.log 2 x.length ^ 24 := hH
     have hHS : bitLength (sysI M s C₀ x) + sizeParameter (sysI M s C₀ x) ≤
-        Kh * x.length * Nat.log 2 x.length ^ 23 := by
-      have : KS * x.length * Nat.log 2 x.length ^ 6 ≤ KS * x.length * Nat.log 2 x.length ^ 23 :=
+        Kh * x.length * Nat.log 2 x.length ^ 24 := by
+      have : KS * x.length * Nat.log 2 x.length ^ 6 ≤ KS * x.length * Nat.log 2 x.length ^ 24 :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hL (by omega))
-      have e : Kh * x.length * Nat.log 2 x.length ^ 23 =
-          C₁ * x.length * Nat.log 2 x.length ^ 23 + KS * x.length * Nat.log 2 x.length ^ 23 := by
+      have e : Kh * x.length * Nat.log 2 x.length ^ 24 =
+          C₁ * x.length * Nat.log 2 x.length ^ 24 + KS * x.length * Nat.log 2 x.length ^ 24 := by
         rw [hKh]; ring
       omega
     have hlog : Nat.log 2 (bitLength (sysI M s C₀ x) + sizeParameter (sysI M s C₀ x) + 2) ≤
         lk * Nat.log 2 x.length := by
       rw [hlk]
-      exact (Nat.log_mono_right (by omega)).trans (log_le_mul_log (K := Kh) (c := 23) hL)
+      exact (Nat.log_mono_right (by omega)).trans (log_le_mul_log (K := Kh) (c := 24) hL)
     exact time_arith hL hHS hlog (by omega)
 
 end Lax119563Proofs.Reduction

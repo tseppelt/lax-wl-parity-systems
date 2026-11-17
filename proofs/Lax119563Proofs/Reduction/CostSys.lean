@@ -4,7 +4,7 @@ import Lax119563Proofs.Reduction.CostPassBase
 /-!
 # Fits, cost and well-formedness of the system generator
 
-**`hasCost_sysGen`**: `HasCost globTys (sysGen M s) 1 20`; **`wfx_sysGen`**.
+**`hasCost_sysGen`**: `HasCost globTys (sysGen M s) 1 21`; **`wfx_sysGen`**.
 -/
 
 namespace Lax119563Proofs.Reduction
@@ -49,24 +49,28 @@ lemma hasCost_domGen (s : ℕ) : HasCost ΓS (domGen s 14 (14 + 37)) 1 1 := by
   refine hasCost_count hd hd.len ?_
   refine hasCost_seq ((hasCost_emit (hasTy_var _)).mono (Nat.zero_le _) (Nat.zero_le _)) ?_
   refine hasCost_domLoops (by tvb) (hasCost_violAt_d _) ?_ le_rfl
-  refine (hasCost_when' ?_ (hasCost_emit' ?_)).mono (Nat.zero_le _) (Nat.zero_le _) <;> tp
+  unfold domBody' bitsGen
+  refine hasCost_when' (by tp) (hasCost_seq ((hasCost_emit (hasTy_var _)).mono (Nat.zero_le _)
+    (Nat.zero_le _)) ?_)
+  exact (hasCost_loop (hasTy_var' rfl) (hasCost_emit' (by tp))).mono (by simp) (by simp)
 
-lemma hasCost_permGen (s : ℕ) {mX : Xp} (hm : Tp (ΓS ++ [P 0 0, P 0 0]) mX) :
-    HasCost ΓS (permGen s mX (14 + 37)) 0 0 := by
-  unfold permGen
+lemma hasCost_permGen (s : ℕ) {mX : Xp} (hm : Tp (ΓS ++ [P 0 0, P 0 0] ++ [P 0 1, P 0 1]) mX) :
+    HasCost ΓS (permGen s mX (14 + 37)) 0 1 := by
+  unfold permGen bitsGen
   refine hasCost_seq ?_ ?_
   · exact (hasCost_loop (hasTy_const (s + 1)) (hasCost_emit (hasTy_var _))).mono (by simp)
       (by simp)
-  · refine (hasCost_loop (hasTy_const (s + 1)) (hasCost_emit' ?_)).mono (by simp) (by simp)
+  · refine (hasCost_loop (hasTy_const (s + 1)) (hasCost_loop (hasTy_var' rfl)
+      (hasCost_emit' ?_))).mono (by simp) (by simp)
     unfold shiftX fieldmX
-    have hℓ : HasTy (ΓS ++ [P 0 0, P 0 0]) gℓ (P 0 1) := hasTy_var' rfl
+    have hℓ : HasTy (ΓS ++ [P 0 0, P 0 0] ++ [P 0 1, P 0 1]) gℓ (P 0 1) := hasTy_var' rfl
     tp
 
 lemma hasCost_schBody (s : ℕ) : HasCost ΓS (schBody s 14) 1 1 := by
   unfold schBody
-  have hp : ∀ mX : Xp, Tp (ΓS ++ [P 0 0, P 0 0]) mX →
+  have hp : ∀ mX : Xp, Tp (ΓS ++ [P 0 0, P 0 0] ++ [P 0 1, P 0 1]) mX →
       HasCost ΓS (permGen s mX (14 + 37)) 1 1 := fun mX hm =>
-    (hasCost_permGen s hm).mono (Nat.zero_le _) (Nat.zero_le _)
+    (hasCost_permGen s hm).mono (Nat.zero_le _) le_rfl
   have he : ∀ a : Xp, HasCost ΓS (emit a) 1 1 → HasCost ΓS (emit a) 1 1 := fun _ h => h
   refine hasCost_ite' (by tp) (hasCost_seqL fun g hg => ?_) (hasCost_seqL fun g hg => ?_)
   · simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
@@ -86,9 +90,9 @@ lemma hasCost_schBody (s : ℕ) : HasCost ΓS (schBody s 14) 1 1 := by
       | exact hp _ (tp_var _)
       | exact hp _ (tp_const _)
 
-lemma hasCost_locGen (s : ℕ) : HasCost globTys (locGen s 14) 1 20 := by
+lemma hasCost_locGen (s : ℕ) : HasCost globTys (locGen s 14) 1 21 := by
   unfold locGen
-  refine (hasCost_loop (hasTy_var' (i := 11) (τ := P 0 20) rfl) (e := 1) (d := 0) ?_).mono
+  refine (hasCost_loop (hasTy_var' (i := 11) (τ := P 0 20) rfl) (e := 1) (d := 1) ?_).mono
     (by omega) (by omega)
   refine hasCost_seqL fun g hg => ?_
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
@@ -97,11 +101,13 @@ lemma hasCost_locGen (s : ℕ) : HasCost globTys (locGen s 14) 1 20 := by
     unfold initX; tp
   · refine (hasCost_emit' ?_).mono (Nat.zero_le _) (Nat.zero_le _)
     tp
-  · refine (hasCost_loop (hasTy_mulC (hasTy_var' rfl) _) (hasCost_emit (hasTy_var _))).mono
-      (by simp) (by simp)
+  · unfold bitsGen
+    refine (hasCost_loop (hasTy_const (s + 1)) (hasCost_loop (hasTy_var' rfl)
+      (hasCost_seq ((hasCost_emit (hasTy_var _)).mono (Nat.zero_le _) (Nat.zero_le _))
+        (hasCost_loop (hasTy_var' rfl) (hasCost_emit' (by tp)))))).mono (by simp) (by simp)
 
 /-- **Fits and cost of the system generator.** -/
-theorem hasCost_sysGen (M : Machine) (s : ℕ) : HasCost globTys (sysGen M s) 1 20 := by
+theorem hasCost_sysGen (M : Machine) (s : ℕ) : HasCost globTys (sysGen M s) 1 21 := by
   unfold sysGen
   refine hasCost_seqL fun g hg => ?_
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
@@ -117,13 +123,15 @@ theorem hasCost_sysGen (M : Machine) (s : ℕ) : HasCost globTys (sysGen M s) 1 
 
 lemma noX_domBody (D : ℕ) : NoX (domBody D) := ⟨trivial, trivial⟩
 
+lemma noX_domBody' (D : ℕ) : NoX (domBody' D) := ⟨⟨trivial, trivial⟩, trivial⟩
+
 lemma wfx_domLoops (s : ℕ) (PX : Xp) {V body : Gn} (hV : NoX V) (hb : NoX body) :
     WFX (domLoops s PX V body) := ⟨⟨hV, hb⟩, wfx_of_noX (g := .count V body) ⟨hV, hb⟩⟩
 
 lemma wfx_schBody (s b : ℕ) : WFX (schBody s b) := by
   have hd : WFX (domGen s b (b + 37)) :=
     cl_wfx.count (wfx_domLoops _ _ (noX_violAt ..) (noX_domBody _))
-      (cl_wfx.seq trivial (wfx_domLoops _ _ (noX_violAt ..) (noX_domBody _)))
+      (cl_wfx.seq trivial (wfx_domLoops _ _ (noX_violAt ..) (noX_domBody' _)))
   have hp : ∀ mX, WFX (permGen s mX (b + 37)) := fun _ => ⟨trivial, trivial⟩
   unfold schBody
   refine cl_wfx.ite _ (cl_wfx.seqL fun g hg => ?_) (cl_wfx.seqL fun g hg => ?_)
@@ -146,7 +154,7 @@ theorem wfx_sysGen (M : Machine) (s : ℕ) : WFX (sysGen M s) := by
       rcases hg with rfl | rfl | rfl
       · trivial
       · trivial
-      · exact cl_wfx.loop _ trivial)
+      · exact cl_wfx.loop _ (cl_wfx.loop _ ⟨trivial, trivial⟩))
   · trivial
   · exact cl_wfx.schEnum _ _ _ _ _ _ _ _ _ (wfx_schBody s 14)
 
