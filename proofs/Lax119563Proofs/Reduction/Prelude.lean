@@ -251,4 +251,91 @@ theorem out_prelude {C₀ : ℕ} (hs : 2 ≤ s) (g : Gn) :
     exact min_eq_left (two_pow_timeWidth_le C₀ x.length))]
   rw [List.take_of_length_le (by omega)]
 
+/-! ## Fits, cost and well-formedness -/
+
+open Ty Gn in
+/-- **Fits and cost of the prelude.** -/
+theorem Gn.hasCost_prelude (M : Machine) (s C₀ : ℕ) {D : ℕ} (hD : 12 ≤ D) {g : Gn}
+    (hg : HasCost globTys g 1 D) : HasCost [] (Gn.prelude M s C₀ g) 1 D := by
+  have lin : ∀ {Γ : List Ty} (c : ℕ), HasTy Γ (const c) (P 0 1) := fun c => hasTy_lin_const c
+  have L : ∀ {Γ : List Ty} {i d d' : ℕ}, Γ.getD i (P 0 0) = P 0 d → d ≤ d' →
+      HasTy Γ (var i) (P 0 d') := fun h hd => (hasTy_var' h).le ⟨le_rfl, hd⟩
+  unfold Gn.prelude
+  refine (hasCost_len (e := 1) (d := D) ?_).mono (by simp) le_rfl
+  refine (hasCost_log (e₀ := 1) (d₀ := 0) (e := 1) (d := D) (hasTy_var' rfl) ?_).mono
+    (by simp) (by simp)
+  -- ℓ, H, R, N
+  refine hasCost_bind (τ := P 0 1) ?_ ?_
+  · exact hasTy_add (hasTy_var' rfl) (lin _)
+  refine hasCost_bind (τ := P 0 1) ?_ ?_
+  · exact hasTy_add (hasTy_mulC (hasTy_var' rfl) _) (hasTy_mulC (hasTy_add (hasTy_var' rfl) (lin _)) _)
+  refine hasCost_bind (τ := P 0 1) ?_ ?_
+  · exact hasTy_add (hasTy_var' rfl) (lin _)
+  refine hasCost_bind (τ := P 0 5) ?_ ?_
+  · have hR : HasTy ([] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1]) (var 4) (P 0 1) :=
+      hasTy_var' rfl
+    simpa using hasTy_mulC (hasTy_mul (hasTy_mul (hasTy_mul (hasTy_mul hR hR hR) hR hR) hR hR)
+      hR hR) 16
+  -- r
+  have hc6 := hasCost_cmdEnum (M := M) (s := s)
+    (τs := [] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 5] ++ [P 0 0])
+    (b := 7) rfl (HX := var 3) (RX := var 4) ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
+    (hasCost_emit (hasTy_const 0) : HasCost _ (emit (const 0)) 0 0)
+  refine hasCost_count (hc6.mono (by omega) (by omega)) hc6.len ?_
+  -- Ec
+  have hc7 := hasCost_cmdEnum (M := M) (s := s)
+    (τs := [] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 5] ++ [P 0 (0 + 6 + 1)]
+      ++ [P 0 0])
+    (b := 8) rfl (HX := var 3) (RX := var 4) ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
+    (hasCost_ite (hasTy_var _) (hasCost_emitN 9) (hasCost_emitN 4) : HasCost _ (szBody 8) 0 0)
+  refine hasCost_count (hc7.mono (by omega) (by omega)) hc7.len ?_
+  -- codes
+  refine hasCost_bind (τ := P 0 0) (hasTy_const 2) ?_
+  refine hasCost_bind (τ := P 0 0) (hasTy_const 0) ?_
+  -- E
+  have hc10 := hasCost_schEnum (M := M) (s := s)
+    (τs := [] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 5] ++ [P 0 (0 + 6 + 1)]
+      ++ [P 0 (0 + 6 + 1)] ++ [P 0 0] ++ [P 0 0] ++ [P 0 0])
+    (b := 11) rfl (HX := gH) (RX := gR) (NX := gN) (rX := gr) (p0X := gp0) (EcX := gEc) ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
+    ⟨(hasTy_var' (τ := P 0 5) rfl).le (show Ty.Le (P 0 5) (P 0 7) from ⟨le_rfl, by norm_num⟩),
+      by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
+    ⟨(hasTy_var' (τ := P 0 0) rfl).le (show Ty.Le (P 0 0) (P 0 7) from ⟨le_rfl, by norm_num⟩),
+      by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
+    (hasCost_emit (hasTy_const 0) : HasCost _ (emit (const 0)) 0 0)
+  refine hasCost_count (hc10.mono (by omega) (by omega)) (hc10.len.le (show Ty.Le (P 0 (0 + 12 + 1)) (P 0 20) from ⟨le_rfl, by norm_num⟩)) ?_
+  -- NS, W, E·NS, famCount, nOut, det, 2^ℓ
+  refine hasCost_bind (τ := P 0 1) ?_ ?_
+  · exact hasTy_mulC (hasTy_add (lin _) (hasTy_var' rfl)) _
+  refine hasCost_bind (τ := P 0 20) ?_ ?_
+  · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl (by norm_num)) _))
+      ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
+  refine hasCost_bind (τ := P 0 21) ?_ ?_
+  · exact hasTy_mul (e := 0) (d := 20) (d' := 1) (L rfl le_rfl) (hasTy_var' rfl) (hasTy_var' rfl)
+  refine hasCost_bind (τ := P 0 21) ?_ ?_
+  · exact hasTy_add (hasTy_add (hasTy_mulC (L rfl le_rfl) _) (hasTy_mulC (L rfl (by norm_num)) _))
+      (L rfl (by norm_num))
+  refine hasCost_bind (τ := .big) ?_ ?_
+  · exact hasTy_mulCBig (hasTy_shl (hasTy_mulCBig (hasTy_var' rfl) _) (hasTy_var' rfl)) _
+  refine hasCost_bind (τ := P 0 7) ?_ ?_
+  · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl le_rfl) _))
+      ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
+  refine hasCost_bind (τ := P 1 0) ?_ ?_
+  · exact hasTy_minR (hasTy_pow2 (hasTy_var' rfl))
+      (hasTy_mulC (hasTy_add (hasTy_var' rfl) ((hasTy_const _).le ⟨by norm_num, le_rfl⟩)) _)
+  exact hg
+
+lemma Gn.wfx_len {g : Gn} (h : WFX g) : WFX (len g) := h
+
+/-- The prelude is well formed if its body is. -/
+theorem Gn.wfx_prelude (M : Machine) (s C₀ : ℕ) {g : Gn} (hg : WFX g) :
+    WFX (Gn.prelude M s C₀ g) := by
+  unfold Gn.prelude
+  refine wfx_len (cl_wfx.log _ ?_)
+  refine cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ ?_
+  refine cl_wfx.count (cl_wfx.cmdEnum _ _ _ _ _ trivial) ?_
+  refine cl_wfx.count (cl_wfx.cmdEnum _ _ _ _ _ (cl_wfx.ite _ (cl_wfx.emitN 9) (cl_wfx.emitN 4))) ?_
+  refine cl_wfx.bind _ (cl_wfx.bind _ (cl_wfx.count (cl_wfx.schEnum _ _ _ _ _ _ _ _ _ trivial) ?_))
+  exact cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <|
+    cl_wfx.bind _ <| cl_wfx.bind _ hg
+
 end Lax119563Proofs.Reduction
