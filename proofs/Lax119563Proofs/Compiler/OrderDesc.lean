@@ -213,4 +213,156 @@ theorem colors_reGraph (ε : ZMod 2) :
   rintro rfl
   simp only [Fin.getElem_fin]
 
+/-! ## Edges: neighbor slots of the hubs -/
+
+/-- The neighbor slots of a hub class with (effective) label `l`: the neighbor class and the
+first effective label bit required there. -/
+def slotsOf : ICls I → Lab → List (ICls I × ZMod 2)
+  | .upd e σ c, l => [(trackAt I e c σ, l.1), (.track e σ c, l.2), (.coef e σ, l.1 + l.2)]
+  | .junc e c, l => [(coordU e c, l.1), (coordV e c, l.2), (.sum e c, l.1 + l.2)]
+  | .link e c, l => [(trackAt I e c (numSteps k ℓ), l.1), (endCls I e c, l.1)]
+  | _, _ => []
+
+lemma hubB_iff_slotsOf (X Y : ICls I) (l m : Lab) :
+    hubB I X l Y m = true ↔ (Y, m.1) ∈ slotsOf I X l := by
+  cases X with
+  | upd e σ c => rw [hubB_upd]; simp [slotsOf, Prod.ext_iff]
+  | junc e c => rw [hubB_junc']; simp [slotsOf, Prod.ext_iff]
+  | link e c => rw [hubB_link]; simp [slotsOf, Prod.ext_iff]
+  | coord => simp [hubB, slotsOf]
+  | sum => simp [hubB, slotsOf]
+  | track => simp [hubB, slotsOf]
+  | coef => simp [hubB, slotsOf]
+
+/-- The classes of the slots of a hub in the order are distinct. -/
+lemma nodup_slotsOf {x : VName I} (hx : x ∈ ordL I) :
+    ((slotsOf I x.1 x.2).map Prod.fst).Nodup := by
+  obtain ⟨X, l⟩ := x
+  have hv := (mem_ordL I _).mp hx
+  cases X with
+  | upd e σ c =>
+    simp only [slotsOf, List.map_cons, List.map_nil, List.nodup_cons, List.mem_cons,
+      List.not_mem_nil, or_false, not_or, List.nodup_nil, and_true]
+    exact ⟨⟨trackAt_ne_track e c σ, trackAt_ne_coef e c σ σ⟩, by simp⟩
+  | junc e c =>
+    have ht : isTern (sch I e) = true := hv.1.1
+    simp only [slotsOf, List.map_cons, List.map_nil, List.nodup_cons, List.mem_cons,
+      List.not_mem_nil, or_false, not_or, List.nodup_nil, and_true]
+    exact ⟨⟨coordU_ne_coordV ht c, by simp [coordU]⟩, by simp [coordV]⟩
+  | link e c =>
+    simp only [slotsOf, List.map_cons, List.map_nil, List.nodup_cons, List.mem_cons,
+      List.not_mem_nil, or_false, not_or, List.nodup_nil, and_true]
+    exact ⟨trackAt_ne_endCls e c _, by simp⟩
+  | coord => simp [slotsOf]
+  | sum => simp [slotsOf]
+  | track => simp [slotsOf]
+  | coef => simp [slotsOf]
+
+variable (ε : ZMod 2)
+
+/-- The label of the name of class `Y` whose first effective bit in `G_ε` is `b`. -/
+def labOf (Y : ICls I) (b : ZMod 2) : Lab := (b - ε * initBit I Y, 0)
+
+open Classical in
+/-- The position of the name of class `Y` with first effective bit `b`, if present. -/
+noncomputable def posOpt (Y : ICls I) (b : ZMod 2) : Option ℕ :=
+  if (Y, labOf I ε Y b) ∈ ordL I then some ((ordL I).idxOf (Y, labOf I ε Y b)) else none
+
+/-- A non-hub name of the order is the one prescribed by its class and effective bit. -/
+lemma eq_labOf {y : VName I} (hy : y ∈ ordL I) (hh : isHub I y.1 = false) :
+    y = (y.1, labOf I ε y.1 (eff I ε y).1) := by
+  obtain ⟨Y, m⟩ := y
+  have h2 : m.2 = 0 := ((mem_ordL I _).mp hy).2.1 (twoBit_of_not_hub hh)
+  ext <;> simp [labOf, eff, h2]
+
+/-- The sorted positions of the neighbors of the name `x`. -/
+noncomputable def nbrPos (x : VName I) : List ℕ :=
+  ((slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2).mergeSort
+    fun a b => decide (a ≤ b)
+
+lemma eff_hub {x : VName I} (h : isHub I x.1 = true) : eff I ε x = x.2 := by
+  obtain ⟨X, l⟩ := x
+  cases X <;> simp_all [isHub, eff, initBit]
+
+/-- The neighbor positions of a name of the order. -/
+theorem filter_hubB_eq_nbrPos' (x : VName I) (hxL : x ∈ ordL I) :
+    ((List.finRange (ordL I).length).filter (fun v : Fin (ordL I).length =>
+        hubB I x.1 (eff I ε x) (ordL I)[(v : ℕ)].1 (eff I ε (ordL I)[(v : ℕ)]))).map Fin.val =
+      nbrPos I ε x := by
+  have hnd : (ordL I).Nodup := nodup_ordL I
+  -- membership
+  have hmem : ∀ v : ℕ, v ∈ ((List.finRange (ordL I).length).filter (fun v : Fin (ordL I).length =>
+        hubB I x.1 (eff I ε x) (ordL I)[(v : ℕ)].1 (eff I ε (ordL I)[(v : ℕ)]))).map Fin.val ↔
+      v ∈ nbrPos I ε x := by
+    intro v
+    simp only [nbrPos, List.mem_mergeSort, List.mem_filterMap, List.mem_map, List.mem_filter,
+      List.mem_finRange, true_and]
+    constructor
+    · rintro ⟨v', hv', rfl⟩
+      have hs := (hubB_iff_slotsOf I _ _ _ _).mp hv'
+      have hnh := (hubB_hub I hv').2
+      have hy : (ordL I)[(v' : ℕ)] ∈ ordL I := List.getElem_mem _
+      refine ⟨_, hs, ?_⟩
+      have he := eq_labOf I ε hy hnh
+      simp only [posOpt]
+      rw [← he, if_pos hy, hnd.idxOf_getElem]
+    · rintro ⟨s, hs, hp⟩
+      simp only [posOpt] at hp
+      split_ifs at hp with hin
+      cases hp
+      refine ⟨⟨_, List.idxOf_lt_length_of_mem hin⟩, ?_, rfl⟩
+      simp only [List.getElem_idxOf]
+      rw [hubB_iff_slotsOf]
+      convert hs using 2
+      simp [eff, labOf]
+  -- both sides are sorted and duplicate-free
+  have hs₁ : (((List.finRange (ordL I).length).filter (fun v : Fin (ordL I).length =>
+        hubB I x.1 (eff I ε x) (ordL I)[(v : ℕ)].1 (eff I ε (ordL I)[(v : ℕ)]))).map
+          Fin.val).Pairwise (· < ·) := by
+    rw [List.pairwise_map]
+    exact (List.pairwise_lt_finRange _).filter _
+  have hs₂ : (nbrPos I ε x).Pairwise (· ≤ ·) := by
+    have := List.pairwise_mergeSort (le := fun a b : ℕ => decide (a ≤ b))
+      (fun a b c h₁ h₂ => by simp at *; omega) (fun a b => by simp; omega)
+      ((slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2)
+    simpa [nbrPos] using this
+  have hnd₂ : (nbrPos I ε x).Nodup := by
+    refine (List.mergeSort_perm _ _).nodup_iff.mpr ?_
+    have hslots := nodup_slotsOf I hxL
+    rw [show slotsOf I x.1 (eff I ε x) = slotsOf I x.1 x.2 by
+      by_cases hh : isHub I x.1 = true
+      · rw [eff_hub I ε hh]
+      · cases hX : x.1 <;> simp_all [isHub, slotsOf]]
+    refine List.Nodup.filterMap ?_ (List.Nodup.of_map _ hslots)
+    intro s s' a ha ha'
+    have key : ∀ t : ICls I × ZMod 2, a ∈ posOpt I ε t.1 t.2 →
+        (t.1, labOf I ε t.1 t.2) ∈ ordL I ∧ (ordL I).idxOf (t.1, labOf I ε t.1 t.2) = a := by
+      intro t ht
+      unfold posOpt at ht
+      split_ifs at ht with h
+      · simp only [Option.mem_def, Option.some.injEq] at ht; exact ⟨h, ht⟩
+      · simp at ht
+    obtain ⟨h₁, e₁⟩ := key s ha
+    obtain ⟨h₂, e₂⟩ := key s' ha'
+    have := (List.idxOf_inj h₁).mp (e₁.trans e₂.symm)
+    obtain ⟨hY, hb⟩ := Prod.mk.inj this
+    simp only [labOf, Prod.mk.injEq] at hb
+    rw [hY] at hb
+    exact Prod.ext hY (sub_left_inj.mp hb.1)
+  exact List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => le_antisymm h1 h2) (hs₁.imp le_of_lt) hs₂
+    ((List.perm_ext_iff_of_nodup (hs₁.imp ne_of_lt) hnd₂).mpr hmem)
+
+/-- **The edge list of the reordered graphs, per hub.** For every position `u`, the edges
+`(u, v)` with `v` in the sorted neighbor positions `nbrPos` of the name at `u` (empty for
+non-hubs; at most three slots `slotsOf`, each giving the position of the name of the slot
+class with the required effective bit, `posOpt`). -/
+theorem edgeList_nbrPos :
+    edgeList (reGraph I (ordL I) ε) =
+      (List.finRange (ordL I).length).flatMap fun u : Fin (ordL I).length =>
+        (nbrPos I ε (ordL I)[(u : ℕ)]).map fun v => ((u : ℕ), v) := by
+  rw [edgeList_ordL]
+  refine List.flatMap_congr fun u _ => ?_
+  rw [← filter_hubB_eq_nbrPos' I ε _ (List.getElem_mem _), List.map_map]
+  rfl
+
 end Lax119563Proofs.Compiler
