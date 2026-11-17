@@ -282,6 +282,232 @@ lemma rdNumS_good (hw : 2 ≤ w) {r p t : Fin R} (hrp : r ≠ p) (hrt : r ≠ t)
     length_encodeNat]
   simp only [Nat.add_assoc]
 
+/-! ## Skipping a number -/
+
+/-- Skip the next number. -/
+def skipNumS (t : Fin R) : CStm R Q :=
+  .seq (.rd t) (.loop (isTrue t) (.seq (.rd t) (.rd t)))
+
+/-- The state after skipping the number `v`. -/
+def skipNumFinal (st : NSt R Q) (t : Fin R) (v : ℕ) : NSt R Q :=
+  { st with env := Function.update st.env t 1, pos := st.pos + (encodeNat v).length }
+
+/-- The state of `skipNumS` before iteration `j`. -/
+def skSt (st : NSt R Q) (t : Fin R) (ds : List Bool) (j : ℕ) : NSt R Q :=
+  { st with env := Function.update st.env t (if j < ds.length then 2 else 1)
+            pos := st.pos + 2 * j + 1 }
+
+/-- **Skipping a number** (of any size). -/
+lemma skipNumS_good (hw : 2 ≤ w) {t : Fin R} (st : NSt R Q) (v : ℕ) (rest : List Bool)
+    (hx : x.drop st.pos = encodeNat v ++ rest) :
+    Good x w (skipNumS t : CStm R Q) st (skipNumFinal st t v)
+      (((encodeNat v).length + 1) * (4 * Ex.nodeCost w)) := by
+  have hU := nodeCost_ge w
+  have hU' := unitCost_ge w
+  obtain ⟨ds, hds⟩ : ∃ ds, ds = Nat.bits v := ⟨_, rfl⟩
+  have hx' : x.drop st.pos = pairs ds ++ false :: rest := by
+    rw [hx, encodeNat_eq_pairs, ← hds]; simp
+  have hlen : st.pos + (2 * ds.length + 1 + rest.length) = x.length := by
+    have := length_le_of_drop hx' (by simp)
+    simp [List.length_append, length_pairs] at this; omega
+  set S : ℕ → NSt R Q := skSt st t ds
+  have envT : ∀ j, (S j).env t = if j < ds.length then 2 else 1 := by intro j; simp [S, skSt]
+  have hbody : ∀ j < ds.length, Good x w (.seq (.rd t) (.rd t)) (S j) (S (j + 1))
+      (2 * unitCost w) := by
+    intro j hj
+    have hm := inBit_pairs_marker hx' (j + 1) (by omega)
+    refine ((Good.rd t).seq (Good.rd t)).of_eq ?_ (by omega)
+    have e1 : (S j).pos = st.pos + 2 * j + 1 := rfl
+    simp only [NSt.set_pos, e1]
+    rw [min_succ_eq (by omega), show st.pos + 2 * j + 1 + 1 = st.pos + 2 * (j + 1) by ring, hm,
+      min_succ_eq (by omega)]
+    refine NSt.ext (funext fun q => ?_) rfl rfl rfl
+    by_cases hq : q = t
+    · subst hq; simp [S, skSt]
+    · simp [S, skSt, Function.update_of_ne hq]
+  have hloop := Good.loop_const (x := x) (w := w) (e := isTrue t) ds.length S (2 * unitCost w)
+    (fun j hj => by rw [isTrue_eval, envT]; simp [hj])
+    (by rw [isTrue_eval, envT]; simp)
+    (fun j _ => isTrue_fits hw (by rw [envT]; split_ifs <;> omega))
+    hbody
+  have h0 := inBit_pairs_marker hx' 0 (Nat.zero_le _)
+  have hrd := Good.rd (x := x) (w := w) (st := st) (Q := Q) t
+  have e0 : { (st.set t (inBit x st.pos)) with pos := min (st.pos + 1) x.length } = S 0 := by
+    simp only [Nat.mul_zero, Nat.add_zero] at h0
+    rw [h0, min_succ_eq (by omega)]
+    refine NSt.ext (funext fun q => ?_) rfl (by simp [S, skSt]) rfl
+    by_cases hq : q = t
+    · subst hq; simp [S, skSt]
+    · simp [S, skSt, Function.update_of_ne hq]
+  rw [e0] at hrd
+  refine (hrd.seq hloop).of_eq ?_ ?_
+  · refine NSt.ext (funext fun q => ?_) rfl ?_ rfl
+    · by_cases hq : q = t
+      · subst hq; simp [S, skSt, skipNumFinal]
+      · simp [S, skSt, skipNumFinal, Function.update_of_ne hq]
+    · simp [S, skSt, skipNumFinal, length_encodeNat, ← hds]; ring
+  · simp only [condCost, isTrue, Ex.size, rv, length_encodeNat, ← hds]
+    nlinarith
+
+/-! ## Reading a list of numbers -/
+
+/-- Push the next `n` numbers onto `q` (counter `i`, scratch `r p t`). -/
+def rdNumsS (q : Fin Q) (n i r p t : Fin R) : CStm R Q :=
+  .seq (.set i (.const 0)) (.loop (.lt (rv i) (rv n))
+    (.seq (rdNumS r p t) (.seq (.push q (rv r)) (.set i (.add (rv i) (.const 1))))))
+
+/-- The state of `rdNumsS` before iteration `j`. -/
+def rnsSt (st : NSt R Q) (q : Fin Q) (i r p t : Fin R) (vs : List ℕ) : ℕ → NSt R Q
+  | 0 => st.set i 0
+  | j + 1 =>
+    let s₁ := rdNumFinal (rnsSt st q i r p t vs j) r p t (vs.getD j 0)
+    (s₁.setS q (vs.getD j 0 :: s₁.stk q)).set i (j + 1)
+
+lemma encodeNats_take_succ (vs : List ℕ) {j : ℕ} (hj : j < vs.length) :
+    encodeNats (vs.take (j + 1)) = encodeNats (vs.take j) ++ encodeNat vs[j] := by
+  rw [List.take_add_one, List.getElem?_eq_getElem hj]
+  simp only [encodeNats, Option.toList_some, List.flatMap_append, List.flatMap_cons,
+    List.flatMap_nil, List.append_nil]
+
+lemma lt_of_bits_length {v w : ℕ} (h : (Nat.bits v).length < w) : v < 2 ^ w := by
+  have := valBits_lt (Nat.bits v)
+  rw [Machines.valBits_bits] at this
+  exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by norm_num) h.le)
+
+lemma sum_getD_eq (f : ℕ → ℕ) : ∀ vs : List ℕ,
+    ∑ j ∈ Finset.range vs.length, f (vs.getD j 0) = (vs.map f).sum
+  | [] => by simp
+  | v :: vs => by
+    rw [List.length_cons, Finset.sum_range_succ', List.map_cons, List.sum_cons,
+      ← sum_getD_eq f vs]
+    simp [add_comm]
+
+lemma length_encodeNats_sum (vs : List ℕ) :
+    (encodeNats vs).length = (vs.map fun v => (encodeNat v).length).sum := by
+  simp [encodeNats, List.length_flatMap]
+
+/-- **Reading a list of numbers.** -/
+lemma rdNumsS_good (hw : 2 ≤ w) {q : Fin Q} {n i r p t : Fin R} (hin : i ≠ n) (hir : i ≠ r)
+    (hip : i ≠ p) (hit : i ≠ t) (hnr : n ≠ r) (hnp : n ≠ p) (hnt : n ≠ t) (hrp : r ≠ p)
+    (hrt : r ≠ t) (hpt : p ≠ t) (st : NSt R Q) (vs : List ℕ) (rest : List Bool)
+    (hx : x.drop st.pos = encodeNats vs ++ rest) (hn : st.env n = vs.length)
+    (hnw : vs.length < 2 ^ w) (hvs : ∀ v ∈ vs, (Nat.bits v).length < w) :
+    Good x w (rdNumsS q n i r p t : CStm R Q) st (rnsSt st q i r p t vs vs.length)
+        ((((encodeNats vs).length + 2 * vs.length + 1)) * (20 * Ex.nodeCost w)) ∧
+      (rnsSt st q i r p t vs vs.length).stk =
+        Function.update st.stk q (vs.reverse ++ st.stk q) ∧
+      (rnsSt st q i r p t vs vs.length).pos = st.pos + (encodeNats vs).length ∧
+      (rnsSt st q i r p t vs vs.length).out = st.out ∧
+      ∀ r', r' ≠ i → r' ≠ r → r' ≠ p → r' ≠ t →
+        (rnsSt st q i r p t vs vs.length).env r' = st.env r' := by
+  have hU := nodeCost_ge w
+  have hU' := unitCost_ge w
+  set S := rnsSt st q i r p t vs
+  -- invariants
+  have inv : ∀ j ≤ vs.length,
+      (S j).stk = Function.update st.stk q ((vs.take j).reverse ++ st.stk q) ∧
+      (S j).pos = st.pos + (encodeNats (vs.take j)).length ∧ (S j).out = st.out ∧
+      (S j).env i = j ∧
+      ∀ r', r' ≠ i → r' ≠ r → r' ≠ p → r' ≠ t → (S j).env r' = st.env r' := by
+    intro j
+    induction j with
+    | zero =>
+      intro _
+      refine ⟨by simp [S, rnsSt], by simp [S, rnsSt, encodeNats], rfl, by simp [S, rnsSt],
+        fun r' h1 _ _ _ => by simp [S, rnsSt, Function.update_of_ne h1]⟩
+    | succ j ih =>
+      intro hj
+      obtain ⟨i1, i2, i3, i4, i5⟩ := ih (by omega)
+      have hg : vs.getD j 0 = vs[j] := List.getD_eq_getElem _ _ (by omega)
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · show ((rdNumFinal (S j) r p t (vs.getD j 0)).setS q _).stk = _
+        funext q'
+        simp only [NSt.setS_stk, rdNumFinal]
+        rw [i1, hg]
+        by_cases hq : q' = q
+        · subst hq
+          rw [Function.update_self, Function.update_self, Function.update_self,
+            List.take_add_one, List.getElem?_eq_getElem (show j < vs.length by omega),
+            Option.toList_some, List.reverse_append, List.reverse_singleton, List.singleton_append,
+            List.cons_append]
+        · rw [Function.update_of_ne hq, Function.update_of_ne hq, Function.update_of_ne hq]
+      · show (rdNumFinal (S j) r p t (vs.getD j 0)).pos = _
+        simp only [rdNumFinal, i2, hg, encodeNats_take_succ vs (show j < vs.length by omega),
+          List.length_append]; ring
+      · show (rdNumFinal (S j) r p t (vs.getD j 0)).out = _
+        simp [rdNumFinal, i3]
+      · simp only [S, rnsSt, NSt.set_env, Function.update_self]
+      · intro r' h1 h2 h3 h4
+        simp only [S, rnsSt, NSt.set_env, NSt.setS_env, rdNumFinal, Function.update_of_ne h1,
+          Function.update_of_ne h2, Function.update_of_ne h3, Function.update_of_ne h4]
+        exact i5 r' h1 h2 h3 h4
+  have envN : ∀ j ≤ vs.length, (S j).env n = vs.length := fun j hj => by
+    rw [(inv j hj).2.2.2.2 n hin.symm hnr hnp hnt, hn]
+  have cmpE : ∀ j ≤ vs.length, (Ex.lt (rv i) (rv n) : Ex R).eval (S j).env =
+      if j < vs.length then 1 else 0 := fun j hj => by
+    simp [Ex.eval, rv, (inv j hj).2.2.2.1, envN j hj]
+  -- the body
+  set C : ℕ → ℕ := fun j => ((encodeNat (vs.getD j 0)).length + 1) * (20 * Ex.nodeCost w) +
+    10 * Ex.nodeCost w
+  have hbody : ∀ j < vs.length, Good x w
+      (.seq (rdNumS r p t) (.seq (.push q (rv r)) (.set i (.add (rv i) (.const 1)))))
+      (S j) (S (j + 1)) (C j) := by
+    intro j hj
+    obtain ⟨i1, i2, i3, i4, i5⟩ := inv j hj.le
+    have hg : vs.getD j 0 = vs[j] := List.getD_eq_getElem _ _ hj
+    have hvj := hvs _ (List.getElem_mem hj)
+    have hxj : x.drop (S j).pos = encodeNat (vs.getD j 0) ++
+        (encodeNats (vs.drop (j + 1)) ++ rest) := by
+      have e : encodeNats vs = encodeNats (vs.take j) ++
+          (encodeNat vs[j] ++ encodeNats (vs.drop (j + 1))) := by
+        conv_lhs => rw [← List.take_append_drop j vs, List.drop_eq_getElem_cons hj]
+        simp only [encodeNats, List.flatMap_append, List.flatMap_cons]
+      rw [i2, drop_add, hx, e, List.append_assoc, List.drop_left, hg, List.append_assoc]
+    have h1 := rdNumS_good (Q := Q) hw hrp hrt hpt (S j) (vs.getD j 0) _ hxj (by rw [hg]; exact hvj)
+    set s₁ := rdNumFinal (S j) r p t (vs.getD j 0)
+    have hr₁ : s₁.env r = vs.getD j 0 := by
+      simp [s₁, rdNumFinal, Function.update_of_ne hrp, Function.update_of_ne hrt]
+    have hi₁ : s₁.env i = j := by
+      simp [s₁, rdNumFinal, Function.update_of_ne hir, Function.update_of_ne hip,
+        Function.update_of_ne hit, i4]
+    have hpush := Good.push (x := x) (w := w) (q := q) (e := rv r) (st := s₁)
+      (by simp only [Ex.Fits, rv, hr₁, hg]; exact lt_of_bits_length hvj)
+    have hset := Good.set (x := x) (w := w) (r := i) (e := Ex.add (rv i) (.const 1))
+      (st := s₁.setS q ((rv r : Ex R).eval s₁.env :: s₁.stk q))
+      (by
+        have h2 : (1 : ℕ) < 2 ^ w := Nat.one_lt_two_pow (by omega)
+        simp only [Ex.Fits, Ex.eval, rv, NSt.setS_env, hi₁]; omega)
+    refine (h1.seq (hpush.seq hset)).of_eq ?_ ?_
+    · show _ = (s₁.setS q (vs.getD j 0 :: s₁.stk q)).set i (j + 1)
+      simp [Ex.eval, rv, hr₁, hi₁]
+    · simp only [C, Ex.size, rv]; omega
+  have hloop := Good.loop (x := x) (w := w) (e := Ex.lt (rv i) (rv n)) vs.length S C
+    (fun j hj => by rw [cmpE j hj.le]; simp [hj])
+    (by rw [cmpE _ le_rfl]; simp)
+    (fun j hj => by
+      simp only [Ex.Fits, rv, (inv j hj).2.2.2.1, envN j hj]; omega)
+    hbody
+  have hinit : Good x w (.set i (.const 0) : CStm R Q) st (S 0) (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp [Ex.Fits])).of_eq rfl (by simp [Ex.size])
+  obtain ⟨i1, i2, i3, -, i5⟩ := inv _ le_rfl
+  rw [List.take_of_length_le le_rfl] at i1 i2
+  refine ⟨(hinit.seq hloop).mono ?_, i1, i2, i3, i5⟩
+  -- the cost
+  have hsum : ∑ j ∈ Finset.range vs.length, (C j + condCost w (Ex.lt (rv i) (rv n))) ≤
+      ∑ j ∈ Finset.range vs.length,
+        ((encodeNat (vs.getD j 0)).length + 2) * (20 * Ex.nodeCost w) := by
+    apply Finset.sum_le_sum
+    intro j _
+    simp only [C, condCost, Ex.size, rv]; nlinarith
+  have hsum' : ∑ j ∈ Finset.range vs.length,
+      ((encodeNat (vs.getD j 0)).length + 2) * (20 * Ex.nodeCost w) =
+      ((encodeNats vs).length + 2 * vs.length) * (20 * Ex.nodeCost w) := by
+    rw [← Finset.sum_mul, Finset.sum_add_distrib, sum_getD_eq (fun v => (encodeNat v).length),
+      length_encodeNats_sum, Finset.sum_const, Finset.card_range, smul_eq_mul]
+    ring
+  simp only [condCost, Ex.size, rv] at hsum ⊢
+  nlinarith
+
 end CStm
 
 end Lax119563Proofs.Compiler
