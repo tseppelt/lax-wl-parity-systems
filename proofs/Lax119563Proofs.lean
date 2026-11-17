@@ -202,3 +202,5 @@ import Lax119563Proofs.Compiler.NProg
 import Lax119563Proofs.Compiler.NCompile
 import Lax119563Proofs.Compiler.NMachine
 import Lax119563Proofs.Compiler.NOutput
+import Lax119563Proofs.Compiler.NLe
+import Lax119563Proofs.Compiler.CStm
