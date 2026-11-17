@@ -198,3 +198,5 @@ import Lax119563Proofs.Compiler.Plan
 import Lax119563Proofs.Compiler.Transfer
 import Lax119563Proofs.Compiler.Clauses
 import Lax119563Proofs.Compiler.NumStack
+import Lax119563Proofs.Compiler.NProg
+import Lax119563Proofs.Compiler.NCompile
