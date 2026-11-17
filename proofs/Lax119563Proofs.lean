@@ -206,3 +206,4 @@ import Lax119563Proofs.Compiler.NLe
 import Lax119563Proofs.Compiler.CStm
 import Lax119563Proofs.Compiler.CMachine
 import Lax119563Proofs.Compiler.CLib
+import Lax119563Proofs.Compiler.CStack

@@ -120,6 +120,33 @@ lemma loop_const {e : Ex R} {body : CStm R Q} (n : ℕ) (S : ℕ → NSt R Q) (C
 
 end Good
 
+/-! ## Bounds are kept -/
+
+/-- Fitting statements keep all registers and stack entries below `2 ^ w` and the cursor
+within the input (via the compiled program). -/
+lemma exec_bdd (hw : 2 ≤ w) {c : CStm R Q} {σ : NSt R Q} (hf : Fits x w c σ) (hb : σ.Bdd w)
+    (hp : σ.pos ≤ x.length) : (exec x c σ).Bdd w ∧ (exec x c σ).pos ≤ x.length := by
+  set st : NSt (R + c.depth + 1) Q :=
+    ⟨fun i => if h : i.val < R then σ.env ⟨i.val, h⟩ else 0, σ.stk, σ.pos, σ.out⟩
+  have hu : uenv c.depth st.toH = σ.env := by
+    funext r; simp [uenv, st, ur]
+  have hbs : st.Bdd w := by
+    refine ⟨fun i => ?_, hb.2⟩
+    simp only [st]; split_ifs
+    · exact hb.1 _
+    · exact Nat.pos_of_ne_zero (by positivity)
+  obtain ⟨st', r', c'⟩ := code_spec (D := c.depth) hw c σ st le_rfl hf ⟨hu, rfl, rfl, rfl⟩
+    hbs hp
+  have hb' := r'.bounded hw hbs
+  refine ⟨⟨fun r => ?_, fun q v hv => ?_⟩, ?_⟩
+  · rw [← c'.1]; exact hb'.1 _
+  · rw [← c'.2.1] at hv; exact hb'.2 q v hv
+  · rw [← c'.2.2.1]; exact r'.pos_le (by simpa [st] using hp)
+
+lemma Good.bdd (hw : 2 ≤ w) {c : CStm R Q} {σ σ' : NSt R Q} {T : ℕ} (h : Good x w c σ σ' T)
+    (hb : σ.Bdd w) (hp : σ.pos ≤ x.length) : σ'.Bdd w ∧ σ'.pos ≤ x.length := by
+  rw [← h.2.1]; exact exec_bdd hw h.1 hb hp
+
 /-! ## Expression shorthands -/
 
 /-- `[a ≠ 0]`-tests and register expressions. -/
