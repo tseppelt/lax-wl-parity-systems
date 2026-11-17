@@ -228,6 +228,305 @@ lemma mvRecsB_good (hw2 : 2 ≤ w) {src dst tmp : Fin Q} {A lim done nr k i t : 
   have h2 : m ≤ m * Ex.nodeCost w := Nat.le_mul_of_pos_right _ (by omega)
   nlinarith
 
+/-! ## Comparing the top records of two stacks -/
+
+lemma NSt.set_self' (s : NSt R Q) (r : Fin R) : s.set r (s.env r) = s := by
+  cases s; simp [NSt.set]
+
+/-- One step of the word-by-word comparison: `d := cmpStep d t1 t2`. -/
+def cmpIte (d t1 t2 : Fin R) : CStm R Q :=
+  .ite (rv d) .skip (.ite (.lt (rv t1) (rv t2)) (.set d (.const 1))
+    (.ite (.lt (rv t2) (rv t1)) (.set d (.const 2)) .skip))
+
+lemma cmpIte_good (hw2 : 2 ≤ w) {d t1 t2 : Fin R} (s : NSt R Q) (hd : s.env d < 2 ^ w)
+    (h1 : s.env t1 < 2 ^ w) (h2 : s.env t2 < 2 ^ w) :
+    Good x w (cmpIte d t1 t2 : CStm R Q) s
+      (s.set d (CSort.cmpStep (s.env d) (s.env t1) (s.env t2))) (20 * Ex.nodeCost w) := by
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  by_cases hd0 : s.env d = 0
+  · have hfd : (rv d : Ex R).Fits w s.env := hd
+    by_cases hab : s.env t1 < s.env t2
+    · refine (Good.iteF hfd (by simp [rv, Ex.eval, hd0]) (Good.iteT (e := .lt (rv t1) (rv t2)) (show (Ex.lt (rv t1) (rv t2) : Ex R).Fits w s.env from ⟨h1, h2⟩)
+        (by simp [rv, Ex.eval, hab]) (Good.set (r := d) (e := .const 1)
+          (by simp only [Ex.Fits]; omega)))).of_eq (by simp [CSort.cmpStep, hd0, hab, Ex.eval])
+        (by simp only [condCost, rv, Ex.size]; omega)
+    · by_cases hba : s.env t2 < s.env t1
+      · refine (Good.iteF hfd (by simp [rv, Ex.eval, hd0]) (Good.iteF (e := .lt (rv t1) (rv t2)) (show (Ex.lt (rv t1) (rv t2) : Ex R).Fits w s.env from ⟨h1, h2⟩)
+          (by simp [rv, Ex.eval, hab]) (Good.iteT (e := .lt (rv t2) (rv t1)) (show (Ex.lt (rv t2) (rv t1) : Ex R).Fits w s.env from ⟨h2, h1⟩) (by simp [rv, Ex.eval, hba])
+            (Good.set (r := d) (e := .const 2) (by simp only [Ex.Fits]; omega))))).of_eq
+          (by simp [CSort.cmpStep, hd0, hab, hba, Ex.eval])
+          (by simp only [condCost, rv, Ex.size]; omega)
+      · refine (Good.iteF hfd (by simp [rv, Ex.eval, hd0]) (Good.iteF (e := .lt (rv t1) (rv t2)) (show (Ex.lt (rv t1) (rv t2) : Ex R).Fits w s.env from ⟨h1, h2⟩)
+          (by simp [rv, Ex.eval, hab]) (Good.iteF (e := .lt (rv t2) (rv t1)) (show (Ex.lt (rv t2) (rv t1) : Ex R).Fits w s.env from ⟨h2, h1⟩) (by simp [rv, Ex.eval, hba])
+            Good.skip))).of_eq
+          (by
+            have : CSort.cmpStep (s.env d) (s.env t1) (s.env t2) = s.env d := by
+              simp [CSort.cmpStep, hd0, hab, hba]
+            rw [this, NSt.set_self'])
+          (by simp only [condCost, rv, Ex.size]; omega)
+  · refine (Good.iteT (e := rv d) hd (by simpa [rv, Ex.eval] using hd0) Good.skip).of_eq ?_
+      (by simp only [condCost, rv, Ex.size]; omega)
+    have : CSort.cmpStep (s.env d) (s.env t1) (s.env t2) = s.env d := by
+      simp [CSort.cmpStep, hd0]
+    rw [this, NSt.set_self']
+
+lemma cmpW_le : ∀ (d : ℕ) (as bs : List ℕ), d ≤ 2 → CSort.cmpW d as bs ≤ 2
+  | d, a :: as, b :: bs, h => by
+    simp only [CSort.cmpW]
+    exact cmpW_le _ as bs (by unfold CSort.cmpStep; split_ifs <;> omega)
+  | _, [], _, h => h
+  | _, _ :: _, [], h => h
+
+/-- The body of the comparison loop. -/
+def cmpBody (s1 s2 c1 c2 : Fin Q) (d kc t1 t2 : Fin R) : CStm R Q :=
+  .seq (.pop s1 t1) (.seq (.pop s2 t2) (.seq (.push c1 (rv t1)) (.seq (.push c2 (rv t2))
+    (.seq (cmpIte d t1 t2) (.set kc (.add (rv kc) (.const 1)))))))
+
+/-- Compare the top records (of `A` words) of `s1` and `s2`: `d := cmpW 0 a₁ a₂`; both stacks
+are restored (via `c1`, `c2`). -/
+def cmpS (s1 s2 c1 c2 : Fin Q) (A d kc t1 t2 i t : Fin R) : CStm R Q :=
+  .seq (.set d (.const 0)) (.seq (.set kc (.const 0))
+    (.seq (.loop (.lt (rv kc) (rv A)) (cmpBody s1 s2 c1 c2 d kc t1 t2))
+      (.seq (moveN c1 s1 A i t) (moveN c2 s2 A i t))))
+
+/-- The stacks of the comparison after `j` words. -/
+def cmpStk (S : Fin Q → List ℕ) (s1 s2 c1 c2 : Fin Q) (a1 a2 L1 L2 : List ℕ) (j : ℕ) :
+    Fin Q → List ℕ :=
+  Function.update (Function.update (Function.update (Function.update S s1 (a1.drop j ++ L1))
+    s2 (a2.drop j ++ L2)) c1 ((a1.take j).reverse ++ S c1)) c2 ((a2.take j).reverse ++ S c2)
+
+lemma take_succ_rev {l : List ℕ} {j : ℕ} (hj : j < l.length) :
+    (l.take (j + 1)).reverse = l[j] :: (l.take j).reverse := by
+  have ht : l.take (j + 1) = l.take j ++ [l[j]] := by
+    rw [List.take_add_one, List.getElem?_eq_getElem hj]; rfl
+  rw [ht, List.reverse_append, List.reverse_singleton, List.singleton_append]
+
+section CmpStk
+
+variable {S : Fin Q → List ℕ} {s1 s2 c1 c2 : Fin Q} {a1 a2 L1 L2 : List ℕ} {j : ℕ}
+
+lemma cmpStk_c2 : cmpStk S s1 s2 c1 c2 a1 a2 L1 L2 j c2 = (a2.take j).reverse ++ S c2 := by
+  simp [cmpStk]
+
+lemma cmpStk_c1 (h : c1 ≠ c2) :
+    cmpStk S s1 s2 c1 c2 a1 a2 L1 L2 j c1 = (a1.take j).reverse ++ S c1 := by
+  simp [cmpStk, Function.update_of_ne h]
+
+lemma cmpStk_s2 (h1 : s2 ≠ c1) (h2 : s2 ≠ c2) :
+    cmpStk S s1 s2 c1 c2 a1 a2 L1 L2 j s2 = a2.drop j ++ L2 := by
+  simp [cmpStk, Function.update_of_ne h1, Function.update_of_ne h2]
+
+lemma cmpStk_s1 (h0 : s1 ≠ s2) (h1 : s1 ≠ c1) (h2 : s1 ≠ c2) :
+    cmpStk S s1 s2 c1 c2 a1 a2 L1 L2 j s1 = a1.drop j ++ L1 := by
+  simp [cmpStk, Function.update_of_ne h0, Function.update_of_ne h1, Function.update_of_ne h2]
+
+lemma cmpStk_other {q : Fin Q} (h0 : q ≠ s1) (h1 : q ≠ s2) (h2 : q ≠ c1) (h3 : q ≠ c2) :
+    cmpStk S s1 s2 c1 c2 a1 a2 L1 L2 j q = S q := by
+  simp [cmpStk, Function.update_of_ne h0, Function.update_of_ne h1, Function.update_of_ne h2,
+    Function.update_of_ne h3]
+
+end CmpStk
+
+lemma cmpS_good (hw2 : 2 ≤ w) {s1 s2 c1 c2 : Fin Q} {A d kc t1 t2 i t : Fin R}
+    (hstk : [s1, s2, c1, c2].Nodup) (hreg : [A, d, kc, t1, t2, i, t].Nodup)
+    (st : NSt R Q) {a : ℕ} (a1 a2 L1 L2 : List ℕ) (ha : st.env A = a)
+    (h1 : st.stk s1 = a1 ++ L1) (h2 : st.stk s2 = a2 ++ L2) (hl1 : a1.length = a)
+    (hl2 : a2.length = a) (hb1 : ∀ v ∈ a1, v < 2 ^ w) (hb2 : ∀ v ∈ a2, v < 2 ^ w)
+    (hw : a + 1 < 2 ^ w) :
+    ∃ st', Good x w (cmpS s1 s2 c1 c2 A d kc t1 t2 i t) st st'
+        ((a + 1) * (80 * Ex.nodeCost w)) ∧
+      st'.stk = st.stk ∧ st'.env d = CSort.cmpW 0 a1 a2 ∧ Frame st st' [d, kc, t1, t2, i, t] := by
+  have hs12 : s1 ≠ s2 := by ndup hstk
+  have hs1c1 : s1 ≠ c1 := by ndup hstk
+  have hs1c2 : s1 ≠ c2 := by ndup hstk
+  have hs2c1 : s2 ≠ c1 := by ndup hstk
+  have hs2c2 : s2 ≠ c2 := by ndup hstk
+  have hc12 : c1 ≠ c2 := by ndup hstk
+  have hAd : A ≠ d := by ndup hreg
+  have hAk : A ≠ kc := by ndup hreg
+  have hAi : A ≠ i := by ndup hreg
+  have hAt : A ≠ t := by ndup hreg
+  have hit : i ≠ t := by ndup hreg
+  have hdk : d ≠ kc := by ndup hreg
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  set Inv : NSt R Q → Prop := fun s => ∃ j ≤ a, s.env kc = j ∧ s.env A = a ∧
+    s.env d = CSort.cmpW 0 (a1.take j) (a2.take j) ∧ s.stk = cmpStk st.stk s1 s2 c1 c2 a1 a2 L1 L2 j ∧
+    Frame st s [d, kc, t1, t2, i, t]
+  have hloop := Good.loop_var (x := x) (w := w) (e := .lt (rv kc) (rv A))
+    (body := cmpBody s1 s2 c1 c2 d kc t1 t2)
+    Inv (fun s => a - s.env kc) (fun _ => 0) 0 (40 * Ex.nodeCost w) (by
+      intro s hI
+      obtain ⟨j, hj, hk, hA', hd', hs, hf⟩ := hI
+      refine ⟨⟨by simp only [rv, Ex.Fits, hk]; omega, by simp only [rv, Ex.Fits, hA']; omega⟩, ?_⟩
+      intro hc
+      have hja : j < a := by
+        simp only [rv, Ex.eval, hk, hA'] at hc; split_ifs at hc with h <;> omega
+      have hj1 : j < a1.length := by omega
+      have hj2 : j < a2.length := by omega
+      have hs1 : s.stk s1 = a1[j] :: (a1.drop (j + 1) ++ L1) := by
+        rw [hs, cmpStk_s1 hs12 hs1c1 hs1c2, List.drop_eq_getElem_cons hj1, List.cons_append]
+      have hs2 : s.stk s2 = a2[j] :: (a2.drop (j + 1) ++ L2) := by
+        rw [hs, cmpStk_s2 hs2c1 hs2c2, List.drop_eq_getElem_cons hj2, List.cons_append]
+      have hv1 : a1[j] < 2 ^ w := hb1 _ (List.getElem_mem _)
+      have hv2 : a2[j] < 2 ^ w := hb2 _ (List.getElem_mem _)
+      have hdle : s.env d ≤ 2 := by rw [hd']; exact cmpW_le 0 _ _ (by omega)
+      -- the states of the body
+      set u1 := (s.setS s1 (a1.drop (j + 1) ++ L1)).set t1 a1[j]
+      set u2 := (u1.setS s2 (a2.drop (j + 1) ++ L2)).set t2 a2[j]
+      set u3 := u2.setS c1 (a1[j] :: u2.stk c1)
+      set u4 := u3.setS c2 (a2[j] :: u3.stk c2)
+      have ht1 : u4.env t1 = a1[j] := by
+        simp [u4, u3, u2, u1, Function.update_of_ne (show t1 ≠ t2 by ndup hreg)]
+      have ht2 : u4.env t2 = a2[j] := by simp [u4, u3, u2]
+      have hd4 : u4.env d = s.env d := by
+        simp [u4, u3, u2, u1, Function.update_of_ne (show d ≠ t2 by ndup hreg),
+          Function.update_of_ne (show d ≠ t1 by ndup hreg)]
+      have hk4 : u4.env kc = j := by
+        simp [u4, u3, u2, u1, Function.update_of_ne (show kc ≠ t2 by ndup hreg),
+          Function.update_of_ne (show kc ≠ t1 by ndup hreg), hk]
+      set u5 := u4.set d (CSort.cmpStep (u4.env d) (u4.env t1) (u4.env t2))
+      have gp1 : Good x w (.pop s1 t1 : CStm R Q) s u1 (unitCost w + 1) :=
+        (Good.pop s1 t1).of_eq (by simp [u1, hs1]) le_rfl
+      have gp2 : Good x w (.pop s2 t2 : CStm R Q) u1 u2 (unitCost w + 1) :=
+        (Good.pop s2 t2).of_eq (by simp [u2, u1, Function.update_of_ne hs12.symm, hs2]) le_rfl
+      have gq1 : Good x w (.push c1 (rv t1) : CStm R Q) u2 u3 (Ex.nodeCost w + unitCost w) :=
+        (Good.push (by
+          simp only [rv, Ex.Fits, u2, u1, NSt.set_env, NSt.setS_env,
+            Function.update_of_ne (show t1 ≠ t2 by ndup hreg), Function.update_self]
+          exact hv1)).of_eq
+          (by simp [u3, u2, u1, rv, Ex.eval, Function.update_of_ne (show t1 ≠ t2 by ndup hreg)])
+          (by simp [rv, Ex.size])
+      have gq2 : Good x w (.push c2 (rv t2) : CStm R Q) u3 u4 (Ex.nodeCost w + unitCost w) :=
+        (Good.push (by simp only [rv, Ex.Fits, u3, u2, NSt.set_env, NSt.setS_env,
+          Function.update_self]; exact hv2)).of_eq
+          (by simp [u4, u3, u2, rv, Ex.eval]) (by simp [rv, Ex.size])
+      have gi : Good x w (cmpIte d t1 t2 : CStm R Q) u4 u5 (20 * Ex.nodeCost w) :=
+        cmpIte_good hw2 u4 (by rw [hd4]; omega) (by rw [ht1]; exact hv1) (by rw [ht2]; exact hv2)
+      have hk5 : u5.env kc = j := by
+        simp only [u5, NSt.set_env, Function.update_of_ne hdk.symm]; exact hk4
+      have gk : Good x w (.set kc (.add (rv kc) (.const 1)) : CStm R Q) u5 (u5.set kc (j + 1))
+          (3 * Ex.nodeCost w + unitCost w) :=
+        (Good.set (by simp only [rv, Ex.Fits, Ex.eval, hk5]; omega)).of_eq
+          (by simp [rv, Ex.eval, hk5]) (by simp [Ex.size])
+      refine ⟨_, (gp1.seq (gp2.seq (gq1.seq (gq2.seq (gi.seq gk))))).mono (by omega),
+        ⟨j + 1, by omega, by simp, ?_, ?_, ?_, ?_⟩, ?_, le_rfl⟩
+      · simp only [NSt.set_env, Function.update_of_ne hAk, u5, Function.update_of_ne hAd, u4,
+          u3, u2, u1, NSt.setS_env, Function.update_of_ne (show A ≠ t2 by ndup hreg),
+          Function.update_of_ne (show A ≠ t1 by ndup hreg)]
+        exact hA'
+      · simp only [NSt.set_env, Function.update_of_ne hdk, u5, Function.update_self]
+        rw [hd4, ht1, ht2, hd', CSort.cmpW_take_succ 0 a1 a2 j hj1 hj2]
+      · simp only [u5, u4, u3, u2, u1, NSt.set_stk, NSt.setS_stk]
+        funext q
+        by_cases hq2 : q = c2
+        · subst hq2
+          simp [Function.update_of_ne hs1c2.symm, Function.update_of_ne hs2c2.symm,
+            Function.update_of_ne hc12.symm, hs, cmpStk_c2, take_succ_rev hj2]
+        · by_cases hq1 : q = c1
+          · subst hq1
+            simp [Function.update_of_ne hs1c1.symm, Function.update_of_ne hs2c1.symm,
+              Function.update_of_ne hc12, hs, cmpStk_c1 hc12, take_succ_rev hj1]
+          · by_cases hqs2 : q = s2
+            · subst hqs2
+              simp [Function.update_of_ne hs2c1, Function.update_of_ne hs2c2,
+                cmpStk_s2 hs2c1 hs2c2]
+            · by_cases hqs1 : q = s1
+              · subst hqs1
+                simp [Function.update_of_ne hs1c1, Function.update_of_ne hs1c2,
+                  Function.update_of_ne hs12, cmpStk_s1 hs12 hs1c1 hs1c2]
+              · simp [Function.update_of_ne hq1, Function.update_of_ne hq2,
+                  Function.update_of_ne hqs1, Function.update_of_ne hqs2, hs,
+                  cmpStk_other hqs1 hqs2 hq1 hq2]
+      · refine ⟨by simp [u5, u4, u3, u2, u1, hf.1], by simp [u5, u4, u3, u2, u1, hf.2.1],
+          fun r hr => ?_⟩
+        simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hr
+        simp only [u5, u4, u3, u2, u1, NSt.set_env, NSt.setS_env, Function.update_of_ne hr.1,
+          Function.update_of_ne hr.2.1, Function.update_of_ne hr.2.2.1,
+          Function.update_of_ne hr.2.2.2.1]
+        exact hf.2.2 r (by simp [hr.1, hr.2.1, hr.2.2.1, hr.2.2.2.1, hr.2.2.2.2.1,
+          hr.2.2.2.2.2])
+      · simp; omega)
+  -- the initialization
+  have g0 : Good x w (.set d (.const 0) : CStm R Q) st (st.set d 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have g1 : Good x w (.set kc (.const 0) : CStm R Q) (st.set d 0) ((st.set d 0).set kc 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have hC0 : cmpStk st.stk s1 s2 c1 c2 a1 a2 L1 L2 0 = st.stk := by
+    funext q
+    by_cases hq2 : q = c2
+    · subst hq2; simp [cmpStk_c2]
+    · by_cases hq1 : q = c1
+      · subst hq1; simp [cmpStk_c1 hc12]
+      · by_cases hqs2 : q = s2
+        · subst hqs2; simp [cmpStk_s2 hs2c1 hs2c2, h2]
+        · by_cases hqs1 : q = s1
+          · subst hqs1; simp [cmpStk_s1 hs12 hs1c1 hs1c2, h1]
+          · simp [cmpStk_other hqs1 hqs2 hq1 hq2]
+  obtain ⟨s', g', ⟨j, hj, hk, hA', hd', hs, hf⟩, hend⟩ := hloop ((st.set d 0).set kc 0)
+    ⟨0, Nat.zero_le _, by simp, by simp [Function.update_of_ne hAk, Function.update_of_ne hAd, ha],
+      by simp [Function.update_of_ne hdk, CSort.cmpW], by simp [hC0],
+      ⟨rfl, rfl, fun r hr => by
+        simp only [List.mem_cons, not_or] at hr
+        simp [Function.update_of_ne hr.1, Function.update_of_ne hr.2.1]⟩⟩
+  have hja : j = a := by
+    simp only [rv, Ex.eval, hk, hA'] at hend; split_ifs at hend with h <;> omega
+  subst hja
+  -- restore the stacks
+  have hsc1 : s'.stk c1 = a1.reverse ++ st.stk c1 := by
+    rw [hs, cmpStk_c1 hc12, List.take_of_length_le (by omega)]
+  obtain ⟨m1, gm1, km1, fm1⟩ := moveN_good (x := x) hs1c1.symm hAi hAt hit s' hA'
+    (by rw [hsc1]; simp; omega) hw
+    (by
+      intro v hv
+      rw [hsc1, List.take_left' (by simpa using hl1)] at hv
+      exact hb1 v (List.mem_reverse.mp hv))
+  have hAm : m1.env A = j := (fm1.2.2 A (by simp [hAi, hAt])).trans hA'
+  have hsc2 : m1.stk c2 = a2.reverse ++ st.stk c2 := by
+    rw [km1, movedStk_other _ hc12.symm hs1c2.symm, hs, cmpStk_c2,
+      List.take_of_length_le (by omega)]
+  obtain ⟨m2, gm2, km2, fm2⟩ := moveN_good (x := x) hs2c2.symm hAi hAt hit m1 hAm
+    (by rw [hsc2]; simp; omega) hw
+    (by
+      intro v hv
+      rw [hsc2, List.take_left' (by simpa using hl2)] at hv
+      exact hb2 v (List.mem_reverse.mp hv))
+  refine ⟨m2, (g0.seq (g1.seq (g'.seq (gm1.seq gm2)))).mono ?_, ?_, ?_,
+    hf.trans ((fm1.trans fm2).mono (by intro r hr; simp at hr ⊢; tauto))⟩
+  · simp only [condCost, rv, Ex.size, NSt.set_env, Function.update_self, Nat.sub_zero,
+      mul_zero, zero_add]
+    have h2 : j ≤ j * Ex.nodeCost w := Nat.le_mul_of_pos_right _ (by omega)
+    nlinarith
+  · funext q
+    rw [km2]
+    by_cases hq2 : q = c2
+    · subst hq2
+      rw [movedStk_src _ hs2c2.symm, hsc2, List.drop_left' (by simpa using hl2)]
+    · by_cases hqs2 : q = s2
+      · subst hqs2
+        rw [movedStk_dst, hsc2, List.take_left' (by simpa using hl2), List.reverse_reverse,
+          km1, movedStk_other _ hs2c1 hs12.symm, hs, cmpStk_s2 hs2c1 hs2c2,
+          List.drop_of_length_le (by omega), List.nil_append, h2]
+      · rw [movedStk_other _ hq2 hqs2, km1]
+        by_cases hq1 : q = c1
+        · subst hq1
+          rw [movedStk_src _ hs1c1.symm, hs, cmpStk_c1 hc12, List.take_of_length_le (by omega),
+            List.drop_left' (by simpa using hl1)]
+        · by_cases hqs1 : q = s1
+          · subst hqs1
+            rw [movedStk_dst, hs, cmpStk_c1 hc12, cmpStk_s1 hs12 hs1c1 hs1c2,
+              List.take_of_length_le (l := a1) (by omega), List.take_left' (by simpa using hl1),
+              List.reverse_reverse, List.drop_of_length_le (l := a1) (by omega), List.nil_append, h1]
+          · rw [movedStk_other _ hq1 hqs1, hs, cmpStk_other hqs1 hqs2 hq1 hq2]
+  · rw [fm2.2.2 d (by simp [show d ≠ i by ndup hreg, show d ≠ t by ndup hreg]),
+      fm1.2.2 d (by simp [show d ≠ i by ndup hreg, show d ≠ t by ndup hreg]), hd',
+      List.take_of_length_le (by omega), List.take_of_length_le (by omega)]
+
 end CStm
 
 end Lax119563Proofs.Compiler
