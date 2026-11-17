@@ -18,7 +18,7 @@ schema are computed by counting the commands with a smaller key (`length_out_bef
 namespace Lax119563Proofs.Reduction
 
 open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime Xp
-open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 
 variable {M : Machine} {s : ℕ}
 

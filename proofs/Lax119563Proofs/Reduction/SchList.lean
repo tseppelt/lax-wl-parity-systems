@@ -11,7 +11,7 @@ mask `msk` of its first permutation (`PermDesc`: block kept, `regVal` XOR-ed wit
 `cmdsN … ++ detN …` (`List.Forall₂ SchMatch`).
 -/
 
-open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 open Lax119563Proofs.Circuits
 
 namespace Lax119563Proofs.Reduction

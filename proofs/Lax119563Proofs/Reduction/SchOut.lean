@@ -12,7 +12,7 @@ from level `b + 28` on.
 namespace Lax119563Proofs.Reduction
 
 open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime Xp
-open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 
 variable {M : Machine} {s : ℕ}
 

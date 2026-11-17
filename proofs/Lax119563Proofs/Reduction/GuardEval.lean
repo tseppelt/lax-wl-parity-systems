@@ -15,7 +15,7 @@ initial configuration (`encCV_init`), which only needs `inBit x v`.
 namespace Lax119563Proofs.Reduction
 
 open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime
-open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 
 variable {M : Machine} {s : ℕ}
 

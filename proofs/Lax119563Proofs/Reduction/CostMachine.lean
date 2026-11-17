@@ -43,7 +43,8 @@ theorem computesWithin_quasiLinear {g : Gn} {d R : ℕ} (hc : HasCost [] g 1 d)
     ∃ C : ℕ, ∀ x : List Bool, 2 ≤ x.length →
       x.length ≤ (encodeNats (g.out x [])).length →
       ComputesWithin (machine R g) x (encodeNats (g.out x []))
-        (C * x.length * Nat.log 2 x.length ^ (d + 3)) := by
+        (C * x.length * Nat.log 2 x.length ^ (d + 3)) ∧
+      (encodeNats (g.out x [])).length ≤ C * x.length * Nat.log 2 x.length ^ (d + 3) := by
   obtain ⟨K, hK⟩ := hc 0
   set A := 3 * (K + 5) with hA
   refine ⟨2088 * A ^ 2 * (2 * K * 3 ^ (d + 1)) + 4, fun x hx hlen => ?_⟩
@@ -58,7 +59,6 @@ theorem computesWithin_quasiLinear {g : Gn} {d R : ℕ} (hc : HasCost [] g 1 d)
   have hB : 2 * 2 ^ ((K + 1) * (L + 1 + 1)) ≤ 2 ^ w := by rw [hw, pow_succ]; omega
   have hw2 : 2 ≤ w := by rw [hw]; nlinarith
   have H := computesWithin hw2 hB hR hwf hF' hlen
-  refine ComputesWithin.mono H ?_
   -- bounds
   set c := g.cost x [] with hc'
   have hout : (g.out x []).length ≤ c := length_out_le_cost g []
@@ -96,10 +96,15 @@ theorem computesWithin_quasiLinear {g : Gn} {d R : ℕ} (hc : HasCost [] g 1 d)
   have h4 : 4 ≤ 4 * (n * L ^ (d + 3)) := by
     have : 1 ≤ n * L ^ (d + 3) := Nat.one_le_iff_ne_zero.mpr (by positivity)
     omega
-  calc κ w * c + 20 * (encodeNats (g.out x [])).length + 4
-      ≤ 2088 * A ^ 2 * (2 * K * 3 ^ (d + 1)) * (n * L ^ (d + 3)) + 4 * (n * L ^ (d + 3)) := by
-        omega
-    _ = _ := by ring
+  refine ⟨ComputesWithin.mono H ?_, ?_⟩
+  · calc κ w * c + 20 * (encodeNats (g.out x [])).length + 4
+        ≤ 2088 * A ^ 2 * (2 * K * 3 ^ (d + 1)) * (n * L ^ (d + 3)) + 4 * (n * L ^ (d + 3)) := by
+          omega
+      _ = _ := by ring
+  · calc (encodeNats (g.out x [])).length
+        ≤ 2088 * A ^ 2 * (2 * K * 3 ^ (d + 1)) * (n * L ^ (d + 3)) + 4 * (n * L ^ (d + 3)) := by
+          omega
+      _ = _ := by ring
 
 end Gn
 

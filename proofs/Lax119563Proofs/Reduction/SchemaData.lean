@@ -1,5 +1,4 @@
-import Lax119563Proofs.Reduction.TernOrder
-import Lax119563Proofs.Circuits.AddrProgram
+import Lax119563Proofs.Reduction.SchemaParts
 
 /-!
 # Numeric descriptions of the schemas of compiled address programs
