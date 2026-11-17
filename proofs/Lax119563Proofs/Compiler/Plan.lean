@@ -112,36 +112,61 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 * `NumStack`: `nsPush_runs`, `nsPop_runs` (stack-program routines, cost `O(|bits v|)`).
 * `NProg` (language, `NRuns` semantics with uniform word size `w`), `NCompile`
   (**`compileN_runs`**: simulation by `Hierarchy.Prog (R + Q + 7) 0` within the same cost;
-  copy-generalised from `Reduction.HCompile`), `NMachine` (**`NProg.computesWithin`**,
-  `NProg.machine_deterministic`; copy of `Reduction.HMachine`).
+  copy-generalised from `Reduction.HCompile`), `NMachine` (`NProg.computesWithin`, needs
+  `|x| ≤ |output|`; superseded by `NOutput`).
+* (item 1) `NOutput`: **`NProg.computesWithinO`** — no condition on the output length or the
+  cursor; cost `t + 20 (|x| + |y|) + 10`. The machine drains the input to a unary helper,
+  moves the head of tape `0` left by a raw `Mach.loop` (an empty stack is represented at any
+  head position), then pushes the output.
+* (item 2) `NLe` (runs within a cost, `NSt.Bdd`, embedding `HProg.toN` so that
+  `Reduction.Ex.code` is reused), `CStm` (structured statements `skip, set, emit, push, pop,
+  sne, rd, rst, seq, ite, loop` — `loop c body` is a *while* loop; total semantics `exec`
+  (a loop runs for the least `n` with condition `0`, via `Nat.find`), `cost`, `Fits`;
+  **`CStm.code_spec`**), `CMachine` (**`CStm.computesWithin`**: from the zero state, the machine
+  computes `encodeNats (exec …).out` within `cost + 20 (|x| + |out|) + 10`), `CLib`
+  (`CStm.Good x w c st st' T` = fits ∧ exec ∧ cost; combinators incl. `Good.loop` along a
+  sequence of states; `exec_bdd`/`Good.bdd`: bounds and cursor are kept).
+* (item 3, partly) `CStack.moveAllS_good`; `CParse` (**`rdNumS_good`**, `skipNumS_good`,
+  `rdNumsS_good`: read / skip a self-delimiting number, read `n` numbers onto a stack;
+  explicit final states `rdNumFinal`, `skipNumFinal`, `rnsSt`); `CSortLoop` (`Good.loop_var`:
+  loops with variant and potential, `Good.loop_stop`, `Good.loop_cons`; `Frame`;
+  **`moveN_good`**: move the top `n` words); `CSortList` (merge sort of records at the list
+  level: lexicographic `rle`, `mrg`, `passX`, `passes`, **`finalRecs_eq`**: after `p` passes
+  with `|rs| ≤ 2^p` the result is `rs.mergeSort rle`, `cmpW`/`rle_iff_cmpW` for word-by-word
+  comparison).
+* (item 5, partly) `Order`: the vertex order **`ordL I`** (schemas: hubs then non-hubs; then
+  locations), with entries in *q-major* order (`stepsC c` = increasing steps, so the
+  previous entry of a column is the previous index; `coefSteps`), **`ordL_perm`** (so
+  `reGraph_spec` applies). `OrderEdges`: hubs precede their neighbors (`ordL_pairwise`),
+  **`edgeList_ordL`**: the edge list is, per position `u`, the increasing `v` with `hubB` from
+  `L[u]` to `L[v]`.
+
+## Decisions and pitfalls
+
+* Entries of a column are ordered q-major (increasing step `σ = q M + j`), not `(j, q)` as
+  first planned: then `trackAt` is just the previous entry of the column.
+* Library specs give explicit final states (or stacks + `Frame`), so `Good` composes.
+* Proof hygiene: `ext r` on `NSt` also applies list extensionality; use
+  `NSt.ext (funext …) (funext …) ?_ ?_`. `simp` may undo `List.take_add_one`; close list
+  goals with `simp only [List.reverse_append, …]`. `set S := … with` on states makes `simp`
+  loop; define the loop states as top-level functions (`mvSt`).
+* Worktree-isolated agents: shell commands combining `cd` with heredocs/git are refused;
+  the shared scratchpad holds other sessions' files (use the `cm2-` prefix).
 
 ## Remaining work (in order)
 
-1. **Shrinking output.** `NProg.computesWithin` still needs `|x| ≤ |encodeNats out|`. This is
-   a limitation of the stack model: a pop moves the head right also on an empty stack and
-   a push writes, so with `y` on stack `0` the head ends at `|x| - |y| + (extra pops)`.
-   Fix at the `Hierarchy.Mach` level: after `compileN p`, pop the remaining input while
-   counting on a unary helper stack, then a raw machine moving the head of tape `0` left
-   once per helper symbol without writing (`Mach.prim` with a left move, `Mach.loop`), then
-   push the output; prove it on tapes via `Prog.compile_endsH` (`Reduction/StackOut`).
-   Alternative: a bridge from `Hierarchy.Mach` to `Machines.TM.finish`.
-2. **Structured layer** with total semantics (copy-generalise `Reduction.SProg/SStm/SLib`:
-   `Stm` with `Good` rules) adding `spush/spop` and stack-emptiness tests, so that program
-   proofs are list mathematics.
-3. **Library programs**: parse the next input number (`rd` pairs until the terminator, a
-   bounded loop), skip a number, queues as two stacks, merge of two sorted stacks of
-   fixed-arity tuples, merge sort (`O(R a log R)` word operations).
-4. **The compiler program**: triviality check; locations pass (stack of
-   `(v, i, b₀ … b_{ℓ-1}, vertex number, ι(v))`, already sorted); schema pre-scan (`|D|`,
-   ternary flag, distinct blocks, whether block `k-1` occurs, union of the set bits of the
-   coordinates as a bit list, `|R_e|`, sizes); request pass (`(u, f(i), bits of b + δ_i)` per
-   column and argument, with sequence numbers; `f, δ` by a merge with the permutation
-   descriptions copied to stacks); sort / join / sort; emission of `n`, colors, `m`, edges
-   for `ε = 0, 1` in the order `L I` above.
-5. **List-level correctness**: `L I` is a permutation of `vertexList I` (`mem_vertexList`,
-   `nodup_vertexList`), colors = first position of the class, edges of `reGraph I (L I) ε` in
-   hub order (`hubB_hub`), each pass of the program against these lists.
+3. **Library programs (rest)**: the stack-level merge sort of records (`A` words per record,
+   word-by-word comparison via `cmpW`, merge of two runs using `moveN`, passes `passX`,
+   against `CSortList.finalRecs_eq`; cost `O((R A + 1)(log R + 1))` word operations); queue
+   helpers as needed.
+4. **The compiler program** (as above): triviality check; locations pass; schema pre-scan;
+   request pass; sort / join / sort; emission of `n`, colors, `m`, edges for `ε = 0, 1` in the
+   order `ordL I`.
+5. **List-level correctness (rest)**: colors of `reGraph I (ordL I) ε` (= first position of
+   the class: per class, its start repeated), the numeric description of `edgeList_ordL` per
+   hub (positions of `trackAt`, `track`, `coef`, `sum`, and coordinate vertices via offsets
+   and ranks), and each pass of the program against these lists.
 6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
-   `NProg.computesWithin`; finally `Matrix/Main.lean` with
-   `compile I := (reGraph I (L I) 0, reGraph I (L I) 1)` and `reGraph_spec`.
+   `CStm.computesWithin`; finally `Matrix/Main.lean` with
+   `compile I := (reGraph I (ordL I) 0, reGraph I (ordL I) 1)` and `reGraph_spec`.
 -/
