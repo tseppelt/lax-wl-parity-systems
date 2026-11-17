@@ -138,7 +138,7 @@ theorem edgeList_ordL (ε : ZMod 2) :
       (eff I ε (ordL I)[(v : ℕ)])) (fun v _ => by
         rw [Bool.eq_iff_iff]; simp only [decide_eq_true_eq]; exact adj_lt_iff I ε u v)]
   simp only [List.map_eq_flatMap]
-  change List.flatMap _ (List.flatMap (fun a => [(a : ℕ)]) _) = _
+  change List.flatMap _ (List.flatMap (fun a : Fin (ordL I).length => [(a : ℕ)]) _) = _
   rw [List.flatMap_assoc]
   simp
 
