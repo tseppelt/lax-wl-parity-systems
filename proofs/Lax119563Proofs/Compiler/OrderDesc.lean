@@ -9,6 +9,13 @@ The output of the compiler machine, as lists that a sequential program can emit.
   concatenation of the blocks `labs.map (X, ·)` (`ordL_eq_flatMap`).
 * **Colors** (`colors_reGraph`): the color list of `reGraph I (ordL I) ε` is `colorsOf 0` of
   the block sizes: each class contributes its start position, repeated once per label.
+* **Edges** (`edgeList_nbrPos`): for each position `u`, the edges `(u, v)`, `v` in
+  `nbrPos ε L[u]`, the sorted positions of the names prescribed by the (at most three)
+  neighbor slots `slotsOf` (class, required effective bit) of the hub; `posOpt` gives the
+  position of the slot's name if present.
+* **Positions** (`idxOf_ordL`): the name `(X, l)` sits at `clsStart X + ls.idxOf l`;
+  `posOpt_bits1` (two-name classes: `clsStart Y + (b - ε·initBit Y)`), `posOpt_single`
+  (initialized coordinate classes: present iff `b = ε·initBit Y`).
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
