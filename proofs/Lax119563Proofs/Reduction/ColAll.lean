@@ -40,6 +40,25 @@ lemma schSlot_facts {ρ τ τ' : List ℕ} {b d e : ℕ}
     rw [hm.1]
     simp
 
+lemma Iv_init_isSome (w : Fin (Iv M x s ℓ H).numLocations) :
+    ((Iv M x s ℓ H).init w).isSome = true ↔ w.val = (Loc.code (Loc.accept : Loc M H)).val ∨
+      w.val = numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3 := by
+  show ((APv M x s ℓ H).compiledInit w).isSome = true ↔ _
+  have e1 : ((APv M x s ℓ H).loc (.prog (APv M x s ℓ H).accept)).val =
+      (Loc.code (Loc.accept : Loc M H)).val := loc_prog_val _ _ _ _ _ _
+  have e2 : ((APv M x s ℓ H).loc (.det .out)).val =
+      numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3 := by
+    rw [loc_det_val, AP_commands]
+    erw [List.length_map]
+    show numLoc M H + _ + 3 = _
+    ring
+  unfold RegisterProgram.compiledInit
+  split_ifs with h1 h2
+  · have := congrArg Fin.val h1; simp only [Option.isSome_some, true_iff]; left; rw [this, e1]
+  · have := congrArg Fin.val h2; simp only [Option.isSome_some, true_iff]; right; rw [this, e2]
+  · simp only [Option.isSome_none, Bool.false_eq_true, false_iff, not_or]
+    exact ⟨fun h => h1 (Fin.ext (h.trans e1.symm)), fun h => h2 (Fin.ext (h.trans e2.symm))⟩
+
 /-! ## Validity expressions -/
 
 /-- The slot coordinate is in the domain (slot loops entered at depth `d`). -/
@@ -231,6 +250,54 @@ theorem out_colCoef (hs : 1 ≤ s) :
       unfold Lax119563Proofs.Matrix.dom; rw [mem_domain_of_schRec hc.2.2.2 c]; exact Or.inl h)
     hi hv ht
   rw [h3, h4, h5, h6]
+
+omit hℓ in
+theorem out_colCoord :
+    (Gn.colCoord s b).out x ρ =
+      (List.range (Iv M x s ℓ H).numLocations).flatMap fun w =>
+        slotL s ℓ fun i v t => [outColor (Iv M x s ℓ H)
+          (slotNum s ℓ ((Iv M x s ℓ H).schemas.length * numSteps (s + 1) ℓ +
+            2 * (Iv M x s ℓ H).schemas.length + w) i v t)] := by
+  simp only [Gn.colCoord, Gn.out, hG.eW]
+  refine List.flatMap_congr fun w hw => ?_
+  rw [List.mem_range] at hw
+  have hGτ := hG.append [(Iv M x s ℓ H).numLocations, w]
+  have hl : (ρ ++ [(Iv M x s ℓ H).numLocations, w]).length = b + 2 := by simp [hρ]
+  rw [out_slotLoops (bnd_glob (by omega) (by rw [hl]; have := hρ ▸ hG.le; omega)) hGτ.eℓ]
+  unfold slotL
+  refine List.flatMap_congr fun i hi => List.flatMap_congr fun v hv =>
+    List.flatMap_congr fun t ht => ?_
+  rw [List.mem_range] at hi hv ht
+  have hGσ := hGτ.append [s + 1, i, 2 ^ ℓ, v, inBit x v,
+    (Gn.skip.out x (ρ ++ [(Iv M x s ℓ H).numLocations, w] ++
+      [s + 1, i, 2 ^ ℓ, v, inBit x v, 0])).length, 4, t]
+  have hS := slotStk_getD (s := s) (ℓ := ℓ) (x := x) (τ := ρ ++ [(Iv M x s ℓ H).numLocations, w])
+    Gn.skip i v t
+  rw [hl] at hS
+  have hw' : (slotStk s ℓ x (ρ ++ [(Iv M x s ℓ H).numLocations, w]) Gn.skip i v t).getD
+      (b + 1) 0 = w := by
+    rw [slotStk_lt _ _ _ _ (by rw [hl]; omega), ← hρ, getD_app]; rfl
+  simp only [slotStk] at hS hw'
+  refine out_colBody _ hGσ ht ?_ ?_ hS.1 hS.2.1
+  · rw [eval_and' (eval_lt_eq _ _) (eval_or' (eval_eq' _ _) (eval_not' (eval_or' (eval_eq' _ _)
+      (eval_eq' _ _)))), ite_ne_zero_iff]
+    simp only [eval_var, eval_const, hS.2.2.2.2, hw']
+    rw [hGσ.getD (by norm_num : 9 < 17), hGσ.getD (by norm_num : 16 < 17)]
+    simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
+    rw [outValid_coord (Iv M x s ℓ H) hi hv ht ⟨w, hw⟩ rfl, Iv_init_isSome]
+    constructor
+    · rintro ⟨h1, h2⟩; exact ⟨h1, fun h => by tauto⟩
+    · rintro ⟨h1, h2⟩; exact ⟨h1, by tauto⟩
+  · simp only [eval_add, eval_mulC, eval_var, hGσ.eENS, hGσ.eE, hw']
+
+/-- **The colour pass** emits the colours of `0, …, nOut - 1`. -/
+theorem out_colPass (hs : 1 ≤ s) :
+    (Gn.colPass M s b).out x ρ = (List.range (nOut (Iv M x s ℓ H))).map (outColor (Iv M x s ℓ H)) := by
+  rw [← flatMap_singleton_eq_map, nOut, range_nOut_flatMap, famCount, range_fam_flatMap]
+  simp only [Gn.colPass, Gn.out_seqL, List.flatMap_cons, List.flatMap_nil, List.append_nil]
+  rw [out_colUpd hρ hG hℓ, out_colJunc hρ hG hℓ, out_colLink hρ hG hℓ, out_colCoord hρ hG,
+    out_colSum hρ hG hℓ, out_colTrack hρ hG hℓ, out_colCoef hρ hG hℓ hs]
+  simp only [List.append_assoc]
 
 end Kinds
 
