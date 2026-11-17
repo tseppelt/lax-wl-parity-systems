@@ -230,37 +230,56 @@ E. Schema enumerator (done: `SchList`, `CountIdx`, `SchEnum`, `CmdStk`, `SchGen`
    `iX ↦ c.1`, `vX ↦ regVal c.2`, `xbX ↦ inBit x (regVal c.2)`, `ℓX ↦ ℓ > 0`, `HX ↦ H`, the
    output is `[]` iff `c ∈ sc.domain`; derived Xp `le` and `eval_and'/or'/not'` for 0/1
    values), `ValidKinds` (`valid_*_iff` per kind, `coef_exists`).
-F. Family passes (next). Design:
-   * Validity per kind (unfold `Valid/ClsValid/LabelOK`, `I.domain v = univ`, `init` =
-     `compiledInit`: `some 0` at `code accept`, `some 1` at `N + 8r + 3`): upd `c ∈ dom ∧ ent ≠ 0`
-     (any label), junc `tern ∧ c ∈ dom` (any label), link `c ∈ dom ∧ l.2 = 0`, coord
-     `l.2 = 0 ∧ (singleton → l.1 = 0)`, sum `tern ∧ c ∈ dom ∧ l.2 = 0`, track like upd with
-     `l.2 = 0`, coef `l.2 = 0` (always valid: every domain contains block `s`) but only at
-     coordinate `(0,0)`.
-   * Colors: `range nOut` = families `F` × `i ≤ s` × `b < 2^ℓ` × `lab < 4` (`flatMap_range_mul`),
-     `outColor (slotNum F i b t)` by `outColor_slotNum`/`outValid_slotNum`. Families in kind order;
-     `E·NS` kinds: `schEnum` (index `e` at `b+27`) then the step loop as `q < s+2`, `j < s+ℓ`
-     (`σ = q (s+ℓ) + j`, `σ % (s+ℓ) = j`); `coord`: loop `v < W`. `b`-loop by `loopX` (gives
-     `inBit x b` for the hit guard). Domain test as a generator: `count` of violations
-     (`fieldOK`: loop `t < m`; window `iℓ ≤ k+t < iℓ+ℓ`; bit `k+t-iℓ` of `v` is
-     `odd (shr (shl v (iℓ)) (k+t))`), result `0` iff in the domain. `entB` without
-     subtraction: bit `j - s` of `v` is `odd (shr (shl v s) j)`.
-   * Edges: only hub kinds (`upd, junc, link`, numbered first) emit (`edgeList_outGraph`,
-     `upNbrs_hub/nonhub/invalid`); neighbors per `nbrCand`, names `nameOfEff` (label
-     `r + ε·initBit`, `initBit = 1` only for `coord (N+8r+3)` at block `0`), filtered by
-     validity (only singleton coords can fail). `trackAt` via `prevStep_eq_count` (nested
-     counts over `(q', j')` pairs); `permU` shift: `regVal ^^^ shiftVal msk i` with
-     `field m (iℓ) ℓ = xorM (shr m (iℓ)) 0 ℓ` and `xorFields` unrolled over the constant `s`.
-     Edge count `m` = `half` of the `count` of the edge pass.
-G. Assembly: globals prelude (`n = |x|` by `len`, `ℓ = log n + C₀ + 4` by `log`, `H = sℓ-2`,
-   `R`, `N = 16 R^5`, `r` and `Ec` by counting `cmdEnum`, `p0` by `codeX` of the query
-   location, `E = Ec + 4`, `NS = (s+2)(s+ℓ)`, `W = N + 8r + 4`, `famCount`, `nOut`);
-   `graphDescription (outGraph I ε) = nOut :: colors ++ m :: edges`,
-   `distinguishes_outGraph_iff`, sizes (`timeProgram'_graphs`), `Gn.computesWithin`; Fits and
-   cost lemmas (none exist yet for `cmdEnum`/`schEnum`: prove per-generator bounds
-   compositionally with `cost_loop_le`-style uniform bounds; only the `b`-loop is `Θ(n)`, all
-   other loops polylog); final file with Lax frontmatter
-   (`conclusion: Lax119563.TimeReduction.time_reduction`).
+F. Family passes (reduction7). Done:
+   * `SlotList`: `slotL` (slots `i ≤ s`, `v < 2^ℓ`, `t < 4`), `range_nOut_flatMap`,
+     `range_fam_flatMap` (seven kinds), `range_mul_flatMap`, `toBlk`/`labOf`, and
+     `outValid_upd/track/junc/link/sum/coord/coef` (validity of slot numbers per kind).
+   * `PassBase`: `Iv M x s ℓ H` (the compiled code-ordered system, a `def`: as an `abbrev` the
+     `with_reducible rfl` of `rw` unfolds it and times out), `globs` (17 globals at levels
+     `0 … 16`: `|x|, log, ℓ, H, R, N, r, Ec, p0, acc, E, NS, W, E·NS, famCount, nOut, det`),
+     `GlobOK` (`ρ.take 17 = globs`), named globals `gℓ … gdet`, `schEnum_ctx` (schema
+     enumerator as `(range E).flatMap` over contexts `SchCtx`), `slotLoops`/`out_slotLoops`,
+     `entX`/`eval_entX`.
+   * `ColPass`, `ColAll`: **`out_colPass`**: `(colPass M s b).out x ρ = (range nOut).map outColor`
+     (needs `ρ.length = b`, `GlobOK ρ`, `0 < ℓ`, `1 ≤ s`).
+   * `EdgeMath`: `edgesOf I ε u`, `edgesOf_nonhub`, `edgesOf_hub_slot`, **`edges_flat`** (the
+     flattened edge list of `outGraph I ε` = upd ++ junc ++ link slot contributions).
+   * `SlotPass` (`schSlots`/`stepSlots` for arbitrary bodies), `EdgeCand` (`candOut`,
+     `plainGen`, `coordGen` with the seed of `Iv`), `EdgeJunc` (`shiftX`/`permVX`,
+     **`out_edgeJunc`**), `EdgePrev` (`prevGen`, `length_out_prevGen = prevCnt`), `EdgeLink`
+     (**`out_edgeLink`**), `EdgeUpd` (**`out_edgeUpd`**).
+   * `DescGen`: `edgePass`, **`out_edgePass`** (flattened edge list of `outGraph (Iv …) ε`),
+     `descGen M s ε b = seqL [emit gnOut, colPass, count edgePass (seq (emit (half (var b)))
+     edgePass)]` and **`out_descGen`**: on a stack `ρ` with `ρ.length = b`, `GlobOK ρ`,
+     `0 < ℓ`, `1 ≤ s`, `ε ≤ 1`: `(descGen M s ε b).out x ρ = graphDescription (outGraph (Iv …) ε)`.
+   Pitfalls: anything that makes Lean whnf `sch (Iv …) e` (implicit-argument unification of
+   validity facts with `Iv`, `rfl` closing `rw`, `congr 1`, `if_pos` on `isTern (sch …)`) times
+   out; state such facts as generic lemmas over `I` and apply them with explicit arguments
+   (`valid_sum_of_junc`, `valid_track_of_link`, `valid_*_of_upd`, `startCls_of_tern`); do not
+   `set` terms containing `Iv`; use `List.append_left_inj` instead of `congr 1`.
+G. Assembly (next). The output part is `descGen` (F). Remaining:
+   * Prelude pushing exactly `globs M x s ℓ H` (levels `0 … 16`, `ℓ = timeWidth C₀ |x|`,
+     `H = timeHorizon s C₀ |x|`; check both definitions in `Circuits`): `len`; `log (var 0)`;
+     `ℓ` and `H` by `bind`; `R = H + 1 + cM M`; `N = 16 R^5` (`mulC`, `mul`); `r` = length of
+     `count (cmdEnum … (emit 0))` (`out_cmdEnum'`, `cmdStks_forall₂` length); `Ec` = count of
+     a `cmdEnum` body emitting `cmdSz` zeros (`szAt_of_stkCmd`, `emitN`); `p0`, `acc` by
+     `SLoc.codeX` of the query/accept locations; `E` = count of `schEnum … (emit 0)` (use
+     `out_schEnum` directly: `schEnum_ctx` needs all 17 globals); `NS = mulC (s+2) (s + ℓ)`;
+     `W = N + 8r + 4` (`= (Iv …).numLocations`, `compiledSize`, `AP_commands`); `E·NS` by
+     `mul`; `famCount`; `nOut = mulC 4 (shl (mulC (s+1) fam) ℓ)`; `det = N + 8r + 3`.
+     Then `GlobOK` of the prelude stack.
+   * `prog := prelude (seq (descGen M s 0 17) (descGen M s 1 17))`, output
+     `graphDescription G₀ ++ graphDescription G₁` (encodeGraphPair after `encodeNats`), with
+     `distinguishes_outGraph_iff` + `timeProgram'_graphs` (`Iv` with `ℓ = timeWidth`,
+     `H = timeHorizon` is `(timeProgram' …).compile (timeQuery' …) _` by `rfl`/`Iv` unfolding),
+     sizes `nOut ≤ C n log^c n` (from the matrix-graph bound: `nOut = 4·2^ℓ(s+1)famCount`),
+     `|x| ≤ |encodeNats out|` (nOut ≥ |x|).
+   * Fits/cost: `HasCost` for `slotLoops` (the `loopX` over `pow2 gℓ`: the cost note above says
+     `2^ℓ` needs a direct class; consider adding a global `2^ℓ` and using it as the `loopX`
+     limit), `violAt` (`hasCost_violGen`), `colBody`, `entX`, `prevGen` (two nested step
+     loops, polylog), `coordGen/plainGen`, `edge*`, `descGen`, prelude; then
+     `computesWithin_quasiLinear` and the final file with Lax frontmatter
+     (`conclusion: Lax119563.TimeReduction.time_reduction`, style of `Counter/Main.lean`).
    Pitfalls (reduction6): `List.Forall₂.exists_of_mem_left`, `List.getD_take`,
    `List.map_fst_zipIdx` do not exist (local versions `forall₂_exists_of_mem_left`,
    `getD_take'`, `map_fst_zipIdx'`); `simp_all` loops on goals with `lexLt`; `split_ifs` also
