@@ -107,10 +107,41 @@ Totals (`n`, offsets of the schema blocks and of the coordinate section) by a co
 the edge count `m` by emitting the edges of `G_ε` to a stream while counting, then
 `n, colors, m, edges` for `ε = 0, 1`.
 
-Remaining work, in order: number-stack routines (`NumStack`); the language with number
-stacks (semantics, compiler to `Hierarchy.Prog`, machine, `computesWithin`; ~2–3k lines by
-analogy with `HProg/HCompile/HMachine` and `Stm`); the stream join lemma (sorted merge semantics); the program;
-the list-level proof that its output is `graphDescription (reGraph I (L I) ε)` (relate the
-column-major order to `vertexList` by a permutation, `reGraph_spec` does the rest); cost
-bounds; `Matrix/Main.lean`.
+## Done for (b)
+
+* `NumStack`: `nsPush_runs`, `nsPop_runs` (stack-program routines, cost `O(|bits v|)`).
+* `NProg` (language, `NRuns` semantics with uniform word size `w`), `NCompile`
+  (**`compileN_runs`**: simulation by `Hierarchy.Prog (R + Q + 7) 0` within the same cost;
+  copy-generalised from `Reduction.HCompile`), `NMachine` (**`NProg.computesWithin`**,
+  `NProg.machine_deterministic`; copy of `Reduction.HMachine`).
+
+## Remaining work (in order)
+
+1. **Shrinking output.** `NProg.computesWithin` still needs `|x| ≤ |encodeNats out|`. This is
+   a limitation of the stack model: a pop moves the head right also on an empty stack and
+   a push writes, so with `y` on stack `0` the head ends at `|x| - |y| + (extra pops)`.
+   Fix at the `Hierarchy.Mach` level: after `compileN p`, pop the remaining input while
+   counting on a unary helper stack, then a raw machine moving the head of tape `0` left
+   once per helper symbol without writing (`Mach.prim` with a left move, `Mach.loop`), then
+   push the output; prove it on tapes via `Prog.compile_endsH` (`Reduction/StackOut`).
+   Alternative: a bridge from `Hierarchy.Mach` to `Machines.TM.finish`.
+2. **Structured layer** with total semantics (copy-generalise `Reduction.SProg/SStm/SLib`:
+   `Stm` with `Good` rules) adding `spush/spop` and stack-emptiness tests, so that program
+   proofs are list mathematics.
+3. **Library programs**: parse the next input number (`rd` pairs until the terminator, a
+   bounded loop), skip a number, queues as two stacks, merge of two sorted stacks of
+   fixed-arity tuples, merge sort (`O(R a log R)` word operations).
+4. **The compiler program**: triviality check; locations pass (stack of
+   `(v, i, b₀ … b_{ℓ-1}, vertex number, ι(v))`, already sorted); schema pre-scan (`|D|`,
+   ternary flag, distinct blocks, whether block `k-1` occurs, union of the set bits of the
+   coordinates as a bit list, `|R_e|`, sizes); request pass (`(u, f(i), bits of b + δ_i)` per
+   column and argument, with sequence numbers; `f, δ` by a merge with the permutation
+   descriptions copied to stacks); sort / join / sort; emission of `n`, colors, `m`, edges
+   for `ε = 0, 1` in the order `L I` above.
+5. **List-level correctness**: `L I` is a permutation of `vertexList I` (`mem_vertexList`,
+   `nodup_vertexList`), colors = first position of the class, edges of `reGraph I (L I) ε` in
+   hub order (`hubB_hub`), each pass of the program against these lists.
+6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
+   `NProg.computesWithin`; finally `Matrix/Main.lean` with
+   `compile I := (reGraph I (L I) 0, reGraph I (L I) 1)` and `reGraph_spec`.
 -/
