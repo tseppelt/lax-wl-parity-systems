@@ -208,3 +208,5 @@ import Lax119563Proofs.HomChar.Tensor
 import Lax119563Proofs.HomChar.Main
 import Lax119563Proofs.Reduction.CostGlob
 import Lax119563Proofs.Reduction.CostWF
+import Lax119563Proofs.Reduction.CostPassBase
+import Lax119563Proofs.Reduction.CostColPass
