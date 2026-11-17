@@ -230,28 +230,32 @@ E. Schema enumerator (done: `SchList`, `CountIdx`, `SchEnum`, `CmdStk`, `SchGen`
    `iX ↦ c.1`, `vX ↦ regVal c.2`, `xbX ↦ inBit x (regVal c.2)`, `ℓX ↦ ℓ > 0`, `HX ↦ H`, the
    output is `[]` iff `c ∈ sc.domain`; derived Xp `le` and `eval_and'/or'/not'` for 0/1
    values), `ValidKinds` (`valid_*_iff` per kind, `coef_exists`).
-F. Family passes (next). Design:
-   * Validity per kind (unfold `Valid/ClsValid/LabelOK`, `I.domain v = univ`, `init` =
-     `compiledInit`: `some 0` at `code accept`, `some 1` at `N + 8r + 3`): upd `c ∈ dom ∧ ent ≠ 0`
-     (any label), junc `tern ∧ c ∈ dom` (any label), link `c ∈ dom ∧ l.2 = 0`, coord
-     `l.2 = 0 ∧ (singleton → l.1 = 0)`, sum `tern ∧ c ∈ dom ∧ l.2 = 0`, track like upd with
-     `l.2 = 0`, coef `l.2 = 0` (always valid: every domain contains block `s`) but only at
-     coordinate `(0,0)`.
-   * Colors: `range nOut` = families `F` × `i ≤ s` × `b < 2^ℓ` × `lab < 4` (`flatMap_range_mul`),
-     `outColor (slotNum F i b t)` by `outColor_slotNum`/`outValid_slotNum`. Families in kind order;
-     `E·NS` kinds: `schEnum` (index `e` at `b+27`) then the step loop as `q < s+2`, `j < s+ℓ`
-     (`σ = q (s+ℓ) + j`, `σ % (s+ℓ) = j`); `coord`: loop `v < W`. `b`-loop by `loopX` (gives
-     `inBit x b` for the hit guard). Domain test as a generator: `count` of violations
-     (`fieldOK`: loop `t < m`; window `iℓ ≤ k+t < iℓ+ℓ`; bit `k+t-iℓ` of `v` is
-     `odd (shr (shl v (iℓ)) (k+t))`), result `0` iff in the domain. `entB` without
-     subtraction: bit `j - s` of `v` is `odd (shr (shl v s) j)`.
-   * Edges: only hub kinds (`upd, junc, link`, numbered first) emit (`edgeList_outGraph`,
-     `upNbrs_hub/nonhub/invalid`); neighbors per `nbrCand`, names `nameOfEff` (label
-     `r + ε·initBit`, `initBit = 1` only for `coord (N+8r+3)` at block `0`), filtered by
-     validity (only singleton coords can fail). `trackAt` via `prevStep_eq_count` (nested
-     counts over `(q', j')` pairs); `permU` shift: `regVal ^^^ shiftVal msk i` with
-     `field m (iℓ) ℓ = xorM (shr m (iℓ)) 0 ℓ` and `xorFields` unrolled over the constant `s`.
-     Edge count `m` = `half` of the `count` of the edge pass.
+F. Family passes (reduction7). Done:
+   * `SlotList`: `slotL` (slots `i ≤ s`, `v < 2^ℓ`, `t < 4`), `range_nOut_flatMap`,
+     `range_fam_flatMap` (seven kinds), `range_mul_flatMap`, `toBlk`/`labOf`, and
+     `outValid_upd/track/junc/link/sum/coord/coef` (validity of slot numbers per kind).
+   * `PassBase`: `Iv M x s ℓ H` (the compiled code-ordered system, a `def`: as an `abbrev` the
+     `with_reducible rfl` of `rw` unfolds it and times out), `globs` (17 globals at levels
+     `0 … 16`: `|x|, log, ℓ, H, R, N, r, Ec, p0, acc, E, NS, W, E·NS, famCount, nOut, det`),
+     `GlobOK` (`ρ.take 17 = globs`), named globals `gℓ … gdet`, `schEnum_ctx` (schema
+     enumerator as `(range E).flatMap` over contexts `SchCtx`), `slotLoops`/`out_slotLoops`,
+     `entX`/`eval_entX`.
+   * `ColPass`, `ColAll`: **`out_colPass`**: `(colPass M s b).out x ρ = (range nOut).map outColor`
+     (needs `ρ.length = b`, `GlobOK ρ`, `0 < ℓ`, `1 ≤ s`).
+   * `EdgeMath`: `edgesOf I ε u`, `edgesOf_nonhub`, `edgesOf_hub_slot`, **`edges_flat`** (the
+     flattened edge list of `outGraph I ε` = upd ++ junc ++ link slot contributions).
+   * `SlotPass` (`schSlots`/`stepSlots` for arbitrary bodies), `EdgeCand` (`candOut`,
+     `plainGen`, `coordGen` with the seed of `Iv`), `EdgeJunc` (`shiftX`/`permVX`,
+     **`out_edgeJunc`**), `EdgePrev` (`prevGen`, `length_out_prevGen = prevCnt`), `EdgeLink`
+     (**`out_edgeLink`**), `EdgeUpd` (`edgeUpd` generator; `out_edgeUpd` in progress).
+   Remaining for F: finish `out_edgeUpd`; `edgePass ε := seqL [edgeUpd, edgeJunc, edgeLink]`
+   with `out = (edgeList (outGraph Iv ε)).flatMap (fun e => [e.1, e.2])` from `edges_flat`;
+   the edge count by `count edgePass (emit (half (var b)))`.
+   Pitfalls: anything that makes Lean whnf `sch (Iv …) e` (implicit-argument unification of
+   validity facts with `Iv`, `rfl` closing `rw`, `congr 1`, `if_pos` on `isTern (sch …)`) times
+   out; state such facts as generic lemmas over `I` and apply them with explicit arguments
+   (`valid_sum_of_junc`, `valid_track_of_link`, `valid_*_of_upd`, `startCls_of_tern`); do not
+   `set` terms containing `Iv`; use `List.append_left_inj` instead of `congr 1`.
 G. Assembly: globals prelude (`n = |x|` by `len`, `ℓ = log n + C₀ + 4` by `log`, `H = sℓ-2`,
    `R`, `N = 16 R^5`, `r` and `Ec` by counting `cmdEnum`, `p0` by `codeX` of the query
    location, `E = Ec + 4`, `NS = (s+2)(s+ℓ)`, `W = N + 8r + 4`, `famCount`, `nOut`);

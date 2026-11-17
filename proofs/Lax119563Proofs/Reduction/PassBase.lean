@@ -26,7 +26,7 @@ noncomputable abbrev APv (M : Machine) (x : List Bool) (s ℓ H : ℕ) : Registe
     (verifierCmds' M x s ℓ H)
 
 /-- Its compiled implicit parity system. -/
-noncomputable abbrev Iv (M : Machine) (x : List Bool) (s ℓ H : ℕ) :
+noncomputable def Iv (M : Machine) (x : List Bool) (s ℓ H : ℕ) :
     ImplicitParitySystem (s + 1) ℓ :=
   (APv M x s ℓ H).compile (Loc.query : Loc M H).code (fun _ _ => 0)
 
