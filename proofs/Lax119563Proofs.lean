@@ -135,6 +135,7 @@ import Lax119563Proofs.Reduction.ValidKinds
 import Lax119563Proofs.Reduction.SlotList
 import Lax119563Proofs.Reduction.PassBase
 import Lax119563Proofs.Reduction.ColPass
+import Lax119563Proofs.Reduction.ColAll
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.UpperBound.Rounds

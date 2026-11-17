@@ -181,7 +181,7 @@ lemma famNum_coef_unique {e : Fin I.schemas.length} {σ : ℕ} (Y : ICls I) (hY 
 
 lemma outValid_coef (hs : 1 ≤ s) (e : Fin I.schemas.length) {σ : ℕ}
     (hσ : σ < numSteps (s + 1) ℓ)
-    (hdom : ∀ b : BlockCoord ℓ, ((Fin.last s, b) : Coord (s + 1) ℓ) ∈ dom I e)
+    (hdom : ∀ c : Coord (s + 1) ℓ, c.1.val = s → c ∈ dom I e)
     {i v t : ℕ} (hi : i < s + 1) (hv : v < 2 ^ ℓ) (ht : t < 4) :
     OutValid I (slotNum s ℓ (2 * (I.schemas.length * numSteps (s + 1) ℓ) +
         3 * I.schemas.length + I.numLocations + (e.val * numSteps (s + 1) ℓ + σ)) i v t) ↔
@@ -198,7 +198,7 @@ lemma outValid_coef (hs : 1 ≤ s) (e : Fin I.schemas.length) {σ : ℕ}
         apply regVal_injective
         rw [regVal_toBlk hv, regVal_zero])
     rw [h, valid_coef_iff, labOf_snd_eq_zero ht]
-    simp only [true_and, and_self, hσ, coef_exists I hs hdom σ]
+    simp only [true_and, and_self, hσ, coef_exists I hs (fun b => hdom _ (Fin.val_last s)) σ]
   · rw [iff_false_intro hc, false_and, iff_false]
     have := not_outValid_slotNum I (X := .coef e σ) hσ (i := ⟨i, hi⟩) (b := toBlk ℓ v)
       (by
