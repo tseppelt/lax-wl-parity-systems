@@ -4,9 +4,9 @@ import Lax119563Proofs.Reduction.CostDom
 /-!
 # Classes of the globals
 
-`globTys`: the growth classes of the 18 globals of `globs` (levels `0 … 17`), as computed by
-the prelude: `|x|` and `2^ℓ` are linear in `|x|` (`P 1 0`), `log₂ |x|, ℓ, H, R, NS` are linear
-in `ℓ` (`P 0 1`), the location and command counts are polylogarithmic, `nOut` is `big`.
+`globTys`: the growth classes of the 14 globals of `globs` (levels `0 … 13`), as computed by
+the prelude: `|x|` and `2^ℓ` are linear in `|x|` (`P 1 0`), `log₂ |x|, ℓ, H, R` are linear
+in `ℓ` (`P 0 1`), the location, command and schema counts are polylogarithmic.
 
 `Xp.minR a b` (the minimum, of the class of `b` whatever the class of `a`) is used by the
 prelude to compute `2^ℓ` in class `P 1 0`.
@@ -16,12 +16,12 @@ namespace Lax119563Proofs.Reduction
 
 open Xp Ty
 
-/-- The classes of the globals (levels `0 … 17`). -/
+/-- The classes of the globals (levels `0 … 13`). -/
 def globTys : List Ty :=
-  [P 1 0, P 0 1, P 0 1, P 0 1, P 0 1, P 0 5, P 0 7, P 0 7, P 0 0, P 0 0, P 0 20, P 0 1,
-    P 0 20, P 0 21, P 0 21, .big, P 0 7, P 1 0]
+  [P 1 0, P 0 1, P 0 1, P 0 1, P 0 1, P 0 5, P 0 7, P 0 7, P 0 0, P 0 0, P 0 20, P 0 20, P 0 7,
+    P 1 0]
 
-lemma length_globTys : globTys.length = 18 := rfl
+lemma length_globTys : globTys.length = 14 := rfl
 
 namespace Xp
 

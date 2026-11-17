@@ -1,12 +1,12 @@
-import Lax119563Proofs.Reduction.DescGen
+import Lax119563Proofs.Reduction.PassBase
 
 /-!
 # Well-formedness of the generators (`WFX`, `NoX`)
 
 `Gn.Cl P`: a predicate on generators closed under `skip, emit, seq, ite, bind, loop, log, count`.
 Both `NoX` and `WFX` are closed. For closed predicates: `seqL, when, dispatch, bindL, bindSub,
-firstL, brGen, emitN, blkGen, cmdEnum, schEnum` preserve `P`; `slotLoops` gives `WFX` from a
-`NoX` test and body. **`wfx_descGen`**: the output generator is well formed.
+firstL, brGen, emitN, blkGen, cmdEnum, schEnum` preserve `P`; the domain test `violAt` is
+`NoX`.
 -/
 
 namespace Lax119563Proofs.Reduction
@@ -111,10 +111,6 @@ lemma wfx_of_noX {g : Gn} (h : NoX g) : WFX g := by
   | log _ _ ig => exact ig h
   | count _ _ ig ih => exact ⟨ig h.1, ih h.2⟩
 
-lemma wfx_slotLoops (s : ℕ) (PX : Xp) {V body : Gn} (hV : NoX V) (hb : NoX body) :
-    WFX (slotLoops s PX V body) :=
-  ⟨⟨hV, hb⟩, wfx_of_noX (g := .count V (.loop (const 4) body)) ⟨hV, hb⟩⟩
-
 lemma noX_violGen (s d : ℕ) (iX vX xbX gkX g1X g2X g3X ℓX HX : Xp) :
     NoX (violGen s d iX vX xbX gkX g1X g2X g3X ℓX HX) := by
   unfold violGen
@@ -123,86 +119,6 @@ lemma noX_violGen (s d : ℕ) (iX vX xbX gkX g1X g2X g3X ℓX HX : Xp) :
     (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.when _ e))))
 
 lemma noX_violAt (s b d : ℕ) : NoX (violAt s b d) := noX_violGen ..
-
-lemma noX_colBody (s : ℕ) (vX FX iX vX' : Xp) : NoX (colBody s vX FX iX vX') :=
-  ⟨trivial, trivial⟩
-
-lemma noX_stepLoops (s : ℕ) {g : Gn} (h : NoX g) : NoX (stepLoops s g) := h
-
-lemma wfx_stepLoops (s : ℕ) {g : Gn} (h : WFX g) : WFX (stepLoops s g) := h
-
-lemma wfx_colSch (M : Machine) (s b : ℕ) (off validX : Xp) : WFX (colSch M s b off validX) :=
-  cl_wfx.schEnum _ _ _ _ _ _ _ _ _ (wfx_slotLoops _ _ (noX_violAt ..) (noX_colBody ..))
-
-lemma wfx_colStep (M : Machine) (s b : ℕ) (off validX : Xp) : WFX (colStep M s b off validX) :=
-  cl_wfx.schEnum _ _ _ _ _ _ _ _ _
-    (wfx_stepLoops _ (wfx_slotLoops _ _ (noX_violAt ..) (noX_colBody ..)))
-
-lemma wfx_colPass (M : Machine) (s b : ℕ) : WFX (colPass M s b) := by
-  unfold colPass
-  refine cl_wfx.seqL fun g hg => ?_
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
-  rcases hg with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · exact wfx_colStep ..
-  · exact wfx_colSch ..
-  · exact wfx_colSch ..
-  · exact cl_wfx.loop _ (wfx_slotLoops s gP trivial (noX_colBody ..))
-  · exact wfx_colSch ..
-  · exact wfx_colStep ..
-  · exact wfx_colStep ..
-
-lemma noX_pairGen (uX nX : Xp) : NoX (pairGen uX nX) := ⟨trivial, trivial⟩
-
-lemma noX_plainGen (s : ℕ) (uX labX FX iX vX : Xp) : NoX (plainGen s uX labX FX iX vX) :=
-  noX_pairGen ..
-
-lemma noX_coordGen (s ε : ℕ) (uX wX iX vX rX : Xp) : NoX (coordGen s ε uX wX iX vX rX) :=
-  cl_noX.when _ (noX_pairGen ..)
-
-lemma noX_prevGen (s D : ℕ) (σX iX vX : Xp) : NoX (prevGen s D σX iX vX) :=
-  noX_stepLoops _ (cl_noX.count (noX_stepLoops _ (cl_noX.when _ (cl_noX.emit _)))
-    (cl_noX.when _ (cl_noX.emit _)))
-
-lemma noX_edgeJuncBody (s ε b : ℕ) : NoX (edgeJuncBody s ε b) := by
-  unfold edgeJuncBody
-  refine cl_noX.ite _ (cl_noX.seqL fun g hg => ?_) cl_noX.skip
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
-  rcases hg with rfl | rfl | rfl
-  · exact noX_coordGen ..
-  · exact noX_coordGen ..
-  · exact noX_plainGen ..
-
-lemma noX_edgeLinkBody (s ε b : ℕ) : NoX (edgeLinkBody s ε b) := by
-  unfold edgeLinkBody
-  exact cl_noX.ite _ (cl_noX.seq (noX_coordGen ..) (cl_noX.count (noX_prevGen ..)
-    (cl_noX.bindSub _ _ _ (noX_plainGen ..)))) cl_noX.skip
-
-lemma noX_edgeUpdBody (s ε b : ℕ) : NoX (edgeUpdBody s ε b) := by
-  unfold edgeUpdBody
-  exact cl_noX.ite _ (cl_noX.seq (cl_noX.count (noX_prevGen ..)
-    (cl_noX.ite _ (cl_noX.ite _ (noX_plainGen ..) (noX_coordGen ..))
-      (cl_noX.bindSub _ _ _ (noX_plainGen ..))))
-    (cl_noX.seq (noX_plainGen ..) (noX_plainGen ..))) cl_noX.skip
-
-lemma wfx_edgePass (M : Machine) (s ε b : ℕ) : WFX (edgePass M s ε b) := by
-  unfold edgePass edgeUpd edgeJunc edgeLink schSlots stepSlots
-  refine cl_wfx.seqL fun g hg => ?_
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
-  rcases hg with rfl | rfl | rfl
-  · exact cl_wfx.schEnum _ _ _ _ _ _ _ _ _
-      (wfx_stepLoops _ (wfx_slotLoops _ _ (noX_violAt ..) (noX_edgeUpdBody ..)))
-  · exact cl_wfx.schEnum _ _ _ _ _ _ _ _ _ (wfx_slotLoops _ _ (noX_violAt ..) (noX_edgeJuncBody ..))
-  · exact cl_wfx.schEnum _ _ _ _ _ _ _ _ _ (wfx_slotLoops _ _ (noX_violAt ..) (noX_edgeLinkBody ..))
-
-/-- **The output generator is well formed.** -/
-theorem wfx_descGen (M : Machine) (s ε b : ℕ) : WFX (descGen M s ε b) := by
-  unfold descGen
-  refine cl_wfx.seqL fun g hg => ?_
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
-  rcases hg with rfl | rfl | rfl
-  · exact trivial
-  · exact wfx_colPass ..
-  · exact cl_wfx.count (wfx_edgePass ..) (cl_wfx.seq trivial (wfx_edgePass ..))
 
 end Gn
 
