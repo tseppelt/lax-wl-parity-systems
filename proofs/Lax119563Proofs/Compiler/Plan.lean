@@ -13,7 +13,7 @@ computing `encodeGraphPair (compile I)` from `encodeSystem I` within
   `adjN I ε`, color = position of the first name of the class in `L`) satisfy the Spoiler,
   Duplicator, size (`≤ 32 S`) and edge clauses with the constants of `matrixGraph`
   (`Cₖ = 2k + stepConst k`). The transfer is `duplicatorSurvives_iff_of_corr` (round-bounded
-  version of `Reduction.duplicatorWins_iff_of_corr`; `survivesFrom_transfer` is round by
+  version of `Compiler.Transfer.duplicatorWins_iff_of_corr`, moved from the deleted `Reduction/Transfer`; `survivesFrom_transfer` is round by
   round) and `numEdges_reGraph`. So `compile I := (reGraph I (L I) 0, reGraph I (L I) 1)` for an
   order `L I` chosen to suit the machine; `matrixGraph` is the case `L = vertexList`.
 * (b) is **not started** beyond the analysis below. `Matrix/Main.lean` still proves the old

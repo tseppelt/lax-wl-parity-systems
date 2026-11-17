@@ -1,5 +1,5 @@
 import Lax119563Proofs.Matrix.Edges
-import Lax119563Proofs.Reduction.Transfer
+import Lax119563Proofs.Compiler.Transfer
 
 /-!
 # The game and size clauses for reordered matrix graphs
@@ -16,7 +16,7 @@ size and edge clauses of the matrix compiler with the constants of `matrixGraph`
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
-open Lax119563.PebbleGame Lax119563Proofs.Matrix Lax119563Proofs.Reduction
+open Lax119563.PebbleGame Lax119563Proofs.Matrix
 
 namespace Lax119563Proofs.Compiler
 

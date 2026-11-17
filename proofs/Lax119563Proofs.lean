@@ -195,4 +195,5 @@ import Lax119563Proofs.Reduction.SysGen
 import Lax119563Proofs.Reduction.CostSys
 import Lax119563Proofs.Reduction.Main
 import Lax119563Proofs.Compiler.Plan
+import Lax119563Proofs.Compiler.Transfer
 import Lax119563Proofs.Compiler.Clauses
