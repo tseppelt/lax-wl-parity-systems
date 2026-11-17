@@ -12,10 +12,11 @@ An implicit parity system $\mathcal I = (W, \mathfrak C, (\mathfrak C_v)_{v \in 
 Turing machine explicitly, as a list of natural numbers encoded as in the binary encodings of
 graph pairs.
 
-* A block coordinate $b \in \mathbb F_2^\ell$ is the number $\sum_{t < \ell} b_t 2^t$, and a
-  coordinate $(i, b)$ is the number $i \cdot 2^\ell + b$.
-* A coordinate domain $D \subseteq \mathfrak C$ is described by $|D|$ followed by the numbers
-  of its coordinates in increasing order.
+* A block coordinate $b \in \mathbb F_2^\ell$ is written with fixed width, as its $\ell$ bits
+  $b_0, \dots, b_{\ell - 1}$, and a coordinate $(i, b)$ as $i, b_0, \dots, b_{\ell - 1}$. Thus
+  every coordinate and every shift listed in the input costs $\Omega(\ell)$ bits.
+* A coordinate domain $D \subseteq \mathfrak C$ is described by $|D|$ followed by its
+  coordinates, ordered by the numbers $i \cdot 2^\ell + \sum_{t < \ell} b_t 2^t$.
 * A block-induced permutation $\pi(i, b) = (f(i), b + \delta_i)$ is described by
   $f(0), \dots, f(k - 1)$ followed by $\delta_0, \dots, \delta_{k - 1}$.
 * A binary schema $(u, v, \mathfrak C_e, \sigma, \tau)$ is described by $2, u, v$, the
@@ -29,6 +30,12 @@ its initialization value followed by its domain $\mathfrak C_v$, then $|\mathcal
 finally the descriptions of the schemas in order. Its *bit length* $H$ is the length of the
 binary code of this list; it accounts for the explicit domains, argument maps and
 initializations, including their indices.
+
+# Implementation notes
+
+The fixed width of block coordinates matters for running times: with a variable-length code
+of block coordinates, small coordinates would be cheaper than the $\ell$-bit coordinates
+the matrix compiler has to compute from them, and $H$ would undercount the input.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.BinaryEncodings
@@ -45,16 +52,25 @@ def blockNum (b : BlockCoord ℓ) : ℕ :=
 def coordNum (c : Coord k ℓ) : ℕ :=
   (c.1 : ℕ) * 2 ^ ℓ + blockNum c.2
 
-/-- The description `|D|, c₁, …, c_{|D|}` of a coordinate domain, with the coordinate numbers
-in increasing order. -/
+/-- The fixed-width description `b₀, …, b_{ℓ-1}` of a block coordinate. -/
+def blockDescription (b : BlockCoord ℓ) : List ℕ :=
+  (List.finRange ℓ).map fun t => (b t).val
+
+/-- The description `i, b₀, …, b_{ℓ-1}` of the coordinate with number `c = i · 2^ℓ + b`. -/
+def coordNumDescription (ℓ c : ℕ) : List ℕ :=
+  c / 2 ^ ℓ :: (List.range ℓ).map fun t => if c.testBit t then 1 else 0
+
+/-- The description `|D|, c₁, …, c_{|D|}` of a coordinate domain, with the coordinates in
+increasing order of their numbers. -/
 def domainDescription (D : Finset (Coord k ℓ)) : List ℕ :=
   let l := (D.image coordNum).sort (· ≤ ·)
-  l.length :: l
+  l.length :: l.flatMap (coordNumDescription ℓ)
 
-/-- The description `f(0), …, f(k-1), δ₀, …, δ_{k-1}` of a block-induced permutation. -/
+/-- The description `f(0), …, f(k-1), δ₀, …, δ_{k-1}` of a block-induced permutation, with the
+shifts written with fixed width. -/
 def permDescription (π : BlockPerm k ℓ) : List ℕ :=
   (List.finRange k).map (fun i => (π.perm i : ℕ)) ++
-    (List.finRange k).map (fun i => blockNum (π.shift i))
+    (List.finRange k).flatMap (fun i => blockDescription (π.shift i))
 
 /-- The description of an equation schema. -/
 def schemaDescription : Schema k ℓ w → List ℕ
