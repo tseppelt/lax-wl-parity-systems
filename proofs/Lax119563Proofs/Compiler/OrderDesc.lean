@@ -365,4 +365,111 @@ theorem edgeList_nbrPos :
   rw [← filter_hubB_eq_nbrPos' I ε _ (List.getElem_mem _), List.map_map]
   rfl
 
+/-! ## Positions of names: class starts and label offsets -/
+
+section Starts
+
+variable {β γ : Type*} [DecidableEq β] [BEq γ] [LawfulBEq γ]
+
+/-- The start position of the class `X` in a list of classes with labels. -/
+def startIn (P : List (β × List γ)) (X : β) : ℕ :=
+  ((P.takeWhile fun p => p.1 ≠ X).map fun p => p.2.length).sum
+
+lemma idxOf_map_pair (X : β) (l : γ) : ∀ ls : List γ,
+    (ls.map fun m => (X, m)).idxOf (X, l) = ls.idxOf l
+  | [] => rfl
+  | m :: ls => by
+    by_cases h : m = l
+    · subst h; simp
+    · rw [List.map_cons, List.idxOf_cons_ne _ (by simp [h]), List.idxOf_cons_ne _ h,
+        idxOf_map_pair X l ls]
+
+/-- **Positions in a list of class blocks.** -/
+theorem idxOf_flatMap_blocks : ∀ (P : List (β × List γ)), (P.map Prod.fst).Nodup →
+    ∀ (X : β) (ls : List γ) (l : γ), (X, ls) ∈ P → l ∈ ls →
+      (P.flatMap fun p => p.2.map fun m => (p.1, m)).idxOf (X, l) = startIn P X + ls.idxOf l
+  | [], _, _, _, _, h, _ => by simp at h
+  | (Y, ms) :: P, hnd, X, ls, l, hX, hl => by
+    simp only [List.map_cons, List.nodup_cons, List.mem_map] at hnd
+    rw [List.flatMap_cons]
+    by_cases hY : Y = X
+    · subst hY
+      have hls : ms = ls := by
+        rcases List.mem_cons.mp hX with h | h
+        · exact (Prod.mk.inj h).2.symm
+        · exact absurd ⟨_, h, rfl⟩ hnd.1
+      subst hls
+      rw [List.idxOf_append_of_mem (List.mem_map.mpr ⟨l, hl, rfl⟩), idxOf_map_pair]
+      simp [startIn]
+    · have hX' : (X, ls) ∈ P := by
+        rcases List.mem_cons.mp hX with h | h
+        · exact absurd (Prod.mk.inj h).1.symm hY
+        · exact h
+      rw [List.idxOf_append_of_notMem (by simp [hY]),
+        idxOf_flatMap_blocks P hnd.2 X ls l hX' hl]
+      simp [startIn, hY]
+      omega
+
+end Starts
+
+lemma nodup_ordCls_fst : ((ordCls I).map Prod.fst).Nodup := by
+  have h := ordBlocks_pairwise I
+  unfold ordBlocks at h
+  rw [List.pairwise_map] at h
+  rw [List.nodup_iff_pairwise_ne, List.pairwise_map]
+  refine List.Pairwise.imp_of_mem ?_ h
+  intro p p' hp hp' hd heq
+  exact hd _ (List.mem_map.mpr ⟨_, mem_labs_zero I hp, rfl⟩) _
+    (List.mem_map.mpr ⟨_, mem_labs_zero I hp', rfl⟩) (by simpa using heq)
+
+/-- The start position of a class in the order. -/
+noncomputable def clsStart (X : ICls I) : ℕ := startIn (ordCls I) X
+
+/-- **Positions of names.** The name `(X, l)` of a class `X` with labels `ls` in `ordCls I`
+sits at `clsStart X + ls.idxOf l`. -/
+theorem idxOf_ordL {X : ICls I} {ls : List Lab} (hX : (X, ls) ∈ ordCls I) {l : Lab}
+    (hl : l ∈ ls) : (ordL I).idxOf (X, l) = clsStart I X + ls.idxOf l := by
+  rw [ordL_eq_flatMap]
+  exact idxOf_flatMap_blocks (ordCls I) (nodup_ordCls_fst I) X ls l hX hl
+
+/-- The names of a class of `ordCls I` in the order are those with its labels. -/
+lemma mem_ordL_iff_of_mem {X : ICls I} {ls : List Lab} (hX : (X, ls) ∈ ordCls I) (l : Lab) :
+    (X, l) ∈ ordL I ↔ l ∈ ls := by
+  rw [ordL_eq_flatMap, List.mem_flatMap]
+  constructor
+  · rintro ⟨p, hp, hl⟩
+    obtain ⟨m, hm, he⟩ := List.mem_map.mp hl
+    obtain ⟨h1, rfl⟩ := Prod.mk.inj he
+    have : p = (X, ls) := List.inj_on_of_nodup_map (nodup_ordCls_fst I) hp hX h1
+    subst this; exact hm
+  · intro hl; exact ⟨_, hX, List.mem_map.mpr ⟨l, hl, rfl⟩⟩
+
+/-- **Slot positions.** For a class `Y` of `ordCls I` with labels `ls`, the slot `(Y, b)`
+gives the name with label `labOf Y b` if that label is present. -/
+theorem posOpt_of_mem {Y : ICls I} {ls : List Lab} (hY : (Y, ls) ∈ ordCls I) (b : ZMod 2) :
+    posOpt I ε Y b =
+      if labOf I ε Y b ∈ ls then some (clsStart I Y + ls.idxOf (labOf I ε Y b)) else none := by
+  unfold posOpt
+  by_cases h : labOf I ε Y b ∈ ls
+  · rw [if_pos ((mem_ordL_iff_of_mem I hY _).mpr h), if_pos h, idxOf_ordL I hY h]
+  · rw [if_neg (fun h' => h ((mem_ordL_iff_of_mem I hY _).mp h')), if_neg h]
+
+lemma idxOf_bits1 (a : ZMod 2) : bits1.idxOf (a, (0 : ZMod 2)) = a.val := by
+  fin_cases a <;> decide
+
+/-- Slots of a two-name class (labels `bits1`): always present, offset the required label. -/
+theorem posOpt_bits1 {Y : ICls I} (hY : (Y, bits1) ∈ ordCls I) (b : ZMod 2) :
+    posOpt I ε Y b = some (clsStart I Y + (b - ε * initBit I Y).val) := by
+  rw [posOpt_of_mem I ε hY, if_pos (by simp [labOf]), labOf, idxOf_bits1]
+
+/-- Slots of a singleton class (an initialized coordinate class): present iff the required
+bit is the effective label of its single name. -/
+theorem posOpt_single {Y : ICls I} (hY : (Y, [((0 : ZMod 2), (0 : ZMod 2))]) ∈ ordCls I)
+    (b : ZMod 2) :
+    posOpt I ε Y b = if b = ε * initBit I Y then some (clsStart I Y) else none := by
+  rw [posOpt_of_mem I ε hY]
+  by_cases h : b = ε * initBit I Y
+  · rw [if_pos (by simp [labOf, h]), if_pos h]; simp [labOf, h]
+  · rw [if_neg (by simp [labOf, sub_eq_zero, h]), if_neg h]
+
 end Lax119563Proofs.Compiler
