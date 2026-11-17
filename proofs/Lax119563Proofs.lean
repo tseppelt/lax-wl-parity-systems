@@ -213,3 +213,5 @@ import Lax119563Proofs.Reduction.CostColPass
 import Lax119563Proofs.Reduction.CostEdgePass
 import Lax119563Proofs.Reduction.Prelude
 import Lax119563Proofs.Reduction.Main
+import Lax119563Proofs.Compiler.Plan
+import Lax119563Proofs.Compiler.Clauses
