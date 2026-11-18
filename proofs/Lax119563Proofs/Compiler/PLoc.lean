@@ -495,4 +495,65 @@ theorem p1_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hℓ : 
   · exact rdNumFinal_env_r (by decide) (by decide) _
   · rw [rdNumFinal_env_ne (by decide) (by decide) (by decide), hoff7, hj]
 
+/-! ## The coordinate numbers of a domain are increasing in `coordList` -/
+
+lemma blockNum_cons {ℓ : ℕ} (a : ZMod 2) (b : BlockCoord ℓ) :
+    blockNum (Fin.cons a b : BlockCoord (ℓ + 1)) = a.val + 2 * blockNum b := by
+  simp only [blockNum, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ, Fin.val_zero, pow_zero,
+    mul_one, Fin.val_succ, pow_succ, Finset.mul_sum]
+  congr 1
+  refine Finset.sum_congr rfl fun t _ => by ring
+
+lemma flatMap_range_pairs : ∀ n : ℕ,
+    (List.range n).flatMap (fun r => [2 * r, 2 * r + 1]) = List.range (2 * n)
+  | 0 => rfl
+  | n + 1 => by
+    rw [List.range_succ, List.flatMap_append, flatMap_range_pairs n,
+      show 2 * (n + 1) = 2 * n + 1 + 1 by ring, List.range_succ, List.range_succ]
+    simp
+
+lemma map_blockNum_allBlockCoords : ∀ ℓ : ℕ,
+    (allBlockCoords ℓ).map blockNum = List.range (2 ^ ℓ)
+  | 0 => by simp [allBlockCoords, blockNum]
+  | ℓ + 1 => by
+    rw [allBlockCoords, List.map_flatMap]
+    have : (fun b : BlockCoord ℓ => ([Fin.cons 0 b, Fin.cons 1 b] : List (BlockCoord (ℓ + 1))).map
+        blockNum) = (fun r => [2 * r, 2 * r + 1]) ∘ blockNum := by
+      funext b
+      simp only [List.map_cons, List.map_nil, Function.comp_apply, blockNum_cons]
+      simp [ZMod.val_one]; omega
+    have e : ((allBlockCoords ℓ).map blockNum).flatMap (fun r => [2 * r, 2 * r + 1]) =
+        (allBlockCoords ℓ).flatMap ((fun r => [2 * r, 2 * r + 1]) ∘ blockNum) := by
+      rw [List.flatMap_map]; rfl
+    rw [this, ← e, map_blockNum_allBlockCoords ℓ, flatMap_range_pairs, pow_succ, mul_comm]
+
+lemma pairwise_map_coordNum_allCoords {k ℓ : ℕ} :
+    ((allCoords k ℓ).map coordNum).Pairwise (· < ·) := by
+  rw [allCoords, List.map_flatMap, List.pairwise_flatMap]
+  refine ⟨fun i _ => ?_, ?_⟩
+  · rw [List.map_map]
+    have : (coordNum ∘ fun b => ((i, b) : Coord k ℓ)) = (fun r => (i : ℕ) * 2 ^ ℓ + r) ∘
+        blockNum := by funext b; rfl
+    rw [this, ← List.map_map, map_blockNum_allBlockCoords, List.pairwise_map]
+    exact List.pairwise_lt_range.imp (by omega)
+  · refine (List.pairwise_lt_finRange k).imp fun {i i'} h => ?_
+    intro x hx y hy
+    simp only [List.map_map, List.mem_map] at hx hy
+    obtain ⟨b, -, rfl⟩ := hx
+    obtain ⟨b', -, rfl⟩ := hy
+    simp only [Function.comp_apply, coordNum]
+    have hb : blockNum b < 2 ^ ℓ := by rw [blockNum_eq_regVal]; exact regVal_lt b
+    have hi : (i : ℕ) + 1 ≤ i' := h
+    nlinarith
+
+/-- **The sorted coordinate numbers** are the numbers of `coordList`. -/
+theorem locNums_eq (v : Fin I.numLocations) :
+    locNums I v = (coordList (I.domain v)).map coordNum := by
+  have hpw : ((coordList (I.domain v)).map coordNum).Pairwise (· < ·) :=
+    pairwise_map_coordNum_allCoords.sublist ((List.filter_sublist).map _)
+  have hfs : ((coordList (I.domain v)).map coordNum).toFinset = (I.domain v).image coordNum := by
+    ext n; simp
+  rw [locNums, ← hfs]
+  exact (List.toFinset_sort _ hpw.nodup).mpr (hpw.imp le_of_lt)
+
 end Lax119563Proofs.Compiler

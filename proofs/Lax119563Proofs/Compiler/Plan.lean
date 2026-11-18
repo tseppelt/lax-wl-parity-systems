@@ -242,9 +242,10 @@ proved for nontrivial systems with `k ≥ 1`), from any state with `pos ≤ H`, 
 `rW`, `rL1` kept, `pos ≤ H`), cost `600 (H + 1) nodeCost`; `p1rIn_good`, `p1rBody_good`.
 Records are in input order: `(v, i, b₀ … b_{ℓ-1})` with `b₀` the *least* significant bit, so
 they are **not** sorted by `CSort.rle`; for the join either sort them too (`sortS`) or build
-the request keys in the same order and sort both. Still missing for the join:
-`locNums I v = (coordList (I.domain v)).map coordNum` (both increasing; needed to match
-`clsStart_coord`, which uses `idxOf` in `coordList`).
+the request keys in the same order and sort both. **`locNums_eq`** (`PLoc`): `locNums I v = (coordList (I.domain v)).map coordNum`, so the
+`r`-th record of `v` is the coordinate `(coordList (I.domain v))[r]` and its offset matches
+`clsStart_coord` (`idxOf` in `coordList`); helpers `blockNum_cons`,
+`map_blockNum_allBlockCoords` (`= range (2^ℓ)`), `pairwise_map_coordNum_allCoords`.
 Next: `P2`; `P3`. For the costs use the
 pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`;
 if `nlinarith` times out in a big context, `nlinarith only [hU, hU', hint products]`);
