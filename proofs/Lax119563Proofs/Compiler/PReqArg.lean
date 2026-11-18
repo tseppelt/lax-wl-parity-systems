@@ -101,7 +101,26 @@ lemma arg_arith (N U k n ℓ lf ld a b : ℕ) (hU : U ≤ N) (hU' : 64 ≤ U) (h
   have e3 : b * N ≤ k * ℓ * N := Nat.mul_le_mul_right _ hb
   have e4 : k * N ≤ lf * N := Nat.mul_le_mul_right _ hlf
   have e5 : k * ℓ * N ≤ ld * N := Nat.mul_le_mul_right _ hld
-  linarith
+  have hN : 64 ≤ N := le_trans hU' hU
+  have eq1 : U + 1 + (lf + 2 * k + 1) * (20 * N) + (k + 1) * (10 * N) +
+      (ld + 2 * (k * ℓ) + 1) * (20 * N) + (k * ℓ + 1) * (10 * N) + (U + 1) + (1 * N + U) + 12 * N
+      + (k + n + 1) * ((ℓ + 3) * (60 * N)) + (n * (ℓ + 1) + 1) * (10 * N) + (a + 1) * (10 * N)
+      + (b + 1) * (10 * N) + (3 * N + U) =
+      4 * U + 2 + 20 * (lf * N) + 50 * (k * N) + 20 * (ld * N) + 50 * (k * ℓ * N) + 106 * N
+      + (k + n + 1) * ((ℓ + 3) * (60 * N)) + 10 * (n * (ℓ + 1) * N) + 10 * (a * N)
+      + 10 * (b * N) := by ring
+  have eq2 : 600 * (lf + ld + n * (ℓ + 1) + 1) * N =
+      600 * (lf * N) + 600 * (ld * N) + 600 * (n * (ℓ + 1) * N) + 600 * N := by ring
+  rw [eq1, eq2]
+  generalize (k + n + 1) * ((ℓ + 3) * (60 * N)) = K at *
+  generalize lf * N = A1 at *
+  generalize ld * N = A2 at *
+  generalize k * N = A3 at *
+  generalize k * ℓ * N = A4 at *
+  generalize n * (ℓ + 1) * N = A5 at *
+  generalize a * N = A6 at *
+  generalize b * N = A7 at *
+  omega
 
 set_option maxHeartbeats 8000000 in
 /-- **One argument of a schema.** -/
@@ -275,15 +294,16 @@ lemma p3Arg_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) (hb :
     fun r hr => hall.env_of hr⟩
   · rw [hlenF, hlenD, hlen9, hP, hfk, hdk]
     simp only [condCost, Ex.size, rv]
-    have hlf : k ≤ (encodeNats (fL π)).length := hfk ▸ length_le_encodeNats _
-    have hld : k * ℓ ≤ (encodeNats (dL π).flatten).length := hdk ▸ length_le_encodeNats _
+    have hlf : k ≤ (encodeNats (fL π)).length := by
+      have := length_le_encodeNats (fL π); rwa [hfk] at this
+    have hld : k * ℓ ≤ (encodeNats (dL π).flatten).length := by
+      have := length_le_encodeNats (dL π).flatten; rwa [hdk] at this
     have := arg_arith (Ex.nodeCost w) (unitCost w) k n ℓ (encodeNats (fL π)).length
       (encodeNats (dL π).flatten).length _ _ hU0 hU' hk hlf hld hlen10 hlen11
     linarith
   · rw [hsuf2.stk_of (by decide)]; simp [s1]
   · rw [hsuf4.stk_of (by decide), h3S, Function.update_of_ne (by decide), Function.update_self]
-  · show s12.stk qF2 = []
-    rw [hsuf12.stk_of (by decide)]
+  · rw [hsuf12.stk_of (by decide)]
     show s11.stk qF2 = []
     rw [h11S, Function.update_of_ne (by decide), Function.update_self]
   · rw [hsuf6.stk_of (by decide), h5S, Function.update_of_ne (by decide), Function.update_self]
