@@ -224,3 +224,4 @@ import Lax119563Proofs.Compiler.PSys
 import Lax119563Proofs.Compiler.PTriv
 import Lax119563Proofs.Compiler.CSkip
 import Lax119563Proofs.Compiler.PLoc
+import Lax119563Proofs.Compiler.PRec
