@@ -658,4 +658,153 @@ lemma p2Coord_good {w : ℕ} (hw : 2 ≤ w) (cs : List (Coord k ℓ)) (hkH : k �
   · rw [e6K]; omega
   · rw [hp6, hp4']; omega
 
+/-! ## The numbers of a schema -/
+
+set_option maxHeartbeats 3000000 in
+lemma p2Fin_good {w : ℕ} (hw : 2 ≤ w) (s : NSt CR CQ) (ors : List ℕ) (hors : s.stk qOr = ors)
+    (hlen : ors.length = ℓ) (hle : ∀ o ∈ ors, o ≤ 1) {Lt Dt R Cl LB : ℕ}
+    (hL : s.env rL = ℓ) (hKm : s.env rKm1 = k - 1) (hK1 : s.env rK1 = k + 1)
+    (hLa : s.env rLast = Lt) (hLt : Lt ≤ 1) (hDi : s.env rDist = Dt) (hR : s.env rRows = R)
+    (hC : s.env rCol = Cl) (hLB : s.env rLB = LB)
+    (hb : LB + Cl + 6 * (R * (k + 1)) + 2 * (((if Lt ≠ 0 then k - 1 else Dt) + ors.sum) * (k + 1))
+      + ℓ + k + Dt + 4 < 2 ^ w) :
+    ∃ s', Good (encodeSystem I) w p2Fin s s' ((ℓ + k + 10) * (60 * Ex.nodeCost w)) ∧
+      s'.env rLB = LB + Cl + 6 * (R * (k + 1)) +
+        2 * (((if Lt ≠ 0 then k - 1 else Dt) + ors.sum) * (k + 1)) ∧
+      s'.stk = Function.update (Function.update s.stk qOr []) qSch
+        ((((if Lt ≠ 0 then k - 1 else Dt) + ors.sum) * (k + 1)) :: (R * (k + 1)) ::
+          (if Lt ≠ 0 then k - 1 else Dt) :: (ors.reverse ++ s.stk qSch)) ∧
+      s'.pos = s.pos ∧ s'.out = s.out := by
+  have hU := CStm.nodeCost_ge w
+  have hU' := CStm.unitCost_ge w
+  set BR := if Lt ≠ 0 then k - 1 else Dt
+  have hsum : ors.sum ≤ ℓ := by
+    have : ors.sum ≤ ors.length * 1 := List.sum_le_card_nsmul ors 1 hle
+    omega
+  have r1 := Good.set (x := encodeSystem I) (w := w) (st := s) (r := rOrp) (e := .const 0)
+    (by simp only [Ex.Fits]; omega)
+  set s1 := s.set rOrp ((Ex.const 0 : Ex CR).eval s.env)
+  have e1 : ∀ q, q ≠ rOrp → s1.env q = s.env q := fun q h => by
+    simp [s1, Function.update_of_ne h]
+  obtain ⟨s2, r2, hs2, ha2, hf2⟩ := mvSumN_good (x := encodeSystem I) (w := w) (src := qOr)
+    (dst := qSch) (n := rL) (j := rI) (t := rO) (acc := rOrp) hw (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) s1 (N := ℓ)
+    (by rw [e1 _ (by decide), hL]) (by simp [s1, hors, hlen])
+    (by omega) (by
+      simp only [s1, NSt.set_env, Function.update_self, Ex.eval, NSt.set_stk, hors,
+        List.take_of_length_le (le_of_eq hlen)]
+      omega)
+  have e2 : ∀ q, q ≠ rI → q ≠ rO → q ≠ rOrp → s2.env q = s.env q := by
+    intro q h1 h2 h3
+    rw [hf2.2.2 q (by simp [h1, h2, h3]), e1 q h3]
+  have e2O : s2.env rOrp = ors.sum := by
+    rw [ha2]; simp [s1, Ex.eval, hors, List.take_of_length_le (le_of_eq hlen)]
+  have hstk2 : s2.stk = Function.update (Function.update s.stk qOr []) qSch
+      (ors.reverse ++ s.stk qSch) := by
+    rw [hs2]
+    funext q
+    unfold movedStk
+    simp only [s1, NSt.set_stk, hors, List.take_of_length_le (le_of_eq hlen),
+      List.drop_of_length_le (le_of_eq hlen)]
+  -- the block rows
+  have r3 : Good (encodeSystem I) w (.ite (rv rLast) (.set rBR (rv rKm1)) (.set rBR (rv rDist)))
+      s2 (s2.set rBR BR) (condCost w (rv rLast) + 2 * Ex.nodeCost w) := by
+    have hLa2 : s2.env rLast = Lt := by rw [e2 _ (by decide) (by decide) (by decide), hLa]
+    by_cases h : Lt ≠ 0
+    · refine Good.iteT (by simp only [Ex.Fits, rv, hLa2]; omega)
+        (by simp only [Ex.eval, rv, hLa2]; exact h)
+        ((CStm.Good.set ?_).of_eq ?_ ?_)
+      · simp only [Ex.Fits, rv]; rw [e2 _ (by decide) (by decide) (by decide), hKm]; omega
+      · simp only [Ex.eval, rv, BR, if_pos h]; rw [e2 _ (by decide) (by decide) (by decide), hKm]
+      · simp only [Ex.size]; omega
+    · refine Good.iteF (by simp only [Ex.Fits, rv, hLa2]; omega)
+        (by simp only [Ex.eval, rv, hLa2]; omega)
+        ((CStm.Good.set ?_).of_eq ?_ ?_)
+      · simp only [Ex.Fits, rv]; rw [e2 _ (by decide) (by decide) (by decide), hDi]; omega
+      · simp only [Ex.eval, rv, BR, if_neg h]; rw [e2 _ (by decide) (by decide) (by decide), hDi]
+      · simp only [Ex.size]; omega
+  set s3 := s2.set rBR BR
+  have hBR : BR ≤ k + Dt := by simp only [BR]; split_ifs <;> omega
+  have r4 := Good.push (x := encodeSystem I) (w := w) (st := s3) (q := qSch) (e := rv rBR)
+    (by simp only [Ex.Fits, rv, s3, NSt.set_env, Function.update_self]; omega)
+  set s4 := s3.setS qSch ((rv rBR : Ex CR).eval s3.env :: s3.stk qSch)
+  have e4 : ∀ q, q ≠ rBR → s4.env q = s2.env q := fun q h => by
+    simp [s4, s3, Function.update_of_ne h]
+  have e4B : s4.env rBR = BR := by simp [s4, s3]
+  have e4O : s4.env rOrp = ors.sum := by rw [e4 _ (by decide), e2O]
+  have r5 := Good.set (x := encodeSystem I) (w := w) (st := s4) (r := rBR)
+    (e := .add (rv rBR) (rv rOrp)) (by simp only [Ex.Fits, Ex.eval, rv, e4B, e4O]; omega)
+  set s5 := s4.set rBR ((Ex.add (rv rBR) (rv rOrp)).eval s4.env)
+  have e5 : ∀ q, q ≠ rBR → s5.env q = s2.env q := fun q h => by
+    simp only [s5, NSt.set_env, Function.update_of_ne h]; exact e4 q h
+  have e5B : s5.env rBR = BR + ors.sum := by simp [s5, Ex.eval, e4B, e4O]
+  have e5R : s5.env rRows = R := by
+    rw [e5 _ (by decide), e2 _ (by decide) (by decide) (by decide), hR]
+  have e5K : s5.env rK1 = k + 1 := by
+    rw [e5 _ (by decide), e2 _ (by decide) (by decide) (by decide), hK1]
+  have r6 := mulS_good (x := encodeSystem I) (w := w) (Q := CQ) (dst := rNE) (a := rRows)
+    (b := rK1) (j := rJ2) hw (by decide) (by decide) (by decide) (by decide) (by decide) s5 e5R
+    e5K (by omega) (by omega)
+  set s6 := (s5.set rNE (R * (k + 1))).set rJ2 (k + 1)
+  have e6 : ∀ q, q ≠ rNE → q ≠ rJ2 → s6.env q = s5.env q := fun q h1 h2 => by
+    simp [s6, Function.update_of_ne h1, Function.update_of_ne h2]
+  have r7 := mulS_good (x := encodeSystem I) (w := w) (Q := CQ) (dst := rNC) (a := rBR)
+    (b := rK1) (j := rJ2) hw (by decide) (by decide) (by decide) (by decide) (by decide) s6
+    (by rw [e6 _ (by decide) (by decide), e5B]) (by rw [e6 _ (by decide) (by decide), e5K])
+    (by omega) (by omega)
+  set s7 := (s6.set rNC ((BR + ors.sum) * (k + 1))).set rJ2 (k + 1)
+  have e7 : ∀ q, q ≠ rNC → q ≠ rJ2 → s7.env q = s6.env q := fun q h1 h2 => by
+    simp [s7, Function.update_of_ne h1, Function.update_of_ne h2]
+  have e7E : s7.env rNE = R * (k + 1) := by
+    rw [e7 _ (by decide) (by decide)]; simp [s6, Function.update_of_ne (show rNE ≠ rJ2 by decide)]
+  have e7C : s7.env rNC = (BR + ors.sum) * (k + 1) := by
+    simp [s7, Function.update_of_ne (show rNC ≠ rJ2 by decide)]
+  have r8 := Good.push (x := encodeSystem I) (w := w) (st := s7) (q := qSch) (e := rv rNE)
+    (by simp only [Ex.Fits, rv, e7E]; omega)
+  set s8 := s7.setS qSch ((rv rNE : Ex CR).eval s7.env :: s7.stk qSch)
+  have r9 := Good.push (x := encodeSystem I) (w := w) (st := s8) (q := qSch) (e := rv rNC)
+    (by simp only [Ex.Fits, rv, s8, NSt.setS_env, e7C]; omega)
+  set s9 := s8.setS qSch ((rv rNC : Ex CR).eval s8.env :: s8.stk qSch)
+  have e9 : ∀ q, s9.env q = s7.env q := fun q => rfl
+  have e9LB : s9.env rLB = LB := by
+    rw [e9, e7 _ (by decide) (by decide), e6 _ (by decide) (by decide), e5 _ (by decide),
+      e2 _ (by decide) (by decide) (by decide), hLB]
+  have e9C : s9.env rCol = Cl := by
+    rw [e9, e7 _ (by decide) (by decide), e6 _ (by decide) (by decide), e5 _ (by decide),
+      e2 _ (by decide) (by decide) (by decide), hC]
+  have r10 := Good.set (x := encodeSystem I) (w := w) (st := s9) (r := rLB)
+    (e := .add (rv rLB) (.add (rv rCol) (six2 rNE rNC))) (by
+      simp only [six2, Ex.Fits, Ex.eval, rv, e9LB, e9C, e9, e7E, e7C]; omega)
+  set s10 := s9.set rLB ((Ex.add (rv rLB) (.add (rv rCol) (six2 rNE rNC))).eval s9.env)
+  refine ⟨s10, (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq (r6.seq (r7.seq (r8.seq (r9.seq
+    r10))))))))).mono ?_, ?_, ?_, ?_, ?_⟩
+  · simp only [condCost, Ex.size, rv, six2]
+    nlinarith
+  · simp only [s10, NSt.set_env, Function.update_self, six2, Ex.eval, rv, e9LB, e9C, e9, e7E, e7C]
+    ring
+  · show Function.update s8.stk qSch (s8.env rNC :: s8.stk qSch) = _
+    have h8 : s8.stk qSch = R * (k + 1) :: BR :: (ors.reverse ++ s.stk qSch) := by
+      show Function.update s7.stk qSch (s7.env rNE :: s7.stk qSch) qSch = _
+      rw [Function.update_self, e7E]
+      show R * (k + 1) :: Function.update s3.stk qSch (s3.env rBR :: s3.stk qSch) qSch = _
+      rw [Function.update_self]
+      simp [s3, hstk2]
+    have h8' : s8.stk = Function.update s2.stk qSch (R * (k + 1) :: BR :: (ors.reverse ++ s.stk qSch)) := by
+      funext q
+      by_cases hq : q = qSch
+      · subst hq; rw [h8, Function.update_self]
+      · show Function.update s7.stk qSch _ q = _
+        rw [Function.update_of_ne hq, Function.update_of_ne hq]
+        show Function.update s3.stk qSch _ q = _
+        rw [Function.update_of_ne hq]; rfl
+    rw [h8', show s8.env rNC = (BR + ors.sum) * (k + 1) from e7C, hstk2]
+    funext q
+    by_cases hq : q = qSch
+    · subst hq; simp
+    · simp [Function.update_of_ne hq]
+  · show s2.pos = s.pos
+    rw [hf2.1]; rfl
+  · show s2.out = s.out
+    rw [hf2.2.1]; rfl
+
 end Lax119563Proofs.Compiler
