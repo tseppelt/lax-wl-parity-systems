@@ -1,0 +1,108 @@
+import Lax119563Proofs.Compiler.OrderDesc
+
+/-!
+# Start positions of the classes of the order
+
+Closed formulas for `clsStart I X` (the position of the first name of class `X` in
+`ordL I`), as sums of section sizes and ranks, for every class kind.
+
+* Generic: `startIn_append_left`, `startIn_append_right`, `startIn_flatMap` (a class in the
+  block of the `i`-th element of a flat map starts after the blocks of the first `i`
+  elements), `startIn_map_const` (blocks of equal size).
+-/
+
+open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
+open Lax119563.BinaryEncodings Lax119563Proofs.Matrix
+
+namespace Lax119563Proofs.Compiler
+
+section Generic
+
+variable {α β γ : Type*} [DecidableEq β]
+
+/-- The number of names of a list of classes with labels. -/
+def sizeOf' (P : List (β × List γ)) : ℕ := (P.map fun p => p.2.length).sum
+
+@[simp] lemma sizeOf'_nil : sizeOf' ([] : List (β × List γ)) = 0 := rfl
+@[simp] lemma sizeOf'_cons (p : β × List γ) (P : List (β × List γ)) :
+    sizeOf' (p :: P) = p.2.length + sizeOf' P := by simp [sizeOf']
+@[simp] lemma sizeOf'_append (P P' : List (β × List γ)) :
+    sizeOf' (P ++ P') = sizeOf' P + sizeOf' P' := by simp [sizeOf']
+lemma sizeOf'_flatMap (L : List α) (f : α → List (β × List γ)) :
+    sizeOf' (L.flatMap f) = (L.map fun a => sizeOf' (f a)).sum := by
+  induction L with
+  | nil => rfl
+  | cons a L ih => simp [ih]
+
+lemma startIn_append_left {P P' : List (β × List γ)} {X : β} (h : X ∈ P.map Prod.fst) :
+    startIn (P ++ P') X = startIn P X := by
+  induction P with
+  | nil => simp at h
+  | cons p P ih =>
+    by_cases hp : p.1 = X
+    · simp [startIn, List.takeWhile_cons, hp]
+    · have h' : X ∈ P.map Prod.fst := by
+        simp only [List.map_cons, List.mem_cons] at h
+        rcases h with h | h
+        · exact absurd h.symm hp
+        · exact h
+      have := ih h'
+      simp only [startIn, ne_eq, decide_not] at this ⊢
+      simp [List.takeWhile_cons, hp, this]
+
+lemma startIn_append_right {P P' : List (β × List γ)} {X : β} (h : X ∉ P.map Prod.fst) :
+    startIn (P ++ P') X = sizeOf' P + startIn P' X := by
+  induction P with
+  | nil => simp
+  | cons p P ih =>
+    have hp : p.1 ≠ X := fun e => h (by simp [← e])
+    have h' : X ∉ P.map Prod.fst := fun h' => h (by simp at h' ⊢; tauto)
+    have := ih h'
+    simp only [startIn, sizeOf', ne_eq, decide_not] at this ⊢
+    simp [List.takeWhile_cons, hp, this]
+    omega
+
+lemma startIn_cons_self (X : β) (ls : List γ) (P : List (β × List γ)) :
+    startIn ((X, ls) :: P) X = 0 := by
+  simp [startIn, List.takeWhile_cons]
+
+/-- **A class in the `i`-th block of a flat map.** -/
+lemma startIn_flatMap (L : List α) (f : α → List (β × List γ)) (i : ℕ) (hi : i < L.length)
+    {X : β} (hX : X ∈ (f L[i]).map Prod.fst)
+    (hdis : ∀ j < i, ∀ hj : j < L.length, X ∉ (f L[j]).map Prod.fst) :
+    startIn (L.flatMap f) X =
+      ((L.take i).map fun a => sizeOf' (f a)).sum + startIn (f L[i]) X := by
+  have hL : L = L.take i ++ L[i] :: L.drop (i + 1) := by simp
+  have hnot : X ∉ ((L.take i).flatMap f).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap, not_exists, not_and]
+    intro a ha hX'
+    obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem ha
+    simp only [List.length_take] at hj
+    have hji : j < i := by omega
+    rw [List.getElem_take] at hX'
+    exact hdis j hji (by omega) (by simpa using hX')
+  conv_lhs => rw [hL]
+  rw [List.flatMap_append, startIn_append_right hnot, List.flatMap_cons,
+    startIn_append_left hX, sizeOf'_flatMap]
+
+/-- A class in the block of the element `a` of a duplicate-free list. -/
+lemma startIn_flatMap_of_mem (L : List α) [DecidableEq α] (hL : L.Nodup)
+    (f : α → List (β × List γ)) {a : α} (ha : a ∈ L) {X : β} (hX : X ∈ (f a).map Prod.fst)
+    (hdis : ∀ b ∈ L, b ≠ a → X ∉ (f b).map Prod.fst) :
+    startIn (L.flatMap f) X =
+      ((L.take (L.idxOf a)).map fun b => sizeOf' (f b)).sum + startIn (f a) X := by
+  have hi : L.idxOf a < L.length := List.idxOf_lt_length_of_mem ha
+  have e : L[L.idxOf a] = a := List.getElem_idxOf hi
+  have := startIn_flatMap L f (L.idxOf a) hi (by rw [e]; exact hX) (fun j hj hj' => by
+    refine hdis _ (List.getElem_mem _) fun h => ?_
+    have := (List.Nodup.getElem_inj_iff hL).mp (h.trans e.symm)
+    omega)
+  rw [this, e]
+
+/-- Blocks of constant size. -/
+lemma sum_map_const (L : List α) (n : ℕ) : (L.map fun _ => n).sum = L.length * n := by
+  simp [List.sum_replicate]
+
+end Generic
+
+end Lax119563Proofs.Compiler
