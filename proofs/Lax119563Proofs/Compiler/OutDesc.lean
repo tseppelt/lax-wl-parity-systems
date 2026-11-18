@@ -197,4 +197,102 @@ theorem posOpt_slot {x : VName I} (hx : x ∈ ordL I) {l : Lab} {s : ICls I × Z
   | junc => simp [isHub] at hh
   | link => simp [isHub] at hh
 
+/-! ## Hubs -/
+
+/-- The start of a hub class, by the closed formulas. -/
+noncomputable def hubStart : ICls I → ℕ
+  | .junc e c => schBase I e + (coordList (dom I e)).idxOf c * colW I e
+  | .link e c => schBase I e + (coordList (dom I e)).idxOf c * colW I e +
+      (if isTern (sch I e) then 4 else 0)
+  | .upd e σ c => schBase I e + (coordList (dom I e)).length * colW I e +
+      4 * (entBefore I e c + (stepsC c).idxOf σ)
+  | _ => 0
+
+lemma clsStart_hubsCls {e : Fin I.schemas.length} {p : ICls I × List Lab}
+    (hp : p ∈ hubsCls I e) : clsStart I p.1 = hubStart I p.1 := by
+  simp only [hubsCls, List.mem_append, List.mem_flatMap, List.mem_map] at hp
+  rcases hp with ⟨c, hc, hp⟩ | ⟨c, hc, σ, hσ, rfl⟩
+  · have hc' : c ∈ dom I e := mem_coordList.mp hc
+    rcases hp with hp | hp
+    · split at hp
+      · next ht =>
+        simp only [List.mem_singleton] at hp; subst hp
+        exact clsStart_junc I ht hc'
+      · simp at hp
+    · simp only [List.mem_singleton] at hp; subst hp
+      exact clsStart_link I hc'
+  · exact clsStart_upd I (mem_coordList.mp hc) hσ
+
+/-- The sorted neighbor positions of the hub name `(X, l)`, by the closed formulas. -/
+noncomputable def hubNbrs (X : ICls I) (l : Lab) : List ℕ :=
+  ((slotsOf I X l).filterMap fun s => slotPos I ε s.1 s.2).mergeSort fun a b => decide (a ≤ b)
+
+lemma mem_ordCls_of_hubsCls {e : Fin I.schemas.length} {p : ICls I × List Lab}
+    (hp : p ∈ hubsCls I e) : p ∈ ordCls I := by
+  unfold ordCls
+  exact List.mem_append_left _ (List.mem_flatMap.mpr ⟨e, List.mem_finRange e,
+    List.mem_append_left _ hp⟩)
+
+lemma nbrPos_hubsCls {e : Fin I.schemas.length} {p : ICls I × List Lab}
+    (hp : p ∈ hubsCls I e) {l : Lab} (hl : l ∈ p.2) :
+    nbrPos I ε (p.1, l) = hubNbrs I ε p.1 l := by
+  have hx : (p.1, l) ∈ ordL I := by
+    rw [ordL_eq_flatMap, List.mem_flatMap]
+    exact ⟨p, mem_ordCls_of_hubsCls I hp, List.mem_map.mpr ⟨l, hl, rfl⟩⟩
+  have hhub : isHub I p.1 = true :=
+    mem_hubsCls_fst I (List.mem_map.mpr ⟨p, hp, rfl⟩)
+  unfold nbrPos hubNbrs
+  rw [eff_hub I ε (x := (p.1, l)) hhub]
+  congr 1
+  exact filterMap_congr' fun s hs => posOpt_slot I ε hx hs
+
+/-- The edges of `G_ε` by the closed formulas: per schema, hub class and label. -/
+noncomputable def gEdges : List (ℕ × ℕ) :=
+  (List.finRange I.schemas.length).flatMap fun e => (hubsCls I e).flatMap fun p =>
+    (p.2.zipIdx (hubStart I p.1)).flatMap fun q =>
+      (hubNbrs I ε p.1 q.1).map fun v => (q.2, v)
+
+/-- **The edge list by closed formulas.** -/
+theorem edgeList_eq_gEdges : edgeList (reGraph I (ordL I) ε) = gEdges I ε := by
+  rw [edgeList_hubsCls, gEdges]
+  refine List.flatMap_congr fun e _ => List.flatMap_congr fun p hp => ?_
+  rw [clsStart_hubsCls I hp]
+  refine List.flatMap_congr fun q hq => ?_
+  have hl : q.1 ∈ p.2 := by
+    obtain ⟨i, hi, he⟩ := List.mem_iff_getElem.mp hq
+    rw [← he, List.getElem_zipIdx]; exact List.getElem_mem _
+  rw [nbrPos_hubsCls I ε hp hl]
+
+/-! ## The description of the graphs -/
+
+/-- The class sizes in the order. -/
+noncomputable def clsSizes : List ℕ := (ordCls I).map fun p => p.2.length
+
+/-- **The description of `G_ε` by closed formulas**: `n`, the colors, `m`, the edges. -/
+noncomputable def gDesc : List ℕ :=
+  (clsSizes I).sum :: colorsOf 0 (clsSizes I) ++
+    (gEdges I ε).length :: (gEdges I ε).flatMap fun e => [e.1, e.2]
+
+lemma length_ordL : (ordL I).length = (clsSizes I).sum := by
+  rw [ordL_eq_flatMap, List.length_flatMap, clsSizes]
+  simp [blk]
+
+/-- **The output of the compiler.** -/
+theorem graphDescription_eq_gDesc :
+    graphDescription (reGraph I (ordL I) ε) = gDesc I ε := by
+  have hc := colors_reGraph I ε
+  unfold graphDescription gDesc
+  rw [hc, edgeList_eq_gEdges]
+  simp only [List.cons_append, List.cons.injEq]
+  refine ⟨?_, ?_⟩
+  · show (ordL I).length = _
+    exact length_ordL I
+  · rfl
+
+/-- **The encoding of the output pair.** -/
+theorem encodeGraphPair_eq :
+    encodeGraphPair (reGraph I (ordL I) 0) (reGraph I (ordL I) 1) =
+      encodeNats (gDesc I 0 ++ gDesc I 1) := by
+  rw [encodeGraphPair, graphDescription_eq_gDesc, graphDescription_eq_gDesc]
+
 end Lax119563Proofs.Compiler
