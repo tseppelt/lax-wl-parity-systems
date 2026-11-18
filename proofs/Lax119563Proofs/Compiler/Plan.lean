@@ -135,7 +135,17 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
   with `|rs| ≤ 2^p` the result is `rs.mergeSort rle`, `cmpW`/`rle_iff_cmpW` for word-by-word
   comparison); `CSort` (stack level: `mvRec_good`, `mvRecsB_good` (move records keeping the
   word order), `cmpS_good` (compare the top records of two stacks), `mrgStk`, `mrg_mv1/mv2`,
-  `mrgIte_good` (one merge step); `mrgBody`, `mrgS` defined, their specs open).
+  `mrgIte_good` (one merge step)); `CSortMain` (**`sortS_good`**: stack `X` holding
+  `rs.flatten` (records of `A ≥ 1` words) ends holding `(rs.mergeSort CSort.rle).flatten`,
+  cost `(n+1)(log₂ n + 2) · 700 (a+1) nodeCost`; `mrgS_good`, `passS_good`, `mvAllS_good`,
+  `revS_good`). Item 3 is done (queue helpers only if needed).
+* (item 5, partly) `OrderPos`: closed formulas `clsStart_junc/link/upd/sum/track/coef/coord`
+  (via `schBase`, `locBase`, `locStart`, `colW`, `nEnt`, `entBefore`, `hubSize`, `sumSize`),
+  `slot_mem_ordCls` (every slot class is present with labels `slotLabs`), `trackAt_stepsC`,
+  `trackAt_numSteps`, `stepsC_ne_nil`, section bounds, `nbrPos_of_pairwise`.
+  Pitfall: upd slots are not always increasing in slot order — for a binary schema at the
+  first entry of a column `trackAt` is the start class `coord u (σ c)` (location section),
+  so the sorted order is track, coef, coord.
 * (item 5, partly) `OrderDesc`: class blocks `ordCls I` (`ordL_eq_flatMap`), **`colors_reGraph`**
   (colors = `colorsOf 0` of the class sizes), neighbor slots `slotsOf` (`hubB_iff_slotsOf`),
   **`edgeList_nbrPos`** (edges per hub = sorted present slot positions `nbrPos`),
@@ -168,11 +178,12 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 4. **The compiler program** (as above): triviality check; locations pass; schema pre-scan;
    request pass; sort / join / sort; emission of `n`, colors, `m`, edges for `ε = 0, 1` in the
    order `ordL I`.
-5. **List-level correctness (rest)**: closed formulas for `clsStart` of each class kind
-   (per-schema section sizes, per-location offsets and ranks in `coordList`); every slot class
-   of a hub lies in `ordCls` with labels `bits1` or `[(0,0)]` (from `schema_wellFormed` and
-   `trackAt` validity); the `mergeSort` in `nbrPos` is the identity except for junc hubs;
-   then each pass of the program against these lists.
+5. **List-level correctness (rest)**: explicit sorted forms of `nbrPos` per hub kind (upd:
+   `[trackAt, track, coef]`, or `[track, coef, coord]` for a binary schema at the first entry;
+   link: `[last track, end coord]`; junc: sum, then the two coordinate positions compared),
+   from the `clsStart_*` formulas and `nbrPos_of_pairwise`; then a single list function
+   `outDesc I` (what the program emits) with `encodeGraphPair = encodeNats (outDesc I)`, and
+   each pass of the program against it.
 6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
    `CStm.computesWithin`; finally `Matrix/Main.lean` with
    `compile I := (reGraph I (ordL I) 0, reGraph I (ordL I) 1)` and `reGraph_spec`.
