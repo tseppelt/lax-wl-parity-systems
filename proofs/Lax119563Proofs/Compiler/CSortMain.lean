@@ -3,7 +3,13 @@ import Lax119563Proofs.Compiler.CSort
 /-!
 # Merge sort of records on number stacks: merging, passes, the sort
 
-* `mrgS_good`: the merge loop computes `CSort.mrg`.
+* `mrgS_good`: the merge loop computes `CSort.mrg`;
+* `pairBody_good`, `passS_good`: one merge pass computes `CSort.passX` (the two runs are split
+  off with `mvRecsB`, merged onto `Y`, and finally moved back);
+* `mvAllS_good`, `revS_good`: moving all records, reversing their order;
+* **`sortS_good`**: passes with run lengths `1, 2, 4, …` while `r < N`, then a reversal if the
+  last direction is descending; the records end sorted (`CSort.finalRecs_eq`), within
+  `(N + 1)(log₂ N + 2) · 700 (A + 1) · nodeCost w`.
 -/
 
 open Lax119563.BinaryEncodings Lax119563Proofs.Reduction
@@ -441,7 +447,7 @@ lemma passS_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
     by_contra h
     have : rs'.length ≠ 0 := by simpa using h
     have hh : s₁.env N ≤ s₁.env done := by
-      by_contra hh0; push_neg at hh0; simp [rv, Ex.eval, hh0] at hend
+      by_contra hh0; rw [not_le] at hh0; simp [rv, Ex.eval, hh0] at hend
     rw [hd, hN] at hh; omega
   subst hrs'
   simp only [CSort.passX_nil, List.reverse_nil, List.nil_append] at hp
@@ -620,6 +626,190 @@ lemma revS_good (hw2 : 2 ≤ w) (hstk : [X, T1, Y, tmp].Nodup)
     · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
       exact e0 q hq.2.2.2.2
     · intro q hq; simp only [List.mem_cons, List.not_mem_nil, or_false] at hq ⊢; tauto
+
+/-! ## The sort -/
+
+/-- Sort the `N` records (of `A` words) on `X` (`CSort.rle`, smallest on top). -/
+def sortS (X T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t r N done k lim2 : Fin R) :
+    CStm R Q :=
+  .seq (.set r (.const 1)) (.seq (.set dir (.const 0))
+    (.seq (.loop (.lt (rv r) (rv N))
+        (.seq (passS X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k lim2)
+          (.seq (.set r (.add (rv r) (rv r))) (.set dir (.lt (rv dir) (.const 1))))))
+      (.ite (rv dir) (revS X T1 Y tmp A N done k i t lim2) .skip)))
+
+lemma log_two_mul_le (n : ℕ) : Nat.log 2 (2 * n) ≤ Nat.log 2 n + 1 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  · rw [mul_comm, Nat.log_mul_base (by norm_num) (by omega)]
+
+set_option maxHeartbeats 2000000 in
+/-- **Merge sort of records on a stack.** -/
+theorem sortS_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
+    (hreg : [A, dir, c, f1, f2, kc, t1, t2, i, t, r, N, done, k, lim2].Nodup)
+    (s : NSt R Q) {a n : ℕ} (rs : List (List ℕ))
+    (hX : s.stk X = rs.flatten) (hT1 : s.stk T1 = []) (hT2 : s.stk T2 = []) (hY : s.stk Y = [])
+    (ha : s.env A = a) (ha1 : 1 ≤ a) (hn : s.env N = n) (hl : rs.length = n)
+    (hrec : ∀ y ∈ rs, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (hwn : 2 * n + 1 < 2 ^ w) :
+    ∃ s', Good x w (sortS X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k lim2) s s'
+        ((n + 1) * (Nat.log 2 n + 2) * (700 * (a + 1) * Ex.nodeCost w)) ∧
+      s'.stk = Function.update s.stk X (rs.mergeSort CSort.rle).flatten ∧
+      Frame s s' [k, done, i, t, c, kc, t1, t2, f1, f2, lim2, r, dir] := by
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  have hXT1 : X ≠ T1 := by ndup hstk
+  have hXT2 : X ≠ T2 := by ndup hstk
+  have hXY : X ≠ Y := by ndup hstk
+  have hmreg : [A, lim2, done, N, k, i, t].Nodup := by nodupT hreg
+  have hrstk : [X, T1, Y, tmp].Nodup := by nodupT hstk
+  have hrd : r ≠ dir := by ndup hreg
+  set S := s.stk
+  set regs : List (Fin R) := [k, done, i, t, c, kc, t1, t2, f1, f2, lim2, r, dir] with hregs
+  set P := (a + 1) * Ex.nodeCost w with hPdef
+  have hP : 64 ≤ P := by
+    have : Ex.nodeCost w ≤ P := Nat.le_mul_of_pos_left _ (by omega)
+    omega
+  have hNP : Ex.nodeCost w ≤ P := Nat.le_mul_of_pos_left _ (by omega)
+  set K₀ := (n + 1) * (610 * P)
+  set Inv : NSt R Q → Prop := fun s₁ => ∃ j, s₁.env r = 2 ^ j ∧ (j = 0 ∨ 2 ^ j < 2 * n) ∧
+    s₁.env dir = (if CSort.dirOf j then 1 else 0) ∧
+    s₁.stk = Function.update S X (CSort.passes rs j).flatten ∧ s₁.env A = a ∧ s₁.env N = n ∧
+    Frame s s₁ regs
+  have hloop := Good.loop_var (x := x) (w := w) (e := .lt (rv r) (rv N))
+    (body := .seq (passS X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k lim2)
+      (.seq (.set r (.add (rv r) (rv r))) (.set dir (.lt (rv dir) (.const 1)))))
+    Inv (fun s₁ => Nat.log 2 (2 * n) - Nat.log 2 (s₁.env r)) (fun _ => 0) 0 K₀ (by
+      intro s₁ hI
+      obtain ⟨j, hr, hj, hdir, hs₁, hA, hN, hfr⟩ := hI
+      have hrw : 2 ^ j < 2 ^ w := by
+        rcases hj with rfl | hj
+        · simp; omega
+        · omega
+      refine ⟨⟨show s₁.env r < 2 ^ w by omega, show s₁.env N < 2 ^ w by omega⟩, ?_⟩
+      intro hc
+      have hjn : 2 ^ j < n := by
+        by_contra hh; rw [not_lt] at hh
+        apply hc; simp only [rv, Ex.eval, hr, hN]; rw [if_neg (by omega)]
+      have hpl : (CSort.passes rs j).length = n := by
+        rw [(CSort.passes_perm rs j).length_eq, hl]
+      obtain ⟨s₂, g₂, k₂, f₂⟩ := passS_good (x := x) (C1 := C1) (C2 := C2) (c := c) (f1 := f1)
+        (f2 := f2) (kc := kc) (t1 := t1) (t2 := t2) (i := i) (t := t) (k := k) (done := done)
+        (lim2 := lim2) hw2 hstk hreg (CSort.dirOf j) s₁ (CSort.passes rs j)
+        (by rw [hs₁]; simp) (by rw [hs₁]; simp [Function.update_of_ne hXT1.symm, S, hT1])
+        (by rw [hs₁]; simp [Function.update_of_ne hXT2.symm, S, hT2]) hA ha1 hdir hr
+        (Nat.one_le_two_pow) hN hpl
+        (fun y hy => hrec y ((CSort.passes_perm rs j).subset hy)) hw (by omega) (by omega)
+      have e2 : ∀ q, q ∉ [k, done, i, t, c, kc, t1, t2, f1, f2, lim2] → s₂.env q = s₁.env q :=
+        fun q hq => f₂.2.2 q hq
+      have hr2 : s₂.env r = 2 ^ j := by rw [e2 r (by nmem hreg), hr]
+      have hdir2 : s₂.env dir = (if CSort.dirOf j then 1 else 0) := by
+        rw [e2 dir (by nmem hreg), hdir]
+      have g3 : Good x w (.set r (.add (rv r) (rv r)) : CStm R Q) s₂ (s₂.set r (2 ^ (j + 1)))
+          (3 * Ex.nodeCost w + unitCost w) :=
+        (Good.set (show (Ex.add (rv r) (rv r) : Ex R).Fits w s₂.env from
+          ⟨show s₂.env r < 2 ^ w by omega, show s₂.env r < 2 ^ w by omega,
+            show s₂.env r + s₂.env r < 2 ^ w by omega⟩)).of_eq
+          (by simp [rv, Ex.eval, hr2, pow_succ]; ring_nf) (by simp [Ex.size])
+      have hdir3 : (s₂.set r (2 ^ (j + 1))).env dir = (if CSort.dirOf j then 1 else 0) := by
+        simp [Function.update_of_ne hrd.symm, hdir2]
+      have g4 : Good x w (.set dir (.lt (rv dir) (.const 1)) : CStm R Q) (s₂.set r (2 ^ (j + 1)))
+          ((s₂.set r (2 ^ (j + 1))).set dir (if CSort.dirOf (j + 1) then 1 else 0))
+          (3 * Ex.nodeCost w + unitCost w) :=
+        (Good.set (by
+          simp only [rv, Ex.Fits, hdir3]; refine ⟨by split_ifs <;> omega, by omega⟩)).of_eq
+          (by
+            congr 1
+            simp only [rv, Ex.eval, hdir3, CSort.dirOf_succ]
+            cases CSort.dirOf j <;> simp) (by simp [Ex.size])
+      refine ⟨_, (g₂.seq (g3.seq g4)).mono ?_, ⟨j + 1, by simp [Function.update_of_ne hrd],
+        Or.inr (by rw [pow_succ]; omega), by simp, ?_, ?_, ?_, ?_⟩, ?_, le_rfl⟩
+      · simp only [K₀, zero_mul, zero_add]
+        have : (n + 1) * (600 * (a + 1) * Ex.nodeCost w) = (n + 1) * (600 * P) := by
+          simp only [hPdef]; ring
+        rw [this]
+        nlinarith
+      · simp only [NSt.set_stk, k₂, hs₁, Function.update_idem]
+        rfl
+      · simp [Function.update_of_ne (show A ≠ dir by ndup hreg),
+          Function.update_of_ne (show A ≠ r by ndup hreg), e2 A (by nmem hreg), hA]
+      · simp [Function.update_of_ne (show N ≠ dir by ndup hreg),
+          Function.update_of_ne (show N ≠ r by ndup hreg), e2 N (by nmem hreg), hN]
+      · refine hfr.trans (Frame.trans (f₂.mono ?_) ⟨rfl, rfl, fun q hq => ?_⟩)
+        · intro q hq; simp only [hregs, List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
+          tauto
+        · simp only [hregs, List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
+          simp [Function.update_of_ne hq.2.2.2.2.2.2.2.2.2.2.2.1,
+            Function.update_of_ne hq.2.2.2.2.2.2.2.2.2.2.2.2]
+      · simp only [NSt.set_env, Function.update_of_ne hrd, Function.update_self]
+        rw [hr, Nat.log_pow (by norm_num), Nat.log_pow (by norm_num)]
+        have : j + 1 ≤ Nat.log 2 (2 * n) :=
+          Nat.le_log_of_pow_le (by norm_num) (by rw [pow_succ]; omega)
+        omega)
+  -- initialization
+  have g0 : Good x w (.set r (.const 1) : CStm R Q) s (s.set r 1) (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have g1 : Good x w (.set dir (.const 0) : CStm R Q) (s.set r 1) ((s.set r 1).set dir 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have hI0 : Inv ((s.set r 1).set dir 0) := by
+    refine ⟨0, by simp [Function.update_of_ne hrd], Or.inl rfl, by simp [CSort.dirOf], ?_,
+      by simp [Function.update_of_ne (show A ≠ dir by ndup hreg),
+        Function.update_of_ne (show A ≠ r by ndup hreg), ha],
+      by simp [Function.update_of_ne (show N ≠ dir by ndup hreg),
+        Function.update_of_ne (show N ≠ r by ndup hreg), hn],
+      ⟨rfl, rfl, fun q hq => ?_⟩⟩
+    · simp only [NSt.set_stk, CSort.passes]; rw [← hX]; exact (Function.update_eq_self X S).symm
+    · simp only [hregs, List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
+      simp [Function.update_of_ne hq.2.2.2.2.2.2.2.2.2.2.2.1,
+        Function.update_of_ne hq.2.2.2.2.2.2.2.2.2.2.2.2]
+  obtain ⟨s₁, g₁, ⟨p, hr, hj, hdir, hs₁, hA, hN, hfr⟩, hend⟩ := hloop _ hI0
+  have hnp : n ≤ 2 ^ p := by
+    by_contra hh; rw [not_le] at hh
+    simp [rv, Ex.eval, hr, hN, hh] at hend
+  have hfinal := CSort.finalRecs_eq rs (p := p) (by omega)
+  have hpl : (CSort.passes rs p).length = n := by
+    rw [(CSort.passes_perm rs p).length_eq, hl]
+  have hμ0 : Nat.log 2 (2 * n) - Nat.log 2 (((s.set r 1).set dir 0).env r) ≤ Nat.log 2 n + 1 := by
+    simp [Function.update_of_ne hrd]; exact log_two_mul_le n
+  -- the final orientation
+  have hdv : (rv dir : Ex R).Fits w s₁.env := by
+    show s₁.env dir < 2 ^ w; rw [hdir]; split_ifs <;> omega
+  obtain ⟨s', g', k', f', hc'⟩ : ∃ s', Good x w (.ite (rv dir) (revS X T1 Y tmp A N done k i t lim2)
+      .skip) s₁ s' (Ex.nodeCost w + 1 + (n + 1) * (200 * P)) ∧
+      s'.stk = Function.update S X (CSort.finalRecs rs p).flatten ∧
+      Frame s₁ s' [k, done, i, t, lim2] ∧ True := by
+    by_cases hd : CSort.dirOf p
+    · obtain ⟨s', g', k', f'⟩ := revS_good (x := x) hw2 hrstk hmreg s₁ (CSort.passes rs p)
+        (by rw [hs₁]; simp) (by rw [hs₁]; simp [Function.update_of_ne hXT1.symm, S, hT1])
+        (by rw [hs₁]; simp [Function.update_of_ne hXY.symm, S, hY]) hA hN hpl
+        (fun y hy => hrec y ((CSort.passes_perm rs p).subset hy)) hw (by omega)
+      refine ⟨s', (Good.iteT hdv (by simp [rv, Ex.eval, hdir, hd]) g').mono
+        (by simp only [condCost, rv, Ex.size]; rw [← hPdef]; omega), ?_, f', trivial⟩
+      rw [k', hs₁, Function.update_idem]; simp [CSort.finalRecs, hd]
+    · refine ⟨s₁, (Good.iteF hdv (by simp [rv, Ex.eval, hdir, hd]) Good.skip).mono
+        (by simp only [condCost, rv, Ex.size]; nlinarith), ?_, Frame.refl _ _, trivial⟩
+      rw [hs₁]; simp [CSort.finalRecs, hd]
+  refine ⟨s', (g0.seq (g1.seq (g₁.seq g'))).mono ?_, ?_, ?_⟩
+  · simp only [condCost, rv, Ex.size, K₀, mul_zero, zero_add, zero_mul]
+    set L := Nat.log 2 n
+    set μ := Nat.log 2 (2 * n) - Nat.log 2 (((s.set r 1).set dir 0).env r)
+    have h1 : μ * ((n + 1) * (610 * P) + ((1 + 1 + 1) * Ex.nodeCost w + 1)) ≤
+        (L + 1) * ((n + 1) * (620 * P)) := by
+      apply Nat.mul_le_mul hμ0
+      nlinarith
+    have e : (n + 1) * (L + 2) * (700 * (a + 1) * Ex.nodeCost w) =
+        (L + 1) * ((n + 1) * (700 * P)) + (n + 1) * (700 * P) := by
+      simp only [hPdef]; ring
+    rw [e]
+    have h2 : (L + 1) * ((n + 1) * (620 * P)) ≤ (L + 1) * ((n + 1) * (700 * P)) :=
+      Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (by omega))
+    have h3 : (n + 1) * (200 * P) + 10 * P ≤ (n + 1) * (700 * P) := by nlinarith
+    omega
+  · rw [k', hfinal]; rfl
+  · refine hfr.trans (f'.mono ?_)
+    intro q hq; simp only [hregs, List.mem_cons, List.not_mem_nil, or_false] at hq ⊢; tauto
 
 end Pass
 
