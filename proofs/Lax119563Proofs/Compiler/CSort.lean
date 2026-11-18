@@ -527,6 +527,245 @@ lemma cmpS_good (hw2 : 2 ≤ w) {s1 s2 c1 c2 : Fin Q} {A d kc t1 t2 i t : Fin R}
       fm1.2.2 d (by simp [show d ≠ i by ndup hreg, show d ≠ t by ndup hreg]), hd',
       List.take_of_length_le (by omega), List.take_of_length_le (by omega)]
 
+/-! ## Merging two runs -/
+
+/-- The stacks during a merge: `u`, `v` on `T1`, `T2`, the merged records `acc` on top of
+`Y`. -/
+def mrgStk (S : Fin Q → List ℕ) (T1 T2 Y : Fin Q) (u v acc : List (List ℕ)) : Fin Q → List ℕ :=
+  Function.update (Function.update (Function.update S T1 u.flatten) T2 v.flatten) Y
+    (acc.flatten ++ S Y)
+
+section MrgStk
+
+variable {S : Fin Q → List ℕ} {T1 T2 Y : Fin Q} {u v acc : List (List ℕ)}
+
+lemma mrgStk_Y : mrgStk S T1 T2 Y u v acc Y = acc.flatten ++ S Y := by simp [mrgStk]
+
+lemma mrgStk_T2 (h : T2 ≠ Y) : mrgStk S T1 T2 Y u v acc T2 = v.flatten := by
+  simp [mrgStk, Function.update_of_ne h]
+
+lemma mrgStk_T1 (h0 : T1 ≠ T2) (h1 : T1 ≠ Y) : mrgStk S T1 T2 Y u v acc T1 = u.flatten := by
+  simp [mrgStk, Function.update_of_ne h0, Function.update_of_ne h1]
+
+lemma mrgStk_other {q : Fin Q} (h0 : q ≠ T1) (h1 : q ≠ T2) (h2 : q ≠ Y) :
+    mrgStk S T1 T2 Y u v acc q = S q := by
+  simp [mrgStk, Function.update_of_ne h0, Function.update_of_ne h1, Function.update_of_ne h2]
+
+lemma mrgStk_mv1 (h0 : T1 ≠ T2) (h1 : T1 ≠ Y) (h2 : T2 ≠ Y) {a0 : List ℕ}
+    {u' : List (List ℕ)} :
+    Function.update (Function.update (mrgStk S T1 T2 Y (a0 :: u') v acc) T1 u'.flatten) Y
+      (a0 ++ mrgStk S T1 T2 Y (a0 :: u') v acc Y) = mrgStk S T1 T2 Y u' v (a0 :: acc) := by
+  funext q
+  by_cases hY : q = Y
+  · subst hY; simp [mrgStk_Y]
+  · by_cases hq1 : q = T1
+    · subst hq1; simp [Function.update_of_ne hY, mrgStk_T1 h0 h1]
+    · by_cases hq2 : q = T2
+      · subst hq2; simp [Function.update_of_ne hY, Function.update_of_ne hq1, mrgStk_T2 h2]
+      · simp [Function.update_of_ne hY, Function.update_of_ne hq1, mrgStk_other hq1 hq2 hY]
+
+lemma mrgStk_mv2 (h0 : T1 ≠ T2) (h1 : T1 ≠ Y) (h2 : T2 ≠ Y) {b0 : List ℕ}
+    {v' : List (List ℕ)} :
+    Function.update (Function.update (mrgStk S T1 T2 Y u (b0 :: v') acc) T2 v'.flatten) Y
+      (b0 ++ mrgStk S T1 T2 Y u (b0 :: v') acc Y) = mrgStk S T1 T2 Y u v' (b0 :: acc) := by
+  funext q
+  by_cases hY : q = Y
+  · subst hY; simp [mrgStk_Y]
+  · by_cases hq2 : q = T2
+    · subst hq2; simp [Function.update_of_ne hY, mrgStk_T2 h2]
+    · by_cases hq1 : q = T1
+      · subst hq1; simp [Function.update_of_ne hY, Function.update_of_ne hq2, mrgStk_T1 h0 h1]
+      · simp [Function.update_of_ne hY, Function.update_of_ne hq2, mrgStk_other hq1 hq2 hY]
+
+end MrgStk
+
+/-- Flags: `1` for a nonempty list. -/
+def nef {α : Type} (l : List α) : ℕ := if l = [] then 0 else 1
+
+lemma flatten_eq_nil_iff {l : List (List ℕ)} {a : ℕ} (ha : 1 ≤ a)
+    (h : ∀ y ∈ l, y.length = a) : l.flatten = [] ↔ l = [] := by
+  constructor
+  · intro hl
+    rcases l with _ | ⟨y, l⟩
+    · rfl
+    · have := h y (by simp)
+      simp only [List.flatten_cons, List.append_eq_nil_iff] at hl
+      rw [hl.1] at this; simp at this; omega
+  · rintro rfl; rfl
+
+section Merge
+
+variable {T1 T2 Y tmp C1 C2 : Fin Q} {A dir c f1 f2 kc t1 t2 i t : Fin R}
+
+lemma mrg_mv1 (hstk : [T1, T2, Y, tmp, C1, C2].Nodup) (hAi : A ≠ i) (hAt : A ≠ t) (hit : i ≠ t)
+    (S : Fin Q → List ℕ) (s : NSt R Q) {a : ℕ} {a0 : List ℕ} {u v acc : List (List ℕ)}
+    (hs : s.stk = mrgStk S T1 T2 Y (a0 :: u) v acc) (ha : s.env A = a) (hl : a0.length = a)
+    (hb : ∀ z ∈ a0, z < 2 ^ w) (hw : a + 1 < 2 ^ w) :
+    ∃ s', Good x w (mvRec T1 Y tmp A i t) s s' (2 * ((a + 1) * (12 * Ex.nodeCost w))) ∧
+      s'.stk = mrgStk S T1 T2 Y u v (a0 :: acc) ∧ Frame s s' [i, t] := by
+  have h0 : T1 ≠ T2 := by ndup hstk
+  have h1 : T1 ≠ Y := by ndup hstk
+  have h2 : T2 ≠ Y := by ndup hstk
+  have hT : s.stk T1 = a0 ++ u.flatten := by rw [hs, mrgStk_T1 h0 h1, List.flatten_cons]
+  obtain ⟨s', g, k, f⟩ := mvRec_good (x := x) (dst := Y) (tmp := tmp) (by ndup hstk)
+    (by ndup hstk) h1 hAi hAt hit s ha (by rw [hT]; simp; omega) hw
+    (by rw [hT, List.take_left' hl]; exact hb)
+  refine ⟨s', g, ?_, f⟩
+  rw [k, hT, List.drop_left' hl, List.take_left' hl, hs]
+  exact mrgStk_mv1 h0 h1 h2
+
+lemma mrg_mv2 (hstk : [T1, T2, Y, tmp, C1, C2].Nodup) (hAi : A ≠ i) (hAt : A ≠ t) (hit : i ≠ t)
+    (S : Fin Q → List ℕ) (s : NSt R Q) {a : ℕ} {b0 : List ℕ} {u v acc : List (List ℕ)}
+    (hs : s.stk = mrgStk S T1 T2 Y u (b0 :: v) acc) (ha : s.env A = a) (hl : b0.length = a)
+    (hb : ∀ z ∈ b0, z < 2 ^ w) (hw : a + 1 < 2 ^ w) :
+    ∃ s', Good x w (mvRec T2 Y tmp A i t) s s' (2 * ((a + 1) * (12 * Ex.nodeCost w))) ∧
+      s'.stk = mrgStk S T1 T2 Y u v (b0 :: acc) ∧ Frame s s' [i, t] := by
+  have h0 : T1 ≠ T2 := by ndup hstk
+  have h1 : T1 ≠ Y := by ndup hstk
+  have h2 : T2 ≠ Y := by ndup hstk
+  have hT : s.stk T2 = b0 ++ v.flatten := by rw [hs, mrgStk_T2 h2, List.flatten_cons]
+  obtain ⟨s', g, k, f⟩ := mvRec_good (x := x) (dst := Y) (tmp := tmp) (by ndup hstk)
+    (by ndup hstk) h2 hAi hAt hit s ha (by rw [hT]; simp; omega) hw
+    (by rw [hT, List.take_left' hl]; exact hb)
+  refine ⟨s', g, ?_, f⟩
+  rw [k, hT, List.drop_left' hl, List.take_left' hl, hs]
+  exact mrgStk_mv2 h0 h1 h2
+
+/-- The branching part of the merge body. -/
+def mrgIteInner (T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t : Fin R) : CStm R Q :=
+  .ite (rv f2)
+    (.seq (.ite (rv dir) (cmpS T1 T2 C1 C2 A c kc t1 t2 i t) (cmpS T2 T1 C1 C2 A c kc t1 t2 i t))
+      (.ite (.lt (rv c) (.const 2)) (mvRec T1 Y tmp A i t) (mvRec T2 Y tmp A i t)))
+    (mvRec T1 Y tmp A i t)
+
+/-- The branching part of the merge body. -/
+def mrgIte (T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t : Fin R) : CStm R Q :=
+  .ite (rv f1) (mrgIteInner T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t) (mvRec T2 Y tmp A i t)
+
+lemma mrgIte_good (hw2 : 2 ≤ w) (hstk : [T1, T2, Y, tmp, C1, C2].Nodup)
+    (hreg : [A, dir, c, f1, f2, kc, t1, t2, i, t].Nodup)
+    (S : Fin Q → List ℕ) (d : Bool) (s : NSt R Q) {a : ℕ} (u v acc : List (List ℕ))
+    (ha : s.env A = a) (hdir : s.env dir = if d then 1 else 0)
+    (hs : s.stk = mrgStk S T1 T2 Y u v acc) (hf1 : s.env f1 = nef u) (hf2 : s.env f2 = nef v)
+    (hrec : ∀ y ∈ u ++ v, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (huv : u ≠ [] ∨ v ≠ []) :
+    ∃ s', Good x w (mrgIte T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t) s s'
+        (104 * Ex.nodeCost w * a + 120 * Ex.nodeCost w) ∧
+      s'.stk = mrgStk S T1 T2 Y (CSort.mrgStep d (u, v, acc)).1 (CSort.mrgStep d (u, v, acc)).2.1
+        (CSort.mrgStep d (u, v, acc)).2.2 ∧
+      Frame s s' [c, kc, t1, t2, i, t] := by
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  have hAi : A ≠ i := by ndup hreg
+  have hAt : A ≠ t := by ndup hreg
+  have hit : i ≠ t := by ndup hreg
+  have hsub : ∀ {r : List (Fin R)}, r ⊆ [c, kc, t1, t2, i, t] → ∀ {s₁ s₂ : NSt R Q},
+      Frame s₁ s₂ r → Frame s₁ s₂ [c, kc, t1, t2, i, t] := fun h _ _ f => f.mono h
+  have hf1v : (rv f1 : Ex R).Fits w s.env := by
+    show s.env f1 < 2 ^ w; rw [hf1]; unfold nef; split_ifs <;> omega
+  have hf2v : (rv f2 : Ex R).Fits w s.env := by
+    show s.env f2 < 2 ^ w; rw [hf2]; unfold nef; split_ifs <;> omega
+  rcases u with _ | ⟨a0, u⟩ <;> rcases v with _ | ⟨b0, v⟩
+  · simp at huv
+  · -- only `T2` is nonempty
+    have hb := hrec b0 (by simp)
+    obtain ⟨s', g, k, f⟩ := mrg_mv2 (x := x) hstk hAi hAt hit S s hs ha hb.1 hb.2 hw
+    refine ⟨s', (Good.iteF hf1v (by simp [rv, Ex.eval, hf1, nef]) g).mono ?_, by simpa [CSort.mrgStep] using k,
+      hsub (by intro r hr; simp at hr ⊢; tauto) f⟩
+    simp only [condCost, rv, Ex.size]; nlinarith
+  · -- only `T1` is nonempty
+    have hb := hrec a0 (by simp)
+    obtain ⟨s', g, k, f⟩ := mrg_mv1 (x := x) hstk hAi hAt hit S s hs ha hb.1 hb.2 hw
+    refine ⟨s', (Good.iteT hf1v (by simp [rv, Ex.eval, hf1, nef])
+      (Good.iteF hf2v (by simp [rv, Ex.eval, hf2, nef]) g)).mono ?_,
+      by simpa [CSort.mrgStep] using k, hsub (by intro r hr; simp at hr ⊢; tauto) f⟩
+    simp only [condCost, rv, Ex.size]; nlinarith
+  · -- both nonempty: compare
+    have ha0 := hrec a0 (by simp)
+    have hb0 := hrec b0 (by simp)
+    have hT1 : s.stk T1 = a0 ++ u.flatten := by
+      rw [hs, mrgStk_T1 (by ndup hstk) (by ndup hstk), List.flatten_cons]
+    have hT2 : s.stk T2 = b0 ++ v.flatten := by
+      rw [hs, mrgStk_T2 (by ndup hstk), List.flatten_cons]
+    have hcreg : [A, c, kc, t1, t2, i, t].Nodup := by
+      simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
+        List.nodup_nil, and_true] at hreg ⊢
+      tauto
+    -- the comparison
+    obtain ⟨sc, gc, kc', ec, hc2le, fc⟩ : ∃ sc, Good x w (.ite (rv dir) (cmpS T1 T2 C1 C2 A c kc t1 t2 i t)
+          (cmpS T2 T1 C1 C2 A c kc t1 t2 i t)) s sc (Ex.nodeCost w + 1 + (a + 1) * (80 * Ex.nodeCost w)) ∧
+        sc.stk = s.stk ∧ (CSort.ordD d b0 a0 = true ↔ sc.env c < 2) ∧ sc.env c ≤ 2 ∧
+        Frame s sc [c, kc, t1, t2, i, t] := by
+      have hdv : (rv dir : Ex R).Fits w s.env := by
+        show s.env dir < 2 ^ w; rw [hdir]; split_ifs <;> omega
+      cases d
+      · obtain ⟨sc, g, k, e, f⟩ := cmpS_good (x := x) hw2 (s1 := T2) (s2 := T1) (c1 := C1)
+          (c2 := C2) (by
+            have : [T2, T1, C1, C2].Perm [T1, T2, C1, C2] := List.Perm.swap _ _ _
+            refine this.nodup_iff.mpr ?_
+            have hsl : [T1, T2, C1, C2].Sublist [T1, T2, Y, tmp, C1, C2] := by simp
+            exact hsl.nodup hstk) hcreg s b0 a0 v.flatten u.flatten ha hT2 hT1 hb0.1 ha0.1
+          hb0.2 ha0.2 hw
+        refine ⟨sc, (Good.iteF hdv (by simp [rv, Ex.eval, hdir]) g).mono (by
+          simp only [condCost, rv, Ex.size]; omega), k, ?_, by rw [e]; exact cmpW_le 0 _ _ (by omega), f⟩
+        rw [e, CSort.ordD, if_neg (by simp), CSort.rle_iff_cmpW b0 a0 (by rw [ha0.1, hb0.1])]
+        have := cmpW_le 0 b0 a0 (by omega)
+        omega
+      · obtain ⟨sc, g, k, e, f⟩ := cmpS_good (x := x) hw2 (s1 := T1) (s2 := T2) (c1 := C1)
+          (c2 := C2) (by
+            have hsl : [T1, T2, C1, C2].Sublist [T1, T2, Y, tmp, C1, C2] := by simp
+            exact hsl.nodup hstk) hcreg s a0 b0 u.flatten v.flatten ha hT1 hT2 ha0.1 hb0.1
+          ha0.2 hb0.2 hw
+        refine ⟨sc, (Good.iteT hdv (by simp [rv, Ex.eval, hdir]) g).mono (by
+          simp only [condCost, rv, Ex.size]; omega), k, ?_, by rw [e]; exact cmpW_le 0 _ _ (by omega), f⟩
+        rw [e, CSort.ordD, if_pos rfl, CSort.rle_iff_cmpW a0 b0 (by rw [ha0.1, hb0.1])]
+        have := cmpW_le 0 a0 b0 (by omega)
+        omega
+    have hsc : sc.stk = mrgStk S T1 T2 Y (a0 :: u) (b0 :: v) acc := kc'.trans hs
+    have hAc : sc.env A = a := by
+      rw [fc.2.2 A (by simp [hAi, hAt, show A ≠ c by ndup hreg, show A ≠ kc by ndup hreg,
+        show A ≠ t1 by ndup hreg, show A ≠ t2 by ndup hreg]), ha]
+    have hcf : (Ex.lt (rv c) (.const 2) : Ex R).Fits w sc.env :=
+      ⟨show sc.env c < 2 ^ w by omega, show 2 < 2 ^ w by omega⟩
+    by_cases hord : CSort.ordD d b0 a0 = true
+    · obtain ⟨s', g, k, f⟩ := mrg_mv1 (x := x) hstk hAi hAt hit S sc hsc hAc ha0.1 ha0.2 hw
+      refine ⟨s', (Good.iteT hf1v (by simp [rv, Ex.eval, hf1, nef])
+        (Good.iteT hf2v (by simp [rv, Ex.eval, hf2, nef])
+          (gc.seq (Good.iteT hcf (show (if sc.env c < 2 then 1 else 0) ≠ 0 by rw [if_pos (ec.mp hord)]; decide) g)))).mono ?_, ?_,
+        fc.trans (f.mono (regs' := [c, kc, t1, t2, i, t]) (by
+          intro r hr; simp only [List.mem_cons, List.not_mem_nil, or_false] at hr ⊢
+          rcases hr with rfl | rfl <;> simp))⟩
+      · simp only [condCost, rv, Ex.size]; ring_nf; omega
+      · rw [k]; simp [CSort.mrgStep, hord]
+    · have hc2 : ¬ sc.env c < 2 := fun h => hord (ec.mpr h)
+      obtain ⟨s', g, k, f⟩ := mrg_mv2 (x := x) hstk hAi hAt hit S sc hsc hAc hb0.1 hb0.2 hw
+      have hfr : Frame s s' [c, kc, t1, t2, i, t] :=
+        fc.trans (f.mono (regs' := [c, kc, t1, t2, i, t]) (by
+          intro r hr; simp only [List.mem_cons, List.not_mem_nil, or_false] at hr ⊢
+          rcases hr with rfl | rfl <;> simp))
+      have hev : Ex.eval sc.env (Ex.lt (rv c) (.const 2)) = 0 := by
+        show (if sc.env c < 2 then 1 else 0) = 0
+        exact if_neg hc2
+      have G := Good.iteT (p := mrgIteInner T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t)
+        (q := mvRec T2 Y tmp A i t) hf1v (by simp [rv, Ex.eval, hf1, nef])
+        (Good.iteT (q := mvRec T1 Y tmp A i t) hf2v (by simp [rv, Ex.eval, hf2, nef])
+          (gc.seq (Good.iteF (p := mvRec T1 Y tmp A i t) hcf hev g)))
+      refine ⟨s', G.mono ?_, ?_, hfr⟩
+      · simp only [condCost, rv, Ex.size]; ring_nf; omega
+      · rw [k]; simp [CSort.mrgStep, hord]
+
+/-- The body of the merge loop. -/
+def mrgBody (T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t : Fin R) : CStm R Q :=
+  .seq (mrgIte T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t) (.seq (.sne f1 T1) (.sne f2 T2))
+
+/-- Merge the runs on `T1` and `T2` onto `Y` (`CSort.mrg`, direction in `dir`). -/
+def mrgS (T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t : Fin R) : CStm R Q :=
+  .seq (.sne f1 T1) (.seq (.sne f2 T2)
+    (.loop (.add (rv f1) (rv f2)) (mrgBody T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t)))
+
+end Merge
+
 end CStm
 
 end Lax119563Proofs.Compiler
