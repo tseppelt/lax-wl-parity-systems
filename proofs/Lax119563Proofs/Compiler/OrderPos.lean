@@ -8,7 +8,16 @@ Closed formulas for `clsStart I X` (the position of the first name of class `X` 
 
 * Generic: `startIn_append_left`, `startIn_append_right`, `startIn_flatMap` (a class in the
   block of the `i`-th element of a flat map starts after the blocks of the first `i`
-  elements), `startIn_map_const` (blocks of equal size).
+  elements), `startIn_map_inj`, `startIn_cols`.
+* Sections: `schSize`, `schBase`, `locBase`, `locSize`, `locStart`, `colW`, `nEnt`,
+  `entBefore`, `hubSize`, `sumSize`; `clsStart_junc`, `clsStart_link`, `clsStart_upd`,
+  `clsStart_sum`, `clsStart_track`, `clsStart_coef`, `clsStart_coord`.
+* Slots: `slot_mem_ordCls` (every slot class of a name of the order is a class of the order
+  with labels `slotLabs`: `[(0,0)]` for initialized coordinate classes, else `bits1`).
+* Tracks: `trackAt_stepsC` (the track before the entry `j` of a column is the entry `j - 1`,
+  or the start class), `trackAt_numSteps` (the last entry), `stepsC_ne_nil` (`k ≥ 2`).
+* Order: `schBase_add_le`, `locBase_le_clsStart_coord`, `clsStart_add_le_sch`,
+  `nbrPos_of_pairwise`.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
