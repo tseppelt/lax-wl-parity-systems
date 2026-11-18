@@ -553,4 +553,90 @@ theorem slot_mem_ordCls {x : VName I} (hx : x ∈ ordL I) {l : Lab} {s : ICls I 
     cases h' : s.1 <;> simp_all [twoBit, isHub]
   simpa [clsLabs, slotLabs, ht] using h
 
+/-! ## Tracks: the previous entry of the column -/
+
+lemma prevStep_eq_some {c : Coord k ℓ} {σ σ' : ℕ} (h1 : σ' < σ) (h2 : ent σ' c ≠ 0)
+    (h3 : ∀ σ'', σ' < σ'' → σ'' < σ → ent σ'' c = 0) : prevStep c σ = some σ' := by
+  rcases hp : prevStep c σ with _ | σ₁
+  · exact absurd (prevStep_none hp σ' h1) h2
+  · obtain ⟨g1, g2, g3⟩ := prevStep_some hp
+    rcases lt_trichotomy σ₁ σ' with h | h | h
+    · exact absurd (g3 σ' h h1) h2
+    · rw [h]
+    · exact absurd (h3 σ₁ h g1) g2
+
+lemma prevStep_eq_none {c : Coord k ℓ} {σ : ℕ} (h : ∀ σ' < σ, ent σ' c = 0) :
+    prevStep c σ = none := by
+  rcases hp : prevStep c σ with _ | σ₁
+  · rfl
+  · obtain ⟨g1, g2, -⟩ := prevStep_some hp
+    exact absurd (h σ₁ g1) g2
+
+lemma pairwise_stepsC (c : Coord k ℓ) : (stepsC c).Pairwise (· < ·) :=
+  List.pairwise_lt_range.filter _
+
+lemma idx_lt_of_lt {L : List ℕ} (hL : L.Pairwise (· < ·)) {a b : ℕ} (ha : a < L.length)
+    (hb : b < L.length) (h : L[a] < L[b]) : a < b := by
+  by_contra h'
+  rcases Nat.lt_or_eq_of_le (not_lt.mp h') with h'' | h''
+  · have := List.pairwise_iff_getElem.mp hL b a hb ha h''; omega
+  · subst h''; omega
+
+/-- **The track before an entry.** The track class at the step `σ = (stepsC c)[j]` is the
+track of the previous entry `j - 1` of the column, or the start class for `j = 0`. -/
+theorem trackAt_stepsC (e : Fin I.schemas.length) (c : Coord k ℓ) {j : ℕ}
+    (hj : j < (stepsC c).length) :
+    trackAt I e c (stepsC c)[j] =
+      if h : j = 0 then startCls I e c else .track e ((stepsC c)[j - 1]'(by omega)) c := by
+  have hP := pairwise_stepsC c
+  have hmem : ∀ σ, σ < numSteps k ℓ → ent σ c ≠ 0 → ∃ i, ∃ hi : i < (stepsC c).length,
+      (stepsC c)[i] = σ := fun σ h1 h2 =>
+    List.getElem_of_mem ((mem_stepsC).mpr ⟨h1, h2⟩)
+  have hN : (stepsC c)[j] < numSteps k ℓ := ((mem_stepsC).mp (List.getElem_mem hj)).1
+  split
+  · next h0 =>
+    subst h0
+    unfold trackAt
+    rw [prevStep_eq_none fun σ' hσ' => by
+      by_contra hne
+      obtain ⟨i, hi, rfl⟩ := hmem σ' (by omega) hne
+      have := idx_lt_of_lt hP hi hj hσ'
+      omega]
+  · next h0 =>
+    unfold trackAt
+    have hj1 : j - 1 < (stepsC c).length := by omega
+    rw [prevStep_eq_some (σ' := (stepsC c)[j - 1])
+      (List.pairwise_iff_getElem.mp hP _ _ hj1 hj (by omega))
+      ((mem_stepsC).mp (List.getElem_mem hj1)).2 (fun σ'' g1 g2 => by
+        by_contra hne
+        obtain ⟨i, hi, rfl⟩ := hmem σ'' (by omega) hne
+        have a1 := idx_lt_of_lt hP hj1 hi g1
+        have a2 := idx_lt_of_lt hP hi hj g2
+        omega)]
+
+/-- **The track at the end of the strip**: the track of the last entry of the column (or the
+start class if the column has no entry). -/
+theorem trackAt_numSteps (e : Fin I.schemas.length) (c : Coord k ℓ) :
+    trackAt I e c (numSteps k ℓ) =
+      if h : stepsC c = [] then startCls I e c else .track e ((stepsC c).getLast h) c := by
+  have hP := pairwise_stepsC c
+  have hmem : ∀ σ, σ < numSteps k ℓ → ent σ c ≠ 0 → σ ∈ stepsC c := fun σ h1 h2 =>
+    (mem_stepsC).mpr ⟨h1, h2⟩
+  by_cases h0 : stepsC c = []
+  · rw [dif_pos h0]
+    unfold trackAt
+    rw [prevStep_eq_none fun σ' hσ' => by
+      by_contra hne; have := hmem σ' hσ' hne; rw [h0] at this; simp at this]
+  · rw [dif_neg h0]
+    unfold trackAt
+    have hl : (stepsC c).getLast h0 ∈ stepsC c := List.getLast_mem h0
+    rw [prevStep_eq_some (σ' := (stepsC c).getLast h0) ((mem_stepsC).mp hl).1
+      ((mem_stepsC).mp hl).2 (fun σ'' g1 g2 => by
+        by_contra hne
+        have h'' := hmem σ'' g2 hne
+        obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem h''
+        rw [List.getLast_eq_getElem] at g1
+        have := idx_lt_of_lt hP (by have := List.length_pos_of_ne_nil h0; omega) hi g1
+        omega)]
+
 end Lax119563Proofs.Compiler
