@@ -133,7 +133,13 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
   **`moveN_good`**: move the top `n` words); `CSortList` (merge sort of records at the list
   level: lexicographic `rle`, `mrg`, `passX`, `passes`, **`finalRecs_eq`**: after `p` passes
   with `|rs| ≤ 2^p` the result is `rs.mergeSort rle`, `cmpW`/`rle_iff_cmpW` for word-by-word
-  comparison).
+  comparison); `CSort` (stack level: `mvRec_good`, `mvRecsB_good` (move records keeping the
+  word order), `cmpS_good` (compare the top records of two stacks), `mrgStk`, `mrg_mv1/mv2`,
+  `mrgIte_good` (one merge step); `mrgBody`, `mrgS` defined, their specs open).
+* (item 5, partly) `OrderDesc`: class blocks `ordCls I` (`ordL_eq_flatMap`), **`colors_reGraph`**
+  (colors = `colorsOf 0` of the class sizes), neighbor slots `slotsOf` (`hubB_iff_slotsOf`),
+  **`edgeList_nbrPos`** (edges per hub = sorted present slot positions `nbrPos`),
+  `idxOf_ordL` (position = `clsStart` + label index), `posOpt_bits1`, `posOpt_single`.
 * (item 5, partly) `Order`: the vertex order **`ordL I`** (schemas: hubs then non-hubs; then
   locations), with entries in *q-major* order (`stepsC c` = increasing steps, so the
   previous entry of a column is the previous index; `coefSteps`), **`ordL_perm`** (so
@@ -162,10 +168,11 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 4. **The compiler program** (as above): triviality check; locations pass; schema pre-scan;
    request pass; sort / join / sort; emission of `n`, colors, `m`, edges for `ε = 0, 1` in the
    order `ordL I`.
-5. **List-level correctness (rest)**: colors of `reGraph I (ordL I) ε` (= first position of
-   the class: per class, its start repeated), the numeric description of `edgeList_ordL` per
-   hub (positions of `trackAt`, `track`, `coef`, `sum`, and coordinate vertices via offsets
-   and ranks), and each pass of the program against these lists.
+5. **List-level correctness (rest)**: closed formulas for `clsStart` of each class kind
+   (per-schema section sizes, per-location offsets and ranks in `coordList`); every slot class
+   of a hub lies in `ordCls` with labels `bits1` or `[(0,0)]` (from `schema_wellFormed` and
+   `trackAt` validity); the `mergeSort` in `nbrPos` is the identity except for junc hubs;
+   then each pass of the program against these lists.
 6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
    `CStm.computesWithin`; finally `Matrix/Main.lean` with
    `compile I := (reGraph I (ordL I) 0, reGraph I (ordL I) 1)` and `reGraph_spec`.
