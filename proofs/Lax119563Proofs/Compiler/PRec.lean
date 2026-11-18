@@ -25,6 +25,8 @@ def rV : Fin CR := 15
 def qRec : Fin CQ := 1
 /-- `k` (read by `P1'`). -/
 def rKk : Fin CR := 16
+/-- The number of location records (computed by `P1'`). -/
+def rCnt : Fin CR := 36
 
 variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ)
 
@@ -41,7 +43,7 @@ lemma labsN_eq (v : Fin I.numLocations) :
 /-- The record of the `r`-th coordinate of location `v`. -/
 noncomputable def locRec (v : Fin I.numLocations) (r : ℕ) : List ℕ :=
   (v : ℕ) :: (coordNumDescription ℓ ((locNums I v).getD r 0) ++
-    [locOff I v + r * labsN I v, labsN I v])
+    [0, locOff I v + r * labsN I v, labsN I v, initNum (I.init v)])
 
 /-- The records of location `v`. -/
 noncomputable def recsV (v : Fin I.numLocations) : List (List ℕ) :=
@@ -111,9 +113,9 @@ open CStm
 
 /-- One coordinate: push its record. -/
 def p1rIn : CStm CR CQ :=
-  .seq (.push qRec (rv rJ)) (.seq (rdNumsS qRec rL1 rI rV rP rT) (.seq (.push qRec (rv rOff))
-    (.seq (.push qRec (rv rLab)) (.seq (.set rOff (.add (rv rOff) (rv rLab)))
-      (.set rK (.add (rv rK) (.const 1)))))))
+  .seq (.push qRec (rv rJ)) (.seq (rdNumsS qRec rL1 rI rV rP rT) (.seq (.push qRec (.const 0))
+    (.seq (.push qRec (rv rOff)) (.seq (.push qRec (rv rLab)) (.seq (.push qRec (rv rA))
+      (.seq (.set rOff (.add (rv rOff) (rv rLab))) (.set rK (.add (rv rK) (.const 1)))))))))
 
 /-- The coordinate loop. -/
 def p1rCoords : CStm CR CQ := .loop (.lt (rv rK) (rv rD)) p1rIn
@@ -122,20 +124,22 @@ def p1rCoords : CStm CR CQ := .loop (.lt (rv rK) (rv rD)) p1rIn
 def p1rBody : CStm CR CQ :=
   .seq (rdNumS rA rP rT) (.seq (rdNumS rD rP rT)
     (.seq (.set rLab (.add (.const 1) (.lt (rv rA) (.const 1))))
-      (.seq (.set rK (.const 0)) (.seq p1rCoords (.set rJ (.add (rv rJ) (.const 1)))))))
+      (.seq (.set rK (.const 0)) (.seq p1rCoords (.seq (.set rCnt (.add (rv rCnt) (rv rD)))
+        (.set rJ (.add (rv rJ) (.const 1))))))))
 
 /-- **Pass `P1'`.** -/
 def p1r : CStm CR CQ :=
   .seq .rst (.seq (rdNumS rKk rP rT) (.seq (skipNumS rT) (.seq (skipNumS rT)
-    (.seq (.set rJ (.const 0)) (.seq (.set rOff (.const 0))
-      (.loop (.lt (rv rJ) (rv rW)) p1rBody))))))
+    (.seq (.set rJ (.const 0)) (.seq (.set rOff (.const 0)) (.seq (.set rCnt (.const 0))
+      (.loop (.lt (rv rJ) (rv rW)) p1rBody)))))))
 
 /-- The invariant of the coordinate loop of location `v` (coordinates from position `B`,
 stacks `S0`, output `O`). -/
 def p1rInInv (v : Fin I.numLocations) (B : ℕ) (S0 : Fin CQ → List ℕ) (O : List ℕ)
     (s : NSt CR CQ) : Prop :=
   s.env rK ≤ (coordList (I.domain v)).length ∧ s.env rD = (coordList (I.domain v)).length ∧
-    s.env rJ = v ∧ s.env rL1 = ℓ + 1 ∧ s.env rLab = labsN I v ∧ s.env rW = I.numLocations ∧
+    s.env rJ = v ∧ s.env rL1 = ℓ + 1 ∧ s.env rLab = labsN I v ∧
+    s.env rA = initNum (I.init v) ∧ s.env rW = I.numLocations ∧
     s.env rOff = locOff I v + s.env rK * labsN I v ∧
     s.pos = B + (encodeNats
       (((locNums I v).map (coordNumDescription ℓ)).take (s.env rK)).flatten).length ∧
@@ -162,7 +166,7 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
         B + (encodeNats ((locNums I v).map (coordNumDescription ℓ)).flatten).length - s.pos := by
   have hU := CStm.nodeCost_ge w
   have hU' := CStm.unitCost_ge w
-  obtain ⟨hK, hD, hJ, hL1, hLab, hW, hO, hpos, hstk, hout⟩ := hI
+  obtain ⟨hK, hD, hJ, hL1, hLab, hA, hW, hO, hpos, hstk, hout⟩ := hI
   set d := (coordList (I.domain v)).length
   set bs := (locNums I v).map (coordNumDescription ℓ)
   have hbsl : bs.length = d := by simp [bs, length_locNums, d]
@@ -218,13 +222,21 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     rw [locOff_succ I v.2]
     have : locSize I v = d * labsN I v := rfl
     rw [this]; nlinarith
-  -- push the offset and the labels
-  have r3 := Good.push (x := encodeSystem I) (w := w) (q := qRec) (e := rv rOff) (st := s2)
-    (by simp only [Ex.Fits, rv, e2O]; nlinarith)
-  set s3 := s2.setS qRec ((rv rOff : Ex CR).eval s2.env :: s2.stk qRec)
+  have e2A : s2.env rA = initNum (I.init v) := by
+    rw [e2 _ (by decide) (by decide) (by decide) (by decide), hA]
+  -- push the tag, the offset, the labels and `ι`
+  have r3a := Good.push (x := encodeSystem I) (w := w) (q := qRec) (e := .const 0) (st := s2)
+    (by simp only [Ex.Fits]; omega)
+  set s2a := s2.setS qRec ((Ex.const 0 : Ex CR).eval s2.env :: s2.stk qRec)
+  have r3 := Good.push (x := encodeSystem I) (w := w) (q := qRec) (e := rv rOff) (st := s2a)
+    (by show s2.env rOff < 2 ^ w; rw [e2O]; nlinarith)
+  set s3 := s2a.setS qRec ((rv rOff : Ex CR).eval s2a.env :: s2a.stk qRec)
   have r4 := Good.push (x := encodeSystem I) (w := w) (q := qRec) (e := rv rLab) (st := s3)
     (by show s2.env rLab < 2 ^ w; rw [e2L]; omega)
-  set s4 := s3.setS qRec ((rv rLab : Ex CR).eval s3.env :: s3.stk qRec)
+  set s4a := s3.setS qRec ((rv rLab : Ex CR).eval s3.env :: s3.stk qRec)
+  have r4a := Good.push (x := encodeSystem I) (w := w) (q := qRec) (e := rv rA) (st := s4a)
+    (by show s2.env rA < 2 ^ w; rw [e2A]; have := initNum_le (I.init v); omega)
+  set s4 := s4a.setS qRec ((rv rA : Ex CR).eval s4a.env :: s4a.stk qRec)
   have r5 := Good.set (x := encodeSystem I) (w := w) (r := rOff) (e := .add (rv rOff) (rv rLab))
     (st := s4) (by
       show s2.env rOff < 2 ^ w ∧ s2.env rLab < 2 ^ w ∧ s2.env rOff + s2.env rLab < 2 ^ w
@@ -232,7 +244,7 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
   set s5 := s4.set rOff (Ex.eval s4.env (.add (rv rOff) (rv rLab)))
   have e5 : ∀ q, s5.env q = Function.update s2.env rOff
       (locOff I v + r * labsN I v + labsN I v) q := by
-    intro q; simp only [s5, s4, s3, NSt.set_env, NSt.setS_env, Ex.eval, rv, e2O, e2L]
+    intro q; simp only [s5, s4, s4a, s3, s2a, NSt.set_env, NSt.setS_env, Ex.eval, rv, e2O, e2L]
   have e5K : s5.env rK = r := by
     rw [e5, Function.update_of_ne (by decide), e2 _ (by decide) (by decide) (by decide)
       (by decide)]
@@ -265,8 +277,8 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     conv_rhs => rw [← List.take_append_drop (r + 1) bs]
     rw [List.flatten_append, encodeNats_append, List.length_append]; omega
   have hvle : ℓ + 1 ≤ (encodeNats vs).length := by rw [← hvl]; exact length_le_encodeNats _
-  refine ⟨s6, (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6))))).mono ?_,
-    ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
+  refine ⟨s6, (r1.seq (r2.seq (r3a.seq (r3.seq (r4.seq (r4a.seq (r5.seq r6))))))).mono ?_,
+    ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
   · rw [hp6]
     have hΔ : B + (encodeNats bs.flatten).length - s.pos -
         (B + (encodeNats bs.flatten).length - (s.pos + (encodeNats vs).length)) =
@@ -283,15 +295,20 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
   · rw [back _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hJ]
   · rw [back _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hL1]
   · rw [back _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hLab]
+  · rw [back _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hA]
   · rw [back _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hW]
   · rw [e6K, e6, Function.update_of_ne (by decide), Function.update_self]; ring
   · rw [e6K, hp6, hpos, hlen]; ring
-  · show Function.update s3.stk qRec (Ex.eval s3.env (rv rLab) :: s3.stk qRec) = _
-    have hl : Ex.eval s3.env (rv rLab) = labsN I v := e2L
+  · show Function.update s4a.stk qRec (Ex.eval s4a.env (rv rA) :: s4a.stk qRec) = _
+    have hl : Ex.eval s4a.env (rv rA) = initNum (I.init v) := e2A
     rw [hl]
-    have h3s : s3.stk qRec = (locOff I v + r * labsN I v) :: s2.stk qRec := by
-      show Function.update s2.stk qRec _ qRec = _
-      rw [Function.update_self]; show s2.env rOff :: _ = _; rw [e2O]
+    have h3s : s4a.stk qRec = labsN I v :: (locOff I v + r * labsN I v) :: 0 :: s2.stk qRec := by
+      show Function.update s3.stk qRec _ qRec = _
+      rw [Function.update_self]; show s2.env rLab :: _ = _; rw [e2L]
+      show _ :: Function.update s2a.stk qRec _ qRec = _
+      rw [Function.update_self]; show _ :: s2.env rOff :: _ = _; rw [e2O]
+      show _ :: _ :: Function.update s2.stk qRec _ qRec = _
+      rw [Function.update_self]; rfl
     have hs1 : s1.stk = Function.update s.stk qRec (v.val :: s.stk qRec) := by
       show Function.update s.stk qRec (s.env rJ :: s.stk qRec) = _; rw [hJ]
     rw [e6K, recsV_take_succ I v hlt, List.flatten_append, List.reverse_append]
@@ -302,6 +319,10 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
         Function.update_self, hstk, Function.update_self]
       simp [locRec, hvs]
     · rw [Function.update_of_ne hq, Function.update_of_ne hq]
+      show Function.update s3.stk qRec _ q = _
+      rw [Function.update_of_ne hq]
+      show Function.update s2a.stk qRec _ q = _
+      rw [Function.update_of_ne hq]
       show Function.update s2.stk qRec _ q = _
       rw [Function.update_of_ne hq, hs2, Function.update_of_ne hq, hs1, Function.update_of_ne hq,
         hstk, Function.update_of_ne hq]
@@ -309,10 +330,22 @@ lemma p1rIn_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
   · rw [e6K]; omega
   · rw [hp6]; omega
 
+lemma length_recsUpTo_le : ∀ j, j ≤ I.numLocations →
+    (recsUpTo I j).length ≤ (locsPre I j).length
+  | 0, _ => by simp [recsUpTo]
+  | j + 1, hj => by
+    have ih := length_recsUpTo_le j (by omega)
+    rw [recsUpTo_succ I (by omega), locsPre_succ I (by omega), List.length_append,
+      List.length_append, locD_eq']
+    have := length_flatten_cnd I ⟨j, by omega⟩
+    simp only [recsV, List.length_map, List.length_range, List.length_cons]
+    nlinarith
+
 /-- The loop invariant of `P1'`. -/
 def p1rInv (st s : NSt CR CQ) : Prop :=
   s.env rW = I.numLocations ∧ s.env rL1 = ℓ + 1 ∧ s.env rJ ≤ I.numLocations ∧
     s.pos = posAt I (s.env rJ) ∧ s.env rOff = locOff I (s.env rJ) ∧
+    s.env rCnt = (recsUpTo I (s.env rJ)).length ∧
     s.stk = Function.update st.stk qRec
       ((recsUpTo I (s.env rJ)).flatten.reverse ++ st.stk qRec) ∧ s.out = st.out
 
@@ -328,7 +361,7 @@ lemma p1rBody_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH 
   have hU := CStm.nodeCost_ge w
   have hU' := CStm.unitCost_ge w
   have hH2 : 2 * (H I + 1) ≤ 2 ^ w := by omega
-  obtain ⟨hW, hL1, hjW, hpos, hoff, hstk, hout⟩ := hI
+  obtain ⟨hW, hL1, hjW, hpos, hoff, hcnt, hstk, hout⟩ := hI
   have hlt : s.env rJ < I.numLocations := by
     by_contra h; apply hc; simp only [Ex.eval, rv, hW]; rw [if_neg h]
   set j := s.env rJ with hjdef
@@ -401,12 +434,13 @@ lemma p1rBody_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH 
     simp only [s2, rdNumFinal_pos]
     rw [← List.drop_drop, hx2, List.drop_left]
   have hI4 : p1rInInv I v s4.pos s.stk s.out s4 := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, rfl⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, rfl⟩
     · rw [e4, Function.update_self]; omega
     · rw [e4, Function.update_of_ne (by decide), Function.update_of_ne (by decide), e2D]
     · rw [back4 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
     · rw [back4 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hL1]
     · rw [e4, Function.update_of_ne (by decide), Function.update_self]
+    · rw [e4, Function.update_of_ne (by decide), Function.update_of_ne (by decide), e2A]
     · rw [back4 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hW]
     · rw [back4 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hoff,
         e4, Function.update_self]; simp; rfl
@@ -422,25 +456,41 @@ lemma p1rBody_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH 
       simp only [Ex.Fits, rv, hD]; omega,
       fun hc' => p1rIn_good I hw hH hkH hℓ v s4.pos s.stk s.out rest hB
         (locOff_le_H I _) s' hI' hc'⟩) s4 hI4
-  obtain ⟨hK5, hD5, hJ5, hL15, hLab5, hW5, hO5, hp5, hs5, ho5⟩ := hI5
+  obtain ⟨hK5, hD5, hJ5, hL15, hLab5, -, hW5, hO5, hp5, hs5, ho5⟩ := hI5
   have hK5' : s5.env rK = d := by
     simp only [Ex.eval, rv, hD5] at hc5; split_ifs at hc5 with h <;> omega
+  have hcnt5 : s5.env rCnt = (recsUpTo I j).length := by
+    rw [r5.env_of (by decide), back4 _ (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide), hcnt]
+  have hrl : (recsUpTo I (j + 1)).length = (recsUpTo I j).length + d := by
+    rw [recsUpTo_succ I hlt]; simp [recsV]; rfl
+  have hrH : (recsUpTo I (j + 1)).length ≤ H I :=
+    (length_recsUpTo_le I (j + 1) (by omega)).trans (locsPre_le I _)
+  have r5c := Good.set (x := encodeSystem I) (w := w) (r := rCnt) (e := .add (rv rCnt) (rv rD))
+    (st := s5) (by simp only [Ex.Fits, Ex.eval, rv, hcnt5, hD5]; omega)
+  set s5c := s5.set rCnt (Ex.eval s5.env (.add (rv rCnt) (rv rD)))
+  have e5c : ∀ q, q ≠ rCnt → s5c.env q = s5.env q := fun q h => by
+    simp [s5c, Function.update_of_ne h]
   have r6 := Good.set (x := encodeSystem I) (w := w) (r := rJ) (e := .add (rv rJ) (.const 1))
-    (st := s5) (by
+    (st := s5c) (by
       have := W_le I
-      simp only [Ex.Fits, Ex.eval, rv, hJ5]; omega)
-  set s6 := s5.set rJ (Ex.eval s5.env (.add (rv rJ) (.const 1)))
-  have e6J : s6.env rJ = j + 1 := by simp [s6, Ex.eval, rv, hJ5, v]
-  have e6 : ∀ q, q ≠ rJ → s6.env q = s5.env q := fun q h => by
-    simp [s6, Function.update_of_ne h]
+      simp only [Ex.Fits, Ex.eval, rv, e5c _ (show rJ ≠ rCnt by decide), hJ5]; omega)
+  set s6 := s5c.set rJ (Ex.eval s5c.env (.add (rv rJ) (.const 1)))
+  have e6J : s6.env rJ = j + 1 := by
+    simp [s6, Ex.eval, rv, e5c _ (show rJ ≠ rCnt by decide), hJ5, v]
+  have e6 : ∀ q, q ≠ rJ → q ≠ rCnt → s6.env q = s5.env q := fun q h h' => by
+    simp only [s6, NSt.set_env, Function.update_of_ne h]; exact e5c q h'
+  have e6C : s6.env rCnt = (recsUpTo I (j + 1)).length := by
+    simp only [s6, NSt.set_env, Function.update_of_ne (show rCnt ≠ rJ by decide), s5c,
+      Function.update_self, Ex.eval, rv, hcnt5, hD5, hrl]; rfl
   have hp6 : s6.pos = s.pos + (encodeNat a).length + (encodeNat d).length +
       (encodeNats bs.flatten).length := by
     show s5.pos = _
     rw [hp5, hK5', List.take_of_length_le (le_of_eq hbsl)]; rfl
   have hφ4 : s4.pos + (encodeNats bs.flatten).length - s4.pos =
       (encodeNats bs.flatten).length := by omega
-  refine ⟨s6, (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6))))).mono ?_,
-    ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
+  refine ⟨s6, (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq (r5c.seq r6)))))).mono ?_,
+    ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
   · rw [hp6, hφ4]
     have hΔ : H I - s.pos - (H I - (s.pos + (encodeNat a).length + (encodeNat d).length +
         (encodeNats bs.flatten).length)) = (encodeNat a).length + (encodeNat d).length +
@@ -455,20 +505,21 @@ lemma p1rBody_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH 
     generalize (encodeNats bs.flatten).length = lf at *
     have := Nat.mul_le_mul_left N hdf
     nlinarith only [hU, hU', this]
-  · rw [e6 _ (by decide), hW5]
-  · rw [e6 _ (by decide), hL15]
+  · rw [e6 _ (by decide) (by decide), hW5]
+  · rw [e6 _ (by decide) (by decide), hL15]
   · rw [e6J]; omega
   · rw [e6J, hp6, hpos, posAt_succ I hlt, locD_eq']
     simp only [encNats_cons, List.length_append]; ring
-  · rw [e6J, e6 _ (by decide), hO5, hK5', locOff_succ I hlt]; rfl
-  · rw [NSt.set_stk, hs5, hK5', e6J, recsUpTo_succ I hlt, hstk]
+  · rw [e6J, e6 _ (by decide) (by decide), hO5, hK5', locOff_succ I hlt]; rfl
+  · rw [e6J, e6C]
+  · rw [NSt.set_stk, show s5c.stk = s5.stk from rfl, hs5, hK5', e6J, recsUpTo_succ I hlt, hstk]
     have hrv : (recsV I v).take d = recsV I v := List.take_of_length_le (by simp [recsV, d])
     rw [hrv, List.flatten_append, List.reverse_append]
     funext q
     by_cases hq : q = qRec
     · subst hq; simp; rfl
     · simp [Function.update_of_ne hq]
-  · rw [NSt.set_out, ho5, hout]
+  · rw [NSt.set_out, show s5c.out = s5.out from rfl, ho5, hout]
   · rw [e6J]; omega
   · rw [hp6]; omega
 
@@ -481,7 +532,7 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     ∃ st', Good (encodeSystem I) w p1r st st' (600 * (H I + 1) * Ex.nodeCost w) ∧
       st'.stk = Function.update st.stk qRec ((locRecs I).flatten.reverse ++ st.stk qRec) ∧
       st'.out = st.out ∧ st'.pos = posAt I I.numLocations ∧ st'.env rW = I.numLocations ∧
-      st'.env rL1 = ℓ + 1 ∧ st'.env rKk = k ∧
+      st'.env rL1 = ℓ + 1 ∧ st'.env rKk = k ∧ st'.env rCnt = (locRecs I).length ∧
       ∀ r, CStm.wReg r p1r = false → st'.env r = st.env r := by
   have hU := CStm.nodeCost_ge w
   have hU' := CStm.unitCost_ge w
@@ -507,23 +558,31 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
       (Function.update (Function.update (Function.update (Function.update
         (Function.update st.env rKk k) rP (2 ^ (Nat.bits k).length)) rT 1) rT 1) rT 1) rJ 0)
       rOff 0 q := fun _ => rfl
-  have hp5 : s5.pos = posAt I 0 := by
+  have r5b := Good.set (x := encodeSystem I) (w := w) (r := rCnt) (e := .const 0) (st := s5)
+    (by simp only [Ex.Fits]; omega)
+  set s5b := s5.set rCnt (Ex.eval s5.env (.const 0))
+  have e5b : ∀ q, s5b.env q = Function.update (Function.update (Function.update
+      (Function.update (Function.update (Function.update (Function.update
+        (Function.update st.env rKk k) rP (2 ^ (Nat.bits k).length)) rT 1) rT 1) rT 1) rJ 0)
+      rOff 0) rCnt 0 q := fun _ => rfl
+  have hp5 : s5b.pos = posAt I 0 := by
     show 0 + (encodeNat k).length + (encodeNat ℓ).length + (encodeNat I.numLocations).length = _
     rw [posAt_zero]; ring
-  have e5J : s5.env rJ = 0 := by
-    rw [e5, Function.update_of_ne (by decide), Function.update_self]
-  have hI5 : p1rInv I st s5 := by
-    refine ⟨?_, ?_, by rw [e5J]; omega, by rw [e5J, hp5], ?_, ?_, rfl⟩
-    · rw [e5]; simp only [Function.update_of_ne (show rW ≠ rOff by decide),
+  have e5J : s5b.env rJ = 0 := by
+    rw [e5b, Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+      Function.update_self]
+  have hI5 : p1rInv I st s5b := by
+    refine ⟨?_, ?_, by rw [e5J]; omega, by rw [e5J, hp5], ?_, by rw [e5J, e5b, Function.update_self]; rfl, ?_, rfl⟩
+    · rw [e5b]; simp only [Function.update_of_ne (show rW ≠ rCnt by decide), Function.update_of_ne (show rW ≠ rOff by decide),
         Function.update_of_ne (show rW ≠ rJ by decide), Function.update_of_ne (show rW ≠ rT by decide),
         Function.update_of_ne (show rW ≠ rP by decide), Function.update_of_ne (show rW ≠ rKk by decide)]
       exact hW
-    · rw [e5]; simp only [Function.update_of_ne (show rL1 ≠ rOff by decide),
+    · rw [e5b]; simp only [Function.update_of_ne (show rL1 ≠ rCnt by decide), Function.update_of_ne (show rL1 ≠ rOff by decide),
         Function.update_of_ne (show rL1 ≠ rJ by decide),
         Function.update_of_ne (show rL1 ≠ rT by decide), Function.update_of_ne (show rL1 ≠ rP by decide),
         Function.update_of_ne (show rL1 ≠ rKk by decide)]
       exact hL1
-    · rw [e5J, locOff_zero, e5, Function.update_self]
+    · rw [e5J, locOff_zero, e5b, Function.update_of_ne (by decide), Function.update_self]
     · rw [e5J]; simp only [recsUpTo, List.take_zero, List.flatMap_nil, List.flatten_nil,
         List.reverse_nil, List.nil_append, Function.update_eq_self]; rfl
   obtain ⟨s6, r6, hI6, hc6⟩ := Good.loop_var (x := encodeSystem I) (w := w)
@@ -532,26 +591,26 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     (200 * Ex.nodeCost w) (fun s hI => ⟨by
       obtain ⟨hW', -, hj, -⟩ := hI
       simp only [Ex.Fits, rv, hW']; omega, fun hc => p1rBody_good I hw hH hkH hℓ st s hI hc⟩)
-    s5 hI5
-  obtain ⟨hW6, hL6, hj6, hpos6, -, hstk6, hout6⟩ := hI6
+    s5b hI5
+  obtain ⟨hW6, hL6, hj6, hpos6, -, hcnt6, hstk6, hout6⟩ := hI6
   have hj : s6.env rJ = I.numLocations := by
     simp only [Ex.eval, rv, hW6] at hc6; split_ifs at hc6 with h <;> omega
-  have hall := r0.seq (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6)))))
-  have hK5 : s5.env rKk = k := by
-    rw [e5]; simp only [Function.update_of_ne (show rKk ≠ rOff by decide),
+  have hall := r0.seq (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq (r5b.seq r6))))))
+  have hK5 : s5b.env rKk = k := by
+    rw [e5b]; simp only [Function.update_of_ne (show rKk ≠ rCnt by decide), Function.update_of_ne (show rKk ≠ rOff by decide),
       Function.update_of_ne (show rKk ≠ rJ by decide), Function.update_of_ne (show rKk ≠ rT by decide),
       Function.update_of_ne (show rKk ≠ rP by decide), Function.update_self]
   refine ⟨s6, hall.mono ?_, by rw [hstk6, hj, recsUpTo_all], hout6, by rw [hpos6, hj], hW6, hL6,
-    by rw [r6.env_of (by decide), hK5], fun r hr => hall.env_of hr⟩
+    by rw [r6.env_of (by decide), hK5], by rw [hcnt6, hj, recsUpTo_all], fun r hr => hall.env_of hr⟩
   have hlen : (encodeNat k).length + (encodeNat ℓ).length +
       (encodeNat I.numLocations).length ≤ H I := by rw [← posAt_zero]; exact posAt_le I 0
-  have hφ : H I - s5.pos ≤ H I := by omega
-  have hμ : I.numLocations - s5.env rJ ≤ H I := by omega
+  have hφ : H I - s5b.pos ≤ H I := by omega
+  have hμ : I.numLocations - s5b.env rJ ≤ H I := by omega
   simp only [condCost, Ex.size, rv] at *
   generalize Ex.nodeCost w = N at *
   generalize unitCost w = U at *
-  generalize H I - s5.pos = φ at *
-  generalize I.numLocations - s5.env rJ = μ at *
+  generalize H I - s5b.pos = φ at *
+  generalize I.numLocations - s5b.env rJ = μ at *
   generalize (encodeNat k).length = lk at *
   generalize (encodeNat ℓ).length = ll at *
   generalize (encodeNat I.numLocations).length = lW at *
