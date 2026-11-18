@@ -219,3 +219,4 @@ import Lax119563Proofs.Compiler.OrderPos
 import Lax119563Proofs.Compiler.OutDesc
 import Lax119563Proofs.Compiler.Final
 import Lax119563Proofs.Compiler.OutLen
+import Lax119563Proofs.Compiler.Bound
