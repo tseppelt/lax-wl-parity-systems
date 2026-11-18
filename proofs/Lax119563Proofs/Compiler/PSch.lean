@@ -414,4 +414,248 @@ lemma orsL_le (cs : List (Coord k ℓ)) : ∀ v ∈ orsL cs, v ≤ 1 := by
 lemma length_blockDescription (b : BlockCoord ℓ) : (blockDescription b).length = ℓ := by
   simp [blockDescription]
 
+set_option maxHeartbeats 3000000 in
+/-- One coordinate. -/
+lemma p2Coord_good {w : ℕ} (hw : 2 ≤ w) (cs : List (Coord k ℓ)) (hkH : k ≤ H I)
+    (hℓ : ℓ ≤ H I) (hdH : cs.length ≤ H I) (hb : 16 * (H I + 1) + rowsSum cs ≤ 2 ^ w)
+    (tern : Bool) (B : ℕ) (S0 : Fin CQ → List ℕ) (O : List ℕ) (rest : List Bool)
+    (hx : (encodeSystem I).drop B = encodeNats (cs.flatMap cdesc) ++ rest)
+    (s : NSt CR CQ) (hI : p2CoordInv cs tern B S0 O s)
+    (hc : (Ex.lt (rv rK) (rv rD)).eval s.env ≠ 0) :
+    ∃ s', Good (encodeSystem I) w p2Coord s s'
+        (150 * Ex.nodeCost w * ((B + (encodeNats (cs.flatMap cdesc)).length - s.pos) -
+          (B + (encodeNats (cs.flatMap cdesc)).length - s'.pos)) + 150 * Ex.nodeCost w) ∧
+      p2CoordInv cs tern B S0 O s' ∧ cs.length - s'.env rK < cs.length - s.env rK ∧
+      B + (encodeNats (cs.flatMap cdesc)).length - s'.pos ≤
+        B + (encodeNats (cs.flatMap cdesc)).length - s.pos := by
+  have hU := CStm.nodeCost_ge w
+  have hU' := CStm.unitCost_ge w
+  obtain ⟨hK, hD, hL, hKk, hKm, hT, hR, hC, hDi, hP, hLa, hpos, hstk, hout⟩ := hI
+  have hlt : s.env rK < cs.length := by
+    by_contra h; apply hc; simp only [Ex.eval, rv, hD]; rw [if_neg h]
+  obtain ⟨r, hrdef⟩ : ∃ r, s.env rK = r := ⟨_, rfl⟩
+  rw [hrdef] at hlt hK hR hC hDi hP hLa hpos hstk
+  set c := cs[r]
+  set bs := blockDescription c.2
+  have hbsl : bs.length = ℓ := length_blockDescription _
+  have hsplit : cs.flatMap cdesc = (cs.take r).flatMap cdesc ++
+      ((c.1 : ℕ) :: bs ++ (cs.drop (r + 1)).flatMap cdesc) := by
+    have e := List.take_append_drop r cs
+    rw [List.drop_eq_getElem_cons hlt] at e
+    conv_lhs => rw [← e]
+    rw [List.flatMap_append, List.flatMap_cons]; rfl
+  set rest1 := encodeNats ((cs.drop (r + 1)).flatMap cdesc) ++ rest
+  have hx1 : (encodeSystem I).drop s.pos = encodeNat (c.1 : ℕ) ++ (encodeNats bs ++ rest1) := by
+    rw [hpos, drop_add, hx, hsplit, encodeNats_append, List.append_assoc, List.drop_left,
+      List.cons_append, encNats_cons, encodeNats_append, List.append_assoc, List.append_assoc]
+  have hH2 : 2 * (H I + 1) ≤ 2 ^ w := by omega
+  have hck : (c.1 : ℕ) < k := c.1.2
+  -- read the block
+  have r1 := rdNumS_good (Q := CQ) hw (r := rBi) (p := rP) (t := rT) (by decide) (by decide)
+    (by decide) s (c.1 : ℕ) _ hx1 (bits_lt_of_le (by omega) hH2)
+  set s1 := rdNumFinal s rBi rP rT (c.1 : ℕ)
+  have e1 : ∀ q, q ≠ rBi → q ≠ rP → q ≠ rT → s1.env q = s.env q :=
+    fun q h1 h2 h3 => rdNumFinal_env_ne h1 h2 h3 _
+  have hRle : rowsSum (cs.take r) ≤ rowsSum cs := rowsSum_take_le cs r
+  have hPle : ((cs.take r).map fun c => (c.1 : ℕ)).getLastD k ≤ k :=
+    getLastD_le le_rfl (by simp only [List.mem_map]; rintro _ ⟨c', -, rfl⟩; exact c'.1.2.le)
+  have hDle : dChg k ((cs.take r).map fun c => (c.1 : ℕ)) ≤ H I :=
+    (dChg_le _ _).trans (by simp; omega)
+  have hcv : colV tern ≤ 8 := by unfold colV; split_ifs <;> omega
+  have hCle : r * colV tern ≤ 8 * H I := by nlinarith
+  have hLle : (if ∃ c ∈ cs.take r, ¬ (c.1 : ℕ) + 1 < k then 1 else 0) ≤ 1 := by
+    split_ifs <;> omega
+  have hTle : (if tern then 1 else 0) ≤ 1 := by split_ifs <;> omega
+  have r2 := p2Blk_good I hw s1 (i := (c.1 : ℕ)) (rdNumFinal_env_r (by decide) (by decide) _)
+    (by rw [e1 _ (by decide) (by decide) (by decide), hP])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hR])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hC])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hDi])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hLa])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hKk])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hKm])
+    (by rw [e1 _ (by decide) (by decide) (by decide), hT])
+    (by omega)
+  set s2 := ((((s1.set rDist (dChg k ((cs.take r).map fun c => (c.1 : ℕ)) +
+      if (c.1 : ℕ) = ((cs.take r).map fun c => (c.1 : ℕ)).getLastD k then 0 else 1)).set rPrev
+      (c.1 : ℕ)).set rRows (rowsSum (cs.take r) + if (c.1 : ℕ) + 1 < k then 1 else k - 1)).set
+      rLast (if (c.1 : ℕ) + 1 < k then (if ∃ c ∈ cs.take r, ¬ (c.1 : ℕ) + 1 < k then 1 else 0)
+        else 1)).set rCol (r * colV tern + if (if tern then 1 else 0) = 0 then 2 else 8)
+  have r3 := Good.set (x := encodeSystem I) (w := w) (st := s2) (r := rI) (e := .const 0)
+    (by simp only [Ex.Fits]; omega)
+  set s3 := s2.set rI ((Ex.const 0 : Ex CR).eval s2.env)
+  have e3 : ∀ q, q ≠ rI → q ≠ rCol → q ≠ rLast → q ≠ rRows → q ≠ rPrev → q ≠ rDist →
+      s3.env q = s1.env q := by
+    intro q h1 h2 h3 h4 h5 h6
+    simp [s3, s2, Function.update_of_ne h1, Function.update_of_ne h2, Function.update_of_ne h3,
+      Function.update_of_ne h4, Function.update_of_ne h5, Function.update_of_ne h6]
+  have e3L : s3.env rL = ℓ := by
+    rw [e3 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      e1 _ (by decide) (by decide) (by decide), hL]
+  set R0 := rowsSum (cs.take r) + if (c.1 : ℕ) + 1 < k then 1 else k - 1
+  have e3R : s3.env rRows = R0 := by
+    simp [s3, s2, Function.update_of_ne (show rRows ≠ rI by decide),
+      Function.update_of_ne (show rRows ≠ rCol by decide),
+      Function.update_of_ne (show rRows ≠ rLast by decide), R0]
+  have hrc : rowsSum (cs.take (r + 1)) = R0 + bs.sum := by
+    rw [rowsSum_take_succ cs hlt, sum_blockDescription]; simp only [R0, rowsC]; ring
+  have hR1 : rowsSum (cs.take (r + 1)) ≤ rowsSum cs := rowsSum_take_le cs (r + 1)
+  -- the bits
+  set ors := orsL (cs.take r)
+  have hs3 : s3.stk = Function.update (Function.update S0 qOr ors) qOr2 [] := by
+    show s.stk = _; exact hstk
+  have hx3 : (encodeSystem I).drop s3.pos = encodeNats bs ++ rest1 := by
+    show (encodeSystem I).drop (s.pos + (encodeNat (c.1 : ℕ)).length) = _
+    rw [drop_add, hx1, List.drop_left]
+  have h03 : s3.env rI = 0 := by simp [s3, Ex.eval]
+  have hI3 : p2BitInv bs ors s3.pos R0 s3.stk s3.out s3 := by
+    refine ⟨by rw [h03]; omega, by rw [e3L, hbsl], by rw [h03]; simp [encodeNats],
+      by rw [h03, e3R, List.take_zero, List.sum_nil, Nat.add_zero], ?_, rfl⟩
+    rw [h03, List.drop_zero, List.take_zero, List.take_zero]
+    simp only [List.zipWith_nil_left, List.reverse_nil]
+    rw [hs3]
+    funext q
+    by_cases h1 : q = qOr2
+    · subst h1; simp
+    · by_cases h2 : q = qOr
+      · subst h2; simp [Function.update_of_ne (show qOr ≠ qOr2 by decide)]
+      · simp [Function.update_of_ne h1, Function.update_of_ne h2]
+  have hors : ors.length = bs.length := by rw [length_orsL, hbsl]
+  obtain ⟨s4, r4, hI4, hc4⟩ := Good.loop_var (x := encodeSystem I) (w := w)
+    (e := .lt (rv rI) (rv rL)) (body := p2Bit) (p2BitInv bs ors s3.pos R0 s3.stk s3.out)
+    (fun s => bs.length - s.env rI) (fun s' => s3.pos + (encodeNats bs).length - s'.pos)
+    (40 * Ex.nodeCost w) (40 * Ex.nodeCost w) (fun s' hI' => ⟨by
+      obtain ⟨hi', hL', -⟩ := hI'
+      simp only [Ex.Fits, rv, hL']; omega,
+      fun hc' => p2Bit_good I hw bs ors (blockDescription_le _) (orsL_le _) hors s3.pos R0 s3.stk
+        s3.out rest1 hx3 (by rw [hs3]; simp) (by rw [← hrc]; omega) (by omega) s' hI' hc'⟩)
+    s3 hI3
+  obtain ⟨hi4, hL4, hp4, hR4, hs4, ho4⟩ := hI4
+  have hi4' : s4.env rI = bs.length := by
+    simp only [Ex.eval, rv, hL4] at hc4; split_ifs at hc4 with h <;> omega
+  rw [hi4'] at hp4 hR4 hs4
+  rw [List.take_of_length_le le_rfl] at hp4 hR4
+  rw [List.take_of_length_le (by omega), List.take_of_length_le le_rfl,
+    List.drop_of_length_le (by omega)] at hs4
+  set z := List.zipWith bor ors bs
+  have hzl : z.length = ℓ := by simp [z, hors, hbsl]
+  have hz : z = orsL (cs.take (r + 1)) := by
+    rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, orsL_append]
+  -- move the OR back
+  obtain ⟨s5, r5, hs5, hf5⟩ := moveN_good (x := encodeSystem I) (w := w) (src := qOr2) (dst := qOr)
+    (cnt := rL) (i := rI) (t := rO) (by decide) (by decide) (by decide) (by decide) s4
+    (n := ℓ) (by rw [hL4, hbsl])
+    (by rw [hs4, Function.update_self, List.length_reverse, hzl])
+    (by omega)
+    (by
+      intro v hv
+      rw [hs4, Function.update_self] at hv
+      have := List.mem_of_mem_take hv
+      rw [List.mem_reverse] at this
+      have : v ≤ 1 := by
+        obtain ⟨j, hj, rfl⟩ := List.mem_iff_getElem.mp this
+        simp only [z, List.getElem_zipWith]; exact bor_le _ _
+      omega)
+  have e5K : s5.env rK = r := by
+    rw [hf5.2.2 _ (by decide), r4.env_of (r := rK) (by decide),
+      e3 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      e1 _ (by decide) (by decide) (by decide), hrdef]
+  have r6 := Good.set (x := encodeSystem I) (w := w) (st := s5) (r := rK)
+    (e := .add (rv rK) (.const 1)) (by simp only [Ex.Fits, Ex.eval, rv, e5K]; omega)
+  set s6 := s5.set rK ((Ex.add (rv rK) (.const 1)).eval s5.env)
+  have hall := r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6))))
+  have htail := r4.seq (r5.seq r6)
+  have e6K : s6.env rK = r + 1 := by simp [s6, Ex.eval, e5K]
+  have hp6 : s6.pos = s4.pos := by
+    show s5.pos = _; exact hf5.1
+  have hlen1 : (encodeNats ((cs.take (r + 1)).flatMap cdesc)).length =
+      (encodeNats ((cs.take r).flatMap cdesc)).length + (encodeNat (c.1 : ℕ)).length +
+        (encodeNats bs).length := by
+    rw [List.take_add_one, List.getElem?_eq_getElem hlt]
+    simp only [Option.toList_some, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, encodeNats_append, List.length_append, cdesc, encNats_cons, c, bs]
+    ring
+  have hle : (encodeNats ((cs.take (r + 1)).flatMap cdesc)).length ≤
+      (encodeNats (cs.flatMap cdesc)).length := by
+    conv_rhs => rw [← List.take_append_drop (r + 1) cs]
+    rw [List.flatMap_append, encodeNats_append, List.length_append]; omega
+  have hp4' : s4.pos = s.pos + (encodeNat (c.1 : ℕ)).length + (encodeNats bs).length := by
+    rw [hp4]; rfl
+  have hbsE : ℓ ≤ (encodeNats bs).length := hbsl ▸ length_le_encodeNats bs
+  have hcE : 1 ≤ (encodeNat (c.1 : ℕ)).length := by rw [length_encodeNat]; omega
+  refine ⟨s6, hall.mono ?_, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩
+  · rw [hp6, hp4']
+    have hΔ : B + (encodeNats (cs.flatMap cdesc)).length - s.pos -
+        (B + (encodeNats (cs.flatMap cdesc)).length - (s.pos + (encodeNat (c.1 : ℕ)).length +
+          (encodeNats bs).length)) = (encodeNat (c.1 : ℕ)).length + (encodeNats bs).length := by
+      rw [hpos] at ⊢; omega
+    rw [hΔ]
+    have hφ3 : s3.pos + (encodeNats bs).length - s3.pos = (encodeNats bs).length := by omega
+    have hμ3 : bs.length - s3.env rI = ℓ := by rw [h03, hbsl]; rfl
+    rw [hφ3, hμ3]
+    simp only [condCost, Ex.size, rv]
+    generalize Ex.nodeCost w = N at *
+    generalize unitCost w = U at *
+    generalize (encodeNat (c.1 : ℕ)).length = lc at *
+    generalize (encodeNats bs).length = lb at *
+    nlinarith
+  · rw [e6K]; omega
+  · rw [hall.env_of (by decide), hD]
+  · rw [hall.env_of (by decide), hL]
+  · rw [hall.env_of (by decide), hKk]
+  · rw [hall.env_of (by decide), hKm]
+  · rw [hall.env_of (by decide), hT]
+  · rw [e6K, hrc, ← hR4]
+    show s5.env rRows = s4.env rRows
+    exact hf5.2.2 _ (by decide)
+  · rw [e6K, htail.env_of (by decide)]
+    cases tern <;> simp [s3, s2, Function.update_of_ne (show rCol ≠ rI by decide), colV] <;> ring
+  · rw [e6K, htail.env_of (by decide)]
+    simp only [s3, s2, NSt.set_env, Function.update_of_ne (show rDist ≠ rI by decide),
+      Function.update_of_ne (show rDist ≠ rCol by decide),
+      Function.update_of_ne (show rDist ≠ rLast by decide),
+      Function.update_of_ne (show rDist ≠ rRows by decide),
+      Function.update_of_ne (show rDist ≠ rPrev by decide), Function.update_self]
+    rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, List.map_append,
+      List.map_singleton, dChg_append]
+  · rw [e6K, htail.env_of (by decide)]
+    simp only [s3, s2, NSt.set_env, Function.update_of_ne (show rPrev ≠ rI by decide),
+      Function.update_of_ne (show rPrev ≠ rCol by decide),
+      Function.update_of_ne (show rPrev ≠ rLast by decide),
+      Function.update_of_ne (show rPrev ≠ rRows by decide), Function.update_self]
+    rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, List.map_append,
+      List.map_singleton, List.getLastD_concat]
+  · rw [e6K, htail.env_of (by decide)]
+    simp only [s3, s2, NSt.set_env, Function.update_of_ne (show rLast ≠ rI by decide),
+      Function.update_of_ne (show rLast ≠ rCol by decide), Function.update_self]
+    rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some]
+    simp only [List.mem_append, List.mem_singleton]
+    by_cases h1 : (c.1 : ℕ) + 1 < k
+    · rw [if_pos h1]
+      by_cases h2 : ∃ c' ∈ cs.take r, ¬ (c'.1 : ℕ) + 1 < k
+      · rw [if_pos h2, if_pos (by obtain ⟨c', h, h'⟩ := h2; exact ⟨c', Or.inl h, h'⟩)]
+      · rw [if_neg h2, if_neg]
+        rintro ⟨c', h | h, h'⟩
+        · exact h2 ⟨c', h, h'⟩
+        · subst h; exact h' h1
+    · rw [if_neg h1, if_pos ⟨c, Or.inr rfl, h1⟩]
+  · rw [e6K, hp6, hp4', hpos, hlen1]; ring
+  · rw [e6K]
+    show s5.stk = _
+    rw [hs5, hs4]
+    funext q
+    unfold movedStk
+    by_cases h1 : q = qOr
+    · subst h1
+      simp only [Function.update_self, Function.update_of_ne (show qOr ≠ qOr2 by decide),
+        List.append_nil]
+      rw [List.take_of_length_le (by simp [hzl]), List.reverse_reverse, hz]
+    · by_cases h2 : q = qOr2
+      · subst h2
+        simp [Function.update_of_ne (show qOr2 ≠ qOr by decide), hzl]
+      · simp [Function.update_of_ne h1, Function.update_of_ne h2, hs3]
+  · rw [hall.out_of (by decide), hout]
+  · rw [e6K]; omega
+  · rw [hp6, hp4']; omega
+
 end Lax119563Proofs.Compiler
