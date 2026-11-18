@@ -139,6 +139,21 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
   `rs.flatten` (records of `A ≥ 1` words) ends holding `(rs.mergeSort CSort.rle).flatten`,
   cost `(n+1)(log₂ n + 2) · 700 (a+1) nodeCost`; `mrgS_good`, `passS_good`, `mvAllS_good`,
   `revS_good`). Item 3 is done (queue helpers only if needed).
+* (item 5) `OutDesc`: **`graphDescription_eq_gDesc`**, **`encodeGraphPair_eq`**:
+  `encodeGraphPair (reGraph I (ordL I) 0) (reGraph I (ordL I) 1) = encodeNats (gDesc I 0 ++
+  gDesc I 1)`, where `gDesc I ε = n :: colorsOf 0 (clsSizes I) ++ m :: edges` with `clsSizes`
+  the label counts of `ordCls I` and edges `gEdges I ε`: for each schema `e`, each hub class
+  `X` of `hubsCls I e` and each label `l` (index `i`), the pairs `(hubStart X + i, v)` for
+  `v ∈ hubNbrs ε X l` — the slot positions `slotPos` (closed formulas: `schBase`, `hubSize`,
+  `sumSize`, `entBefore`, `nEnt`, `coefSteps`, `locStart`, rank of the coordinate in
+  `coordList (I.domain v)`, `initSeed` for singleton coordinate classes), sorted. Sorted forms
+  (no sorting needed by the program except for junctions): `hubNbrs_link` (last track, end
+  coordinate), `hubNbrs_upd` (previous track or sum, track, coef — unless first entry of a
+  binary column), `hubNbrs_upd_first` (track, coef, start coordinate), `hubNbrs_junc` (sum,
+  then the two coordinates sorted). Steps: `edgeList_hubsCls` (edges per hub class via
+  `zipIdx_flatMap_blocks`), `posOpt_slot`, `clsStart_hubsCls`, `edgeList_eq_gEdges`,
+  `schSize_eq`, `ent_lt_nEnt`, section bounds `track_lt_coef`, `coef_lt_locBase`,
+  `sum_lt_track`, `coord_ge_locBase`.
 * (item 5, partly) `OrderPos`: closed formulas `clsStart_junc/link/upd/sum/track/coef/coord`
   (via `schBase`, `locBase`, `locStart`, `colW`, `nEnt`, `entBefore`, `hubSize`, `sumSize`),
   `slot_mem_ordCls` (every slot class is present with labels `slotLabs`), `trackAt_stepsC`,
@@ -178,12 +193,8 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 4. **The compiler program** (as above): triviality check; locations pass; schema pre-scan;
    request pass; sort / join / sort; emission of `n`, colors, `m`, edges for `ε = 0, 1` in the
    order `ordL I`.
-5. **List-level correctness (rest)**: explicit sorted forms of `nbrPos` per hub kind (upd:
-   `[trackAt, track, coef]`, or `[track, coef, coord]` for a binary schema at the first entry;
-   link: `[last track, end coord]`; junc: sum, then the two coordinate positions compared),
-   from the `clsStart_*` formulas and `nbrPos_of_pairwise`; then a single list function
-   `outDesc I` (what the program emits) with `encodeGraphPair = encodeNats (outDesc I)`, and
-   each pass of the program against it.
+5. **List-level correctness (rest)**: only the per-pass correctness of the program against
+   `gDesc` remains (the list-level target is done, see `OutDesc` above).
 6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
    `CStm.computesWithin`; finally `Matrix/Main.lean` with
    `compile I := (reGraph I (ordL I) 0, reGraph I (ordL I) 1)` and `reGraph_spec`.

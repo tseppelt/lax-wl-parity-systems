@@ -11,6 +11,10 @@ computes from the input (`graphDescription_eq_gDesc`, `encodeGraphPair_eq`):
   `slotPos` (closed formulas of `OrderPos`: `schBase`, `hubSize`, `sumSize`, `entBefore`,
   `nEnt`, `coefSteps`, `locStart` and the rank of a coordinate in `coordList (I.domain v)`),
   sorted.
+
+Sorted forms: `hubNbrs_link`, `hubNbrs_upd`, `hubNbrs_upd_first` need no sorting (the slot
+order, resp. track, coefficient, start coordinate); `hubNbrs_junc` is the sum followed by the
+two coordinate positions sorted.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
