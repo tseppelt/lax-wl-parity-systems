@@ -1,4 +1,5 @@
 import Lax119563Proofs.Compiler.PLoc
+import Lax119563Proofs.Compiler.CFrame
 
 /-!
 # Pass `P1'` of the compiler program: the location records
@@ -22,6 +23,8 @@ def rLab : Fin CR := 14
 def rV : Fin CR := 15
 /-- The location records. -/
 def qRec : Fin CQ := 1
+/-- `k` (read by `P1'`). -/
+def rKk : Fin CR := 16
 
 variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ)
 
@@ -123,7 +126,7 @@ def p1rBody : CStm CR CQ :=
 
 /-- **Pass `P1'`.** -/
 def p1r : CStm CR CQ :=
-  .seq .rst (.seq (skipNumS rT) (.seq (skipNumS rT) (.seq (skipNumS rT)
+  .seq .rst (.seq (rdNumS rKk rP rT) (.seq (skipNumS rT) (.seq (skipNumS rT)
     (.seq (.set rJ (.const 0)) (.seq (.set rOff (.const 0))
       (.loop (.lt (rv rJ) (rv rW)) p1rBody))))))
 
@@ -477,15 +480,17 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     (hL1 : st.env rL1 = ℓ + 1) :
     ∃ st', Good (encodeSystem I) w p1r st st' (600 * (H I + 1) * Ex.nodeCost w) ∧
       st'.stk = Function.update st.stk qRec ((locRecs I).flatten.reverse ++ st.stk qRec) ∧
-      st'.out = st.out ∧ st'.pos ≤ H I ∧ st'.env rW = I.numLocations ∧
-      st'.env rL1 = ℓ + 1 := by
+      st'.out = st.out ∧ st'.pos = posAt I I.numLocations ∧ st'.env rW = I.numLocations ∧
+      st'.env rL1 = ℓ + 1 ∧ st'.env rKk = k ∧
+      ∀ r, CStm.wReg r p1r = false → st'.env r = st.env r := by
   have hU := CStm.nodeCost_ge w
   have hU' := CStm.unitCost_ge w
   have hWH := W_le I
   have r0 := Good.rst (x := encodeSystem I) (w := w) (st := st)
   set s0 : NSt CR CQ := { st with pos := 0 }
-  have r1 := skipNumS_good (Q := CQ) hw (t := rT) s0 k _ (drop_zero_k I)
-  set s1 := skipNumFinal s0 rT k
+  have r1 := rdNumS_good (Q := CQ) hw (r := rKk) (p := rP) (t := rT) (by decide) (by decide)
+    (by decide) s0 k _ (drop_zero_k I) (bits_lt_of_le hkH (by omega))
+  set s1 := rdNumFinal s0 rKk rP rT k
   have r2 := skipNumS_good (Q := CQ) hw (t := rT) s1 ℓ _
     (by show (encodeSystem I).drop (0 + _) = _; rw [zero_add]; exact drop_ell I)
   set s2 := skipNumFinal s1 rT ℓ
@@ -499,7 +504,8 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
     (by simp only [Ex.Fits]; omega)
   set s5 := s4.set rOff (Ex.eval s4.env (.const 0))
   have e5 : ∀ q, s5.env q = Function.update (Function.update
-      (Function.update (Function.update (Function.update st.env rT 1) rT 1) rT 1) rJ 0)
+      (Function.update (Function.update (Function.update (Function.update
+        (Function.update st.env rKk k) rP (2 ^ (Nat.bits k).length)) rT 1) rT 1) rT 1) rJ 0)
       rOff 0 q := fun _ => rfl
   have hp5 : s5.pos = posAt I 0 := by
     show 0 + (encodeNat k).length + (encodeNat ℓ).length + (encodeNat I.numLocations).length = _
@@ -509,11 +515,13 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
   have hI5 : p1rInv I st s5 := by
     refine ⟨?_, ?_, by rw [e5J]; omega, by rw [e5J, hp5], ?_, ?_, rfl⟩
     · rw [e5]; simp only [Function.update_of_ne (show rW ≠ rOff by decide),
-        Function.update_of_ne (show rW ≠ rJ by decide), Function.update_of_ne (show rW ≠ rT by decide)]
+        Function.update_of_ne (show rW ≠ rJ by decide), Function.update_of_ne (show rW ≠ rT by decide),
+        Function.update_of_ne (show rW ≠ rP by decide), Function.update_of_ne (show rW ≠ rKk by decide)]
       exact hW
     · rw [e5]; simp only [Function.update_of_ne (show rL1 ≠ rOff by decide),
         Function.update_of_ne (show rL1 ≠ rJ by decide),
-        Function.update_of_ne (show rL1 ≠ rT by decide)]
+        Function.update_of_ne (show rL1 ≠ rT by decide), Function.update_of_ne (show rL1 ≠ rP by decide),
+        Function.update_of_ne (show rL1 ≠ rKk by decide)]
       exact hL1
     · rw [e5J, locOff_zero, e5, Function.update_self]
     · rw [e5J]; simp only [recsUpTo, List.take_zero, List.flatMap_nil, List.flatten_nil,
@@ -528,8 +536,13 @@ theorem p1r_good {w : ℕ} (hw : 2 ≤ w) (hH : 4 * (H I + 1) ≤ 2 ^ w) (hkH : 
   obtain ⟨hW6, hL6, hj6, hpos6, -, hstk6, hout6⟩ := hI6
   have hj : s6.env rJ = I.numLocations := by
     simp only [Ex.eval, rv, hW6] at hc6; split_ifs at hc6 with h <;> omega
-  refine ⟨s6, (r0.seq (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6)))))).mono ?_,
-    by rw [hstk6, hj, recsUpTo_all], hout6, by rw [hpos6]; exact posAt_le I _, hW6, hL6⟩
+  have hall := r0.seq (r1.seq (r2.seq (r3.seq (r4.seq (r5.seq r6)))))
+  have hK5 : s5.env rKk = k := by
+    rw [e5]; simp only [Function.update_of_ne (show rKk ≠ rOff by decide),
+      Function.update_of_ne (show rKk ≠ rJ by decide), Function.update_of_ne (show rKk ≠ rT by decide),
+      Function.update_of_ne (show rKk ≠ rP by decide), Function.update_self]
+  refine ⟨s6, hall.mono ?_, by rw [hstk6, hj, recsUpTo_all], hout6, by rw [hpos6, hj], hW6, hL6,
+    by rw [r6.env_of (by decide), hK5], fun r hr => hall.env_of hr⟩
   have hlen : (encodeNat k).length + (encodeNat ℓ).length +
       (encodeNat I.numLocations).length ≤ H I := by rw [← posAt_zero]; exact posAt_le I 0
   have hφ : H I - s5.pos ≤ H I := by omega
