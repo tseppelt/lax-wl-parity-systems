@@ -233,8 +233,19 @@ registers `rL = ℓ`, `rL1 = ℓ + 1`, `rOff`, counters `rK, rI`, stack `qLoc = 
 proved for nontrivial systems with `k ≥ 1`), from any state with `pos ≤ H`, `p1` ends at
 `schPos I` with `rW = W`, `rL = ℓ`, `rE = E`, `rOff = locOff I W`, `qLoc` :=
 `(locOffs I).reverse ++ qLoc`, other stacks and output kept, cost `500 (H + 1) nodeCost`.
-Next: `ℓ ≤ H` for nontrivial systems; `P1'` (records `(v, i, b₀ … b_{ℓ-1})` with the
-coordinate rank for the join, if `E > 0`); `P2`. For the costs use the
+`ell_le_H` (`1 ≤ k`, `¬ trivSys I` → `ℓ ≤ H`). `PRec` (pass `P1'`, for `E > 0`):
+`k_le_H` (`E > 0` → `k ≤ H`), `coordNum_div`, `labsN v = |coordLabs v|`, records
+`locRec I v r = v :: coordNumDescription ℓ (locNums[r]) ++ [locOff v + r · labsN v, labsN v]`
+(so the record ends with `clsStart (coord v c) - locBase` and the label count),
+`recsV`, `recsUpTo`, `locRecs`; **`p1r_good`**: after `p1` (`rW = W`, `rL1 = ℓ + 1`), under
+`k, ℓ ≤ H`, `p1r` sets `qRec := (locRecs I).flatten.reverse ++ qRec` (other stacks, output,
+`rW`, `rL1` kept, `pos ≤ H`), cost `600 (H + 1) nodeCost`; `p1rIn_good`, `p1rBody_good`.
+Records are in input order: `(v, i, b₀ … b_{ℓ-1})` with `b₀` the *least* significant bit, so
+they are **not** sorted by `CSort.rle`; for the join either sort them too (`sortS`) or build
+the request keys in the same order and sort both. Still missing for the join:
+`locNums I v = (coordList (I.domain v)).map coordNum` (both increasing; needed to match
+`clsStart_coord`, which uses `idxOf` in `coordList`).
+Next: `P2`; `P3`. For the costs use the
 pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`;
 if `nlinarith` times out in a big context, `nlinarith only [hU, hU', hint products]`);
 for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos` (or
