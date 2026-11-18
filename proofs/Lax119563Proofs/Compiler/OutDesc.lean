@@ -68,4 +68,68 @@ lemma zipIdx_flatMap_blocks (G : β × γ → ℕ → List δ) :
 
 end Generic
 
+variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ) (ε : ZMod 2)
+
+/-! ## Edges per hub class -/
+
+lemma nbrPos_of_not_hub {x : VName I} (h : isHub I x.1 = false) : nbrPos I ε x = [] := by
+  obtain ⟨X, l⟩ := x
+  cases X <;> simp_all [isHub, nbrPos, slotsOf]
+
+/-- **The edges, per hub class.** For every schema and every hub class `X` of `hubsCls I e`
+with labels `ls`, the label with index `i` sits at `clsStart X + i`. -/
+theorem edgeList_hubsCls :
+    edgeList (reGraph I (ordL I) ε) =
+      (List.finRange I.schemas.length).flatMap fun e => (hubsCls I e).flatMap fun p =>
+        (p.2.zipIdx (clsStart I p.1)).flatMap fun q =>
+          (nbrPos I ε (p.1, q.1)).map fun v => (q.2, v) := by
+  rw [edgeList_nbrPos]
+  have h1 := finRange_flatMap_eq_zipIdx (ordL I)
+    (fun u x => (nbrPos I ε x).map fun v => (u, v))
+  rw [h1]
+  have h2 := zipIdx_flatMap_blocks (fun x u => (nbrPos I ε x).map fun v => (u, v)) (ordCls I) 0
+    (nodup_ordCls_fst I)
+  have h3 : (ordCls I).flatMap (fun p => p.2.map fun m => (p.1, m)) = ordL I :=
+    (ordL_eq_flatMap I).symm
+  rw [h3] at h2
+  rw [h2]
+  simp only [Nat.zero_add]
+  have hc : ∀ F : ICls I × List Lab → List (ℕ × ℕ), (ordCls I).flatMap F =
+      ((List.finRange I.schemas.length).flatMap fun e => hubsCls I e ++ nonhubsCls I e).flatMap F
+        ++ ((List.finRange I.numLocations).flatMap fun v =>
+          (coordList (I.domain v)).map fun c => (Cls.coord v c, coordLabs I v)).flatMap F :=
+    fun F => by rw [ordCls, List.flatMap_append]
+  rw [hc, List.flatMap_assoc]
+  have hloc : ((List.finRange I.numLocations).flatMap fun v =>
+      (coordList (I.domain v)).map fun c => (Cls.coord v c, coordLabs I v)).flatMap
+        (fun p => (p.2.zipIdx (startIn (ordCls I) p.1)).flatMap fun q =>
+          (nbrPos I ε (p.1, q.1)).map fun v => (q.2, v)) = [] := by
+    rw [List.flatMap_eq_nil_iff]
+    intro p hp
+    simp only [List.mem_flatMap, List.mem_map] at hp
+    obtain ⟨v, -, c, -, rfl⟩ := hp
+    rw [List.flatMap_eq_nil_iff]
+    intro q _
+    rw [nbrPos_of_not_hub I ε rfl]; rfl
+  rw [hloc, List.append_nil]
+  refine List.flatMap_congr fun e _ => ?_
+  rw [List.flatMap_append]
+  have hnon : (nonhubsCls I e).flatMap
+      (fun p => (p.2.zipIdx (startIn (ordCls I) p.1)).flatMap fun q =>
+          (nbrPos I ε (p.1, q.1)).map fun v => (q.2, v)) = [] := by
+    rw [List.flatMap_eq_nil_iff]
+    intro p hp
+    rw [List.flatMap_eq_nil_iff]
+    intro q hq
+    have hl : q.1 ∈ p.2 := by
+      have := List.mem_iff_getElem.mp hq
+      obtain ⟨i, hi, he⟩ := this
+      rw [← he, List.getElem_zipIdx]; exact List.getElem_mem _
+    have hx : (p.1, q.1) ∈ nonhubsE I e := by
+      rw [nonhubsE_eq, List.mem_flatMap]
+      exact ⟨p, hp, List.mem_map.mpr ⟨q.1, hl, rfl⟩⟩
+    rw [nbrPos_of_not_hub I ε (not_hub_of_mem_nonhubsE I hx).1]; rfl
+  rw [hnon, List.append_nil]
+  rfl
+
 end Lax119563Proofs.Compiler
