@@ -440,4 +440,34 @@ theorem clsStart_coef {e : Fin I.schemas.length} {σ : ℕ} (hσ : σ ∈ coefSt
     startIn_map_inj (fun σ => (Cls.coef e σ : ICls I)) (fun a b h => by cases h; rfl)]
   simp [bits1]; ring
 
+/-- **Coordinate classes.** -/
+theorem clsStart_coord {v : Fin I.numLocations} {c : Coord k ℓ} (hc : c ∈ I.domain v) :
+    clsStart I (Cls.coord v c) =
+      locStart I v + (coordList (I.domain v)).idxOf c * (coordLabs I v).length := by
+  have hcD : c ∈ coordList (I.domain v) := (mem_coordList).mpr hc
+  have hnS : (Cls.coord v c : ICls I) ∉ ((List.finRange I.schemas.length).flatMap
+      fun e => hubsCls I e ++ nonhubsCls I e).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap, not_exists, not_and]
+    intro e _ h
+    obtain ⟨p, hp, he⟩ := List.mem_map.mp h
+    have := keySchema_of_mem I hp
+    rw [he] at this; cases this
+  unfold clsStart ordCls
+  rw [startIn_append_right hnS, sizeOf'_flatMap,
+    startIn_flatMap_of_mem _ (List.nodup_finRange _) _ (List.mem_finRange v)
+      (X := (Cls.coord v c : ICls I)) (by
+        simp only [List.map_map, List.mem_map, Function.comp_apply]; exact ⟨c, hcD, rfl⟩)
+      (fun v' _ hne h => by
+        simp only [List.map_map, List.mem_map, Function.comp_apply] at h
+        obtain ⟨_, -, h⟩ := h
+        cases h; exact hne rfl),
+    startIn_map_inj (fun c => (Cls.coord v c : ICls I)) (fun a b h => by cases h; rfl)]
+  have h1 : (List.map (fun a => sizeOf' (hubsCls I a ++ nonhubsCls I a))
+      (List.finRange I.schemas.length)).sum = locBase I := rfl
+  have h2 : (fun a => sizeOf' ((coordList (I.domain a)).map
+      fun c => ((Cls.coord a c : ICls I), coordLabs I a))) = locSize I := by
+    funext a; rw [sizeOf'_map_const]; rfl
+  rw [h1, h2, List.idxOf_finRange, locStart]
+  ring
+
 end Lax119563Proofs.Compiler
