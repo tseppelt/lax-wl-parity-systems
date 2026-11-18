@@ -239,14 +239,30 @@ proved for nontrivial systems with `k ≥ 1`), from any state with `pos ≤ H`, 
 (so the record ends with `clsStart (coord v c) - locBase` and the label count),
 `recsV`, `recsUpTo`, `locRecs`; **`p1r_good`**: after `p1` (`rW = W`, `rL1 = ℓ + 1`), under
 `k, ℓ ≤ H`, `p1r` sets `qRec := (locRecs I).flatten.reverse ++ qRec` (other stacks, output,
-`rW`, `rL1` kept, `pos ≤ H`), cost `600 (H + 1) nodeCost`; `p1rIn_good`, `p1rBody_good`.
+`rW`, `rL1` kept), cost `600 (H + 1) nodeCost`; `p1rIn_good`, `p1rBody_good`. Now `p1r` *reads*
+`k` into `rKk` (register 16) and ends at `posAt I W` (the position of `E`); `p1r_good` also
+gives every register with `wReg r p1r = false` (e.g. `rL`) unchanged.
 Records are in input order: `(v, i, b₀ … b_{ℓ-1})` with `b₀` the *least* significant bit, so
 they are **not** sorted by `CSort.rle`; for the join either sort them too (`sortS`) or build
 the request keys in the same order and sort both. **`locNums_eq`** (`PLoc`): `locNums I v = (coordList (I.domain v)).map coordNum`, so the
 `r`-th record of `v` is the coordinate `(coordList (I.domain v))[r]` and its offset matches
 `clsStart_coord` (`idxOf` in `coordList`); helpers `blockNum_cons`,
 `map_blockNum_allBlockCoords` (`= range (2^ℓ)`), `pairwise_map_coordNum_allCoords`.
-Next: `P2`; `P3`. For the costs use the
+**Branch proofs/compiler-p2.** `CFrame` (`wReg r c`, `wStk q c`, `wOut c`, `wPos c`: syntactic
+frames; `Good.env_of/stk_of/out_of/pos_of`, closed by `decide`, e.g. `hall.env_of (by decide)`).
+`CArith` (`mulS_good`, `predS_good`, `pushZS_good`, `mvSumN_good`). `PSchSize`
+(`ent_ne_zero_iff` with `rowNZ`, `length_stepsC` = `(k+1) rowsC c`, `nEnt_eq`,
+`length_coefSteps` = `(k+1)(blkRows + orPop)`, `schSize_eq'` = `|D|(tern?8:2) + 6 nEnt + 2|coef|`,
+`dChg`/`blkRows_eq` (block changes of the sorted blocks), `orsL`/`orsL_append`/`sum_orsL`).
+`PSchDesc` (`cdesc c = c.1 :: blockDescription c.2`, `domainDescription_eq'`,
+`schemaDescription_eq'` = `arity :: schLocs ++ (|D| :: coords) ++ perms`, `schD`, `schAt`,
+`drop_schAt`, `schAt_succ`, `schPos_add`). `PSch` (program `p2`; registers 17–35, stacks
+`qOr = 2`, `qOr2 = 3`, `qSch = 4`; `p2Bit_good`, `p2Blk_good`, `p2Coord_good`, `p2Fin_good`).
+`PSchLoop` (`p2Sch_good`, **`p2_good`**: at `posAt I W` with `rKk = k`, `rL = ℓ`, `rL1 = ℓ+1`,
+`qOr = qOr2 = []`, under `1 ≤ k`, `E > 0`, `16 (H + locBase + 1) ≤ 2^w`: `rLB = locBase I`,
+`qSch := (schRecsUpTo I E).reverse ++ qSch` with `schRec I e = orsL D ++ [blkRows D, nEnt, |coefSteps|]`,
+`pos = H`, cost `2000 (H + 1) nodeCost`).
+Next: `P3`. For the costs use the
 pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`;
 if `nlinarith` times out in a big context, `nlinarith only [hU, hU', hint products]`);
 for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos` (or
