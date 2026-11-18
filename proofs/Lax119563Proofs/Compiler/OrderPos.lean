@@ -86,7 +86,7 @@ lemma startIn_flatMap (L : List α) (f : α → List (β × List γ)) (i : ℕ) 
     startIn_append_left hX, sizeOf'_flatMap]
 
 /-- A class in the block of the element `a` of a duplicate-free list. -/
-lemma startIn_flatMap_of_mem (L : List α) [DecidableEq α] (hL : L.Nodup)
+lemma startIn_flatMap_of_mem (L : List α) [BEq α] [LawfulBEq α] (hL : L.Nodup)
     (f : α → List (β × List γ)) {a : α} (ha : a ∈ L) {X : β} (hX : X ∈ (f a).map Prod.fst)
     (hdis : ∀ b ∈ L, b ≠ a → X ∉ (f b).map Prod.fst) :
     startIn (L.flatMap f) X =
@@ -107,7 +107,7 @@ end Generic
 
 section Generic2
 
-variable {α β γ : Type*} [DecidableEq α] [DecidableEq β]
+variable {α β γ : Type*} [BEq α] [LawfulBEq α] [DecidableEq β]
 
 /-- Blocks of one class each, all with the labels `ls`. -/
 lemma startIn_map_inj (g : α → β) (hg : Function.Injective g) (ls : List γ) (a : α) :
@@ -213,5 +213,66 @@ lemma clsStart_sch {e : Fin I.schemas.length} {X : ICls I}
       exact hne (Option.some.inj this).symm)]
   simp [schBase]
   congr 3; funext b; simp [schSize]
+
+
+/-- The junction/link block of column `c`. -/
+def jlBlock (e : Fin I.schemas.length) (c : Coord k ℓ) : List (ICls I × List Lab) :=
+  (if isTern (sch I e) then [(Cls.junc e c, bits2)] else []) ++ [(Cls.link e c, bits1)]
+
+lemma sizeOf'_jlBlock (e : Fin I.schemas.length) (c : Coord k ℓ) :
+    sizeOf' (jlBlock I e c) = colW I e := by
+  unfold jlBlock colW; split <;> simp [bits1, bits2]
+
+lemma hubsCls_eq (e : Fin I.schemas.length) :
+    hubsCls I e = (coordList (dom I e)).flatMap (jlBlock I e) ++
+      (coordList (dom I e)).flatMap fun c => (stepsC c).map fun σ => (Cls.upd e σ c, bits2) :=
+  rfl
+
+lemma mem_jl_fst {e : Fin I.schemas.length} {c : Coord k ℓ} {X : ICls I}
+    (h : X ∈ (jlBlock I e c).map Prod.fst) : X = Cls.junc e c ∨ X = Cls.link e c := by
+  unfold jlBlock at h; split at h <;> simp at h <;> tauto
+
+lemma idxOf_le_length {α : Type*} [BEq α] [LawfulBEq α] (L : List α) (a : α) :
+    L.idxOf a ≤ L.length := List.idxOf_le_length
+
+/-- **Junctions.** -/
+theorem clsStart_junc {e : Fin I.schemas.length} {c : Coord k ℓ} (ht : isTern (sch I e) = true)
+    (hc : c ∈ dom I e) :
+    clsStart I (Cls.junc e c) = schBase I e + (coordList (dom I e)).idxOf c * colW I e := by
+  have hcD : c ∈ coordList (dom I e) := (mem_coordList).mpr hc
+  have hJ : Cls.junc e c ∈ (jlBlock I e c).map Prod.fst := by simp [jlBlock, ht]
+  have hJ' : Cls.junc e c ∈ ((coordList (dom I e)).flatMap (jlBlock I e)).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap]; exact ⟨c, hcD, hJ⟩
+  rw [clsStart_sch I (X := Cls.junc e c) (by
+    rw [List.map_append, List.mem_append, hubsCls_eq, List.map_append, List.mem_append]
+    exact Or.inl (Or.inl hJ')), startIn_append_left (by
+      rw [hubsCls_eq, List.map_append, List.mem_append]; exact Or.inl hJ'), hubsCls_eq,
+    startIn_append_left hJ', startIn_flatMap_of_mem _ (nodup_coordList _) _ hcD hJ
+      (fun c' _ hne h => by rcases mem_jl_fst I h with h | h <;> simp at h <;> tauto)]
+  simp only [sizeOf'_jlBlock]
+  rw [sum_take_const _ _ _ (idxOf_le_length _ _)]
+  simp [jlBlock, ht, startIn_cons_self]
+
+/-- **Links.** -/
+theorem clsStart_link {e : Fin I.schemas.length} {c : Coord k ℓ} (hc : c ∈ dom I e) :
+    clsStart I (Cls.link e c) = schBase I e + (coordList (dom I e)).idxOf c * colW I e +
+      (if isTern (sch I e) then 4 else 0) := by
+  have hcD : c ∈ coordList (dom I e) := (mem_coordList).mpr hc
+  have hJ : Cls.link e c ∈ (jlBlock I e c).map Prod.fst := by
+    unfold jlBlock; split <;> simp
+  have hJ' : Cls.link e c ∈ ((coordList (dom I e)).flatMap (jlBlock I e)).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap]; exact ⟨c, hcD, hJ⟩
+  rw [clsStart_sch I (X := Cls.link e c) (by
+    rw [List.map_append, List.mem_append, hubsCls_eq, List.map_append, List.mem_append]
+    exact Or.inl (Or.inl hJ')), startIn_append_left (by
+      rw [hubsCls_eq, List.map_append, List.mem_append]; exact Or.inl hJ'), hubsCls_eq,
+    startIn_append_left hJ', startIn_flatMap_of_mem _ (nodup_coordList _) _ hcD hJ
+      (fun c' _ hne h => by rcases mem_jl_fst I h with h | h <;> simp at h <;> tauto)]
+  simp only [sizeOf'_jlBlock]
+  rw [sum_take_const _ _ _ (idxOf_le_length _ _)]
+  unfold jlBlock
+  split
+  · simp [startIn, List.takeWhile_cons, bits2]; omega
+  · simp [startIn_cons_self]
 
 end Lax119563Proofs.Compiler
