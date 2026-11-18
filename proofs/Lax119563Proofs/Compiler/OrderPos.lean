@@ -470,4 +470,87 @@ theorem clsStart_coord {v : Fin I.numLocations} {c : Coord k ℓ} (hc : c ∈ I.
   rw [h1, h2, List.idxOf_finRange, locStart]
   ring
 
+/-! ## The slot classes are classes of the order -/
+
+/-- The labels of a class in the order. -/
+def clsLabs (Y : ICls I) : List Lab :=
+  if twoBit I Y then bits2 else if isSingleton I Y then [((0 : ZMod 2), (0 : ZMod 2))] else bits1
+
+lemma labs_of_mem_ordCls {p : ICls I × List Lab} (hp : p ∈ ordCls I) : p.2 = clsLabs I p.1 := by
+  simp only [ordCls, hubsCls, nonhubsCls, List.mem_append, List.mem_flatMap, List.mem_map,
+    List.mem_finRange, true_and] at hp
+  rcases hp with ⟨e, (⟨c, -, hp⟩ | ⟨c, -, σ, -, rfl⟩) | (⟨c, -, hp⟩ | ⟨c, -, σ, -, rfl⟩) |
+      ⟨σ, -, rfl⟩⟩ | ⟨v, c, -, rfl⟩
+  · rcases hp with hp | hp
+    · split at hp
+      · simp only [List.mem_singleton] at hp; subst hp; rfl
+      · simp at hp
+    · simp only [List.mem_singleton] at hp; subst hp; rfl
+  · rfl
+  · split at hp
+    · simp only [List.mem_singleton] at hp; subst hp; rfl
+    · simp at hp
+  · rfl
+  · rfl
+  · simp only [clsLabs, coordLabs, twoBit, isSingleton]
+    split <;> simp_all
+
+/-- Every valid class is a class of the order, with its labels. -/
+lemma mem_ordCls_of_valid {Y : ICls I} (hY : ClsValid I Y) : (Y, clsLabs I Y) ∈ ordCls I := by
+  have h0 : (Y, ((0 : ZMod 2), (0 : ZMod 2))) ∈ ordL I := (mem_ordL I _).mpr (valid_zero hY)
+  rw [ordL_eq_flatMap, List.mem_flatMap] at h0
+  obtain ⟨p, hp, hm⟩ := h0
+  obtain ⟨m, -, he⟩ := List.mem_map.mp hm
+  have h1 : p.1 = Y := (Prod.mk.inj he).1
+  have h2 := labs_of_mem_ordCls I hp
+  rw [h1] at h2
+  have : p = (Y, clsLabs I Y) := Prod.ext h1 h2
+  rw [← this]; exact hp
+
+/-- The slot classes of the names of the order are valid. -/
+lemma valid_slots {x : VName I} (hx : x ∈ ordL I) {l : Lab} {s : ICls I × ZMod 2}
+    (hs : s ∈ slotsOf I x.1 l) : ClsValid I s.1 := by
+  obtain ⟨X, lx⟩ := x
+  have hv := ((mem_ordL I _).mp hx).1
+  cases X with
+  | upd e σ c =>
+    obtain ⟨hσ, hc, hent⟩ := hv
+    simp only [slotsOf, List.mem_cons, List.not_mem_nil, or_false] at hs
+    rcases hs with rfl | rfl | rfl
+    · exact valid_trackAt e hc hσ.le
+    · exact ⟨hσ, hc, hent⟩
+    · exact ⟨hσ, c, hc, hent⟩
+  | junc e c =>
+    obtain ⟨ht, hc⟩ := hv
+    simp only [slotsOf, List.mem_cons, List.not_mem_nil, or_false] at hs
+    rcases hs with rfl | rfl | rfl
+    · exact valid_coordU e hc
+    · exact valid_coordV e hc
+    · exact ⟨ht, hc⟩
+  | link e c =>
+    simp only [slotsOf, List.mem_cons, List.not_mem_nil, or_false] at hs
+    rcases hs with rfl | rfl
+    · exact valid_trackAt e hv le_rfl
+    · exact valid_endCls e hv
+  | coord => simp [slotsOf] at hs
+  | sum => simp [slotsOf] at hs
+  | track => simp [slotsOf] at hs
+  | coef => simp [slotsOf] at hs
+
+/-- The labels of a slot class: one name for initialized coordinate classes, else two. -/
+def slotLabs (Y : ICls I) : List Lab :=
+  if isSingleton I Y then [((0 : ZMod 2), (0 : ZMod 2))] else bits1
+
+/-- **Slot classes.** The class of every slot of a name of the order is a class of the order
+with labels `slotLabs`: `[(0,0)]` for coordinate classes of initialized locations, `bits1`
+otherwise, so that `posOpt_single` resp. `posOpt_bits1` applies. -/
+theorem slot_mem_ordCls {x : VName I} (hx : x ∈ ordL I) {l : Lab} {s : ICls I × ZMod 2}
+    (hs : s ∈ slotsOf I x.1 l) : (s.1, slotLabs I s.1) ∈ ordCls I := by
+  have h := mem_ordCls_of_valid I (valid_slots I hx hs)
+  have hh : isHub I s.1 = false :=
+    (hubB_hub I ((hubB_iff_slotsOf I x.1 s.1 l (s.2, 0)).mpr hs)).2
+  have ht : twoBit I s.1 = false := by
+    cases h' : s.1 <;> simp_all [twoBit, isHub]
+  simpa [clsLabs, slotLabs, ht] using h
+
 end Lax119563Proofs.Compiler
