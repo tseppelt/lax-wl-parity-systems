@@ -292,4 +292,152 @@ lemma startIn_cols {α β γ δ : Type*} [BEq α] [LawfulBEq α] [BEq δ] [Lawfu
   simp only [sizeOf'_map_const]
   rw [List.sum_map_mul_right]
 
+
+lemma sizeOf'_jl (e : Fin I.schemas.length) :
+    sizeOf' ((coordList (dom I e)).flatMap (jlBlock I e)) =
+      (coordList (dom I e)).length * colW I e := by
+  rw [sizeOf'_flatMap]; simp only [sizeOf'_jlBlock]; rw [sum_map_const]
+
+lemma sizeOf'_ent (e : Fin I.schemas.length) (g : Coord k ℓ → ℕ → ICls I) (ls : List Lab) :
+    sizeOf' ((coordList (dom I e)).flatMap fun c => (stepsC c).map fun σ => (g c σ, ls)) =
+      nEnt I e * ls.length := by
+  rw [sizeOf'_flatMap]; simp only [sizeOf'_map_const]
+  rw [nEnt, List.sum_map_mul_right]
+
+lemma sizeOf'_hubsCls (e : Fin I.schemas.length) : sizeOf' (hubsCls I e) = hubSize I e := by
+  rw [hubsCls_eq, sizeOf'_append, sizeOf'_jl, sizeOf'_ent]; simp [hubSize, bits2]; ring
+
+/-- The sum part of the non-hubs. -/
+def sumPart (e : Fin I.schemas.length) : List (ICls I × List Lab) :=
+  (coordList (dom I e)).flatMap fun c => if isTern (sch I e) then [(Cls.sum e c, bits1)] else []
+
+/-- The track part of the non-hubs. -/
+def trackPart (e : Fin I.schemas.length) : List (ICls I × List Lab) :=
+  (coordList (dom I e)).flatMap fun c => (stepsC c).map fun σ => (Cls.track e σ c, bits1)
+
+lemma nonhubsCls_eq (e : Fin I.schemas.length) :
+    nonhubsCls I e = sumPart I e ++ trackPart I e ++
+      (coefSteps I e).map fun σ => (Cls.coef e σ, bits1) := rfl
+
+lemma sizeOf'_sumPart (e : Fin I.schemas.length) : sizeOf' (sumPart I e) = sumSize I e := by
+  rw [sumPart, sizeOf'_flatMap, sumSize]
+  split
+  · simp [bits1, sum_map_const]; ring
+  · simp
+
+lemma mem_sumPart_fst {e : Fin I.schemas.length} {X : ICls I}
+    (h : X ∈ (sumPart I e).map Prod.fst) : ∃ c, X = Cls.sum e c := by
+  simp only [sumPart, List.map_flatMap, List.mem_flatMap] at h
+  obtain ⟨c, -, h⟩ := h
+  split at h <;> simp at h; exact ⟨c, h⟩
+
+lemma mem_trackPart_fst {e : Fin I.schemas.length} {X : ICls I}
+    (h : X ∈ (trackPart I e).map Prod.fst) : ∃ σ c, X = Cls.track e σ c := by
+  simp only [trackPart, List.map_flatMap, List.mem_flatMap, List.map_map, List.mem_map,
+    Function.comp_apply] at h
+  obtain ⟨c, -, σ, -, h⟩ := h
+  exact ⟨σ, c, h.symm⟩
+
+lemma mem_hubsCls_fst {e : Fin I.schemas.length} {X : ICls I}
+    (h : X ∈ (hubsCls I e).map Prod.fst) : isHub I X = true := by
+  rw [hubsCls_eq, List.map_append, List.mem_append] at h
+  rcases h with h | h
+  · simp only [List.map_flatMap, List.mem_flatMap] at h
+    obtain ⟨c, -, h⟩ := h
+    rcases mem_jl_fst I h with rfl | rfl <;> rfl
+  · simp only [List.map_flatMap, List.mem_flatMap, List.map_map, List.mem_map,
+      Function.comp_apply] at h
+    obtain ⟨c, -, σ, -, rfl⟩ := h
+    rfl
+
+/-- A non-hub class of schema `e` starts after the hubs. -/
+lemma clsStart_nonhub {e : Fin I.schemas.length} {X : ICls I}
+    (hX : X ∈ (nonhubsCls I e).map Prod.fst) (hh : isHub I X = false) :
+    clsStart I X = schBase I e + hubSize I e + startIn (nonhubsCls I e) X := by
+  rw [clsStart_sch I (by rw [List.map_append, List.mem_append]; exact Or.inr hX),
+    startIn_append_right (fun h => by rw [mem_hubsCls_fst I h] at hh; cases hh),
+    sizeOf'_hubsCls]
+  ring
+
+/-- **Updates.** -/
+theorem clsStart_upd {e : Fin I.schemas.length} {c : Coord k ℓ} {σ : ℕ} (hc : c ∈ dom I e)
+    (hσ : σ ∈ stepsC c) :
+    clsStart I (Cls.upd e σ c) = schBase I e + (coordList (dom I e)).length * colW I e +
+      4 * (entBefore I e c + (stepsC c).idxOf σ) := by
+  have hcD : c ∈ coordList (dom I e) := (mem_coordList).mpr hc
+  have hU : (Cls.upd e σ c : ICls I) ∈ ((coordList (dom I e)).flatMap fun c =>
+      (stepsC c).map fun σ => (Cls.upd e σ c, bits2)).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap, List.map_map, List.mem_map,
+      Function.comp_apply]
+    exact ⟨c, hcD, σ, hσ, rfl⟩
+  have hnJ : (Cls.upd e σ c : ICls I) ∉ ((coordList (dom I e)).flatMap (jlBlock I e)).map Prod.fst := by
+    simp only [List.map_flatMap, List.mem_flatMap, not_exists, not_and]
+    intro c' _ h; rcases mem_jl_fst I h with h | h <;> cases h
+  rw [clsStart_sch I (X := Cls.upd e σ c) (by
+      rw [List.map_append, List.mem_append, hubsCls_eq, List.map_append, List.mem_append]
+      exact Or.inl (Or.inr hU)),
+    startIn_append_left (by rw [hubsCls_eq, List.map_append, List.mem_append]; exact Or.inr hU),
+    hubsCls_eq, startIn_append_right hnJ, sizeOf'_jl,
+    startIn_cols (coordList (dom I e)) (nodup_coordList _) stepsC (fun c σ => (Cls.upd e σ c : ICls I))
+      (fun a b a' b' h => by cases h; exact ⟨rfl, rfl⟩) bits2 hcD hσ]
+  simp [entBefore, bits2]; ring
+
+/-- **Sums.** -/
+theorem clsStart_sum {e : Fin I.schemas.length} {c : Coord k ℓ} (ht : isTern (sch I e) = true)
+    (hc : c ∈ dom I e) :
+    clsStart I (Cls.sum e c) = schBase I e + hubSize I e + 2 * (coordList (dom I e)).idxOf c := by
+  have hcD : c ∈ coordList (dom I e) := (mem_coordList).mpr hc
+  have hS : (Cls.sum e c : ICls I) ∈ (sumPart I e).map Prod.fst := by
+    simp only [sumPart, List.map_flatMap, List.mem_flatMap]
+    exact ⟨c, hcD, by simp [ht]⟩
+  rw [clsStart_nonhub I (by
+      rw [nonhubsCls_eq, List.map_append, List.mem_append, List.map_append, List.mem_append]
+      exact Or.inl (Or.inl hS)) rfl,
+    nonhubsCls_eq, startIn_append_left (by
+      rw [List.map_append, List.mem_append]; exact Or.inl hS),
+    startIn_append_left hS, sumPart,
+    startIn_flatMap_of_mem _ (nodup_coordList _) _ hcD (by simp [ht]) (fun c' _ hne h => by
+      split at h <;> simp at h <;> exact hne h.symm)]
+  simp only [ht, if_true, sizeOf'_cons, sizeOf'_nil]
+  rw [sum_take_const _ _ _ (idxOf_le_length _ _), startIn_cons_self]
+  simp [bits1]; ring
+
+/-- **Tracks.** -/
+theorem clsStart_track {e : Fin I.schemas.length} {c : Coord k ℓ} {σ : ℕ} (hc : c ∈ dom I e)
+    (hσ : σ ∈ stepsC c) :
+    clsStart I (Cls.track e σ c) = schBase I e + hubSize I e + sumSize I e +
+      2 * (entBefore I e c + (stepsC c).idxOf σ) := by
+  have hcD : c ∈ coordList (dom I e) := (mem_coordList).mpr hc
+  have hT : (Cls.track e σ c : ICls I) ∈ (trackPart I e).map Prod.fst := by
+    simp only [trackPart, List.map_flatMap, List.mem_flatMap, List.map_map, List.mem_map,
+      Function.comp_apply]
+    exact ⟨c, hcD, σ, hσ, rfl⟩
+  rw [clsStart_nonhub I (by
+      rw [nonhubsCls_eq, List.map_append, List.mem_append, List.map_append, List.mem_append]
+      exact Or.inl (Or.inr hT)) rfl,
+    nonhubsCls_eq, startIn_append_left (by
+      rw [List.map_append, List.mem_append]; exact Or.inr hT),
+    startIn_append_right (fun h => by obtain ⟨c', h⟩ := mem_sumPart_fst I h; cases h),
+    sizeOf'_sumPart, trackPart,
+    startIn_cols (coordList (dom I e)) (nodup_coordList _) stepsC (fun c σ => (Cls.track e σ c : ICls I))
+      (fun a b a' b' h => by cases h; exact ⟨rfl, rfl⟩) bits1 hcD hσ]
+  simp [entBefore, bits1]; ring
+
+/-- **Coefficients.** -/
+theorem clsStart_coef {e : Fin I.schemas.length} {σ : ℕ} (hσ : σ ∈ coefSteps I e) :
+    clsStart I (Cls.coef e σ) = schBase I e + hubSize I e + sumSize I e + 2 * nEnt I e +
+      2 * (coefSteps I e).idxOf σ := by
+  have hC : (Cls.coef e σ : ICls I) ∈ ((coefSteps I e).map fun σ => (Cls.coef e σ, bits1)).map
+      Prod.fst := by simpa using hσ
+  rw [clsStart_nonhub I (by
+      rw [nonhubsCls_eq, List.map_append, List.mem_append]; exact Or.inr hC) rfl,
+    nonhubsCls_eq, startIn_append_right (fun h => by
+      rw [List.map_append, List.mem_append] at h
+      rcases h with h | h
+      · obtain ⟨c', h⟩ := mem_sumPart_fst I h; cases h
+      · obtain ⟨_, _, h⟩ := mem_trackPart_fst I h; cases h),
+    sizeOf'_append, sizeOf'_sumPart, trackPart, sizeOf'_ent,
+    startIn_map_inj (fun σ => (Cls.coef e σ : ICls I)) (fun a b h => by cases h; rfl)]
+  simp [bits1]; ring
+
 end Lax119563Proofs.Compiler
