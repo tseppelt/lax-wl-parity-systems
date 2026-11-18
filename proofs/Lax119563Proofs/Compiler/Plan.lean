@@ -308,9 +308,25 @@ the shift (`moveN qAux qDl2 ℓ`), push `1, seq, 0, 0`; afterwards `qF2, qDl2` t
 `sortS` of `qAns` (`A = 4`). Stacks/registers of P3: `PJoin` (`qX … qJunk`, scan registers
 20–29) and `PReqBits` (generation stacks 5–11, 14, 15; registers 20–35 scratch; persistent:
 `rW, rE, rL, rL1, rKk, rLB, rPL, rCnt = 36, rSB = 37` (request count / seq base)).
-Remaining for P3: list facts (`hG1/hG2` of `scanF_eq` for `locRecs ++ reqs`: keys unique by
-`coordNum_injective`, targets in the domain by `WellFormed`), the column step, the argument and
-schema loops, assembly with the two sorts, and the P4-order description of the sorted answers.
+Done (all `Good` lemmas with explicit stacks, frames via `wReg`/`wStk`): `p3Bits_good`,
+`p3Advs_good`, `p3Col_good` (`PReqCol`), `p3Cols_good` (`PReqCols`: requests `colReqs u π cs s₀ t`,
+needs the column blocks nondecreasing, `curB`), `p3Arg_good` (`PReqArg`: one argument, reads
+`f`/shifts via `rdNumsS` + `moveAllS`, `p3Seq` sets the first sequence number
+`base + sqOff tern a |D|`, stride `sqStr tern`; needs `st.Bdd w` for `moveAllS`),
+`p3Args_good` (`PReqArgs`: all arguments, requests `argsReqs locs perms cs base tern A`).
+Remaining for P3: (1) `p3Sch` (one schema: `rdNumS rA`, `rTn := [2 < rA]`, `rStr := 1 + 2 rTn`,
+locations `rdNumsS qLs rA` + `moveAllS qLs qLs2`, `rdNumS rD`, `mulS rNw rD rL1`, coordinates
+`rdNumsS qDom rNw` + `moveAllS qDom qDom2`, `p3Args`, `moveAllS qDom2 qJunk`,
+`rSB += rA · rD` (`mulS`), `rJ += 1`) and its loop over the schemas, with
+`argsReqs (schLocs s) (schPerms s) (coordList D) (ansBase I e) tern (arity s) = reqsE I e`
+(`seqOff_eq`); (2) the P3 assembly (`moveAllS qRec qJunk`, `p1r`, skip `E`, `mulS rKL rKk rL`,
+`rSB := 0`, schema loop, `moveAllS qRec qX`, `sortS` with `A = ℓ + 6`, `N = rCnt + rSB`,
+`pJScan`, `sortS` of `qAns` with `A = 4`); (3) list facts for `scanF_eq` on `locRecs ++ reqs`
+(`hG1`: location keys unique, by `coordNum_injective` / `nodup_coordList`; `hG2`: request
+targets in the domain, `Schema.WellFormed`), lengths `ℓ + 6`, sortedness of the final answers
+by `seq` (distinct sequence numbers) and their P4-order description.
+Pitfall: `timeout` is not installed on macOS, `timeout … lake env lean` prints nothing — use
+`lake build <module>` to confirm.
 
 ## Remaining work (in order)
 
