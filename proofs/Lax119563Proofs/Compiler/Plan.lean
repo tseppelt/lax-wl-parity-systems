@@ -286,6 +286,32 @@ definitional `Function.update` form (`e5` in `p0_good`). With `open CStm`, write
 `(L+1)³` per record word; `machine_of_program`/`final_bound` now take any exponent `e ≥ 1`
 (`cost ≤ K (H+S+1)(L+1)^e`), so use `e = 3`.
 
+**Branch proofs/compiler-p3 (P3, in progress).** Design (*union sort*, no key comparisons):
+location records and requests have the same shape `key ++ [tag, d₁, d₂, d₃]` with
+`key = v :: i :: b₀ … b_{ℓ-1}` (`ℓ + 2` words): `locRec I v r = v :: cnd ++ [0, off, labs, ι]`
+(`PRec` now pushes this format: tag `0` and `initNum (I.init v)` added; `p1r_good` also gives
+`rCnt = |locRecs I|`, register 36), requests `reqRec u π c s = u :: cdesc (π.apply c) ++
+[1, s, 0, 0]` (`PReqList`). After `sortS` of the union (stack `qX = 5`), the location record
+with the key of a request comes right before it (tag `0 < 1`) and no other location record lies
+between (**`Join.scanF_eq`**, `PJoinList`); so one scan answers all requests (**`pJScan_good`**,
+`PJoin`: answers `[seq, off, labs, seed]` pushed on `qAns = 12`, `seed = [i = 0 ∧ ι = 2]` =
+`(initSeed I v c').val`). Then `sortS` of the answers by `seq`. Sequence numbers are
+`ansBase I e + seqOff tern |D| a r` (`PReqList.reqsE`): the order in which `P4` consumes the
+answers (ternary: per column `U, V, W`; binary: all `V` (links), then all `U` (first upd)).
+Planned P3 program: `moveAllS qRec qJunk` (drop the old records), `p1r` (records again, cursor at
+`posAt W`), skip `E`, generation over the schemas (per schema: read arity, locations onto
+`qLs → qLs2`, `|D|`, the coordinates onto `qDom → qDom2`; per argument: `f` onto `qF → qF2`,
+the shifts onto `qDl → qDl2`, then per column: advance the block (`moveN qDl2 qJunk ℓ`, pop
+`f`), `p3Bits` (**done**, `PReqBits`: xor of column bits and shift bits onto `qRec`), restore
+the shift (`moveN qAux qDl2 ℓ`), push `1, seq, 0, 0`; afterwards `qF2, qDl2` to `qJunk`,
+`qDom → qDom2`), `moveAllS qRec qX`, `sortS` (`A = ℓ + 6`, `N = rCnt + rSB`), `pJScan`,
+`sortS` of `qAns` (`A = 4`). Stacks/registers of P3: `PJoin` (`qX … qJunk`, scan registers
+20–29) and `PReqBits` (generation stacks 5–11, 14, 15; registers 20–35 scratch; persistent:
+`rW, rE, rL, rL1, rKk, rLB, rPL, rCnt = 36, rSB = 37` (request count / seq base)).
+Remaining for P3: list facts (`hG1/hG2` of `scanF_eq` for `locRecs ++ reqs`: keys unique by
+`coordNum_injective`, targets in the domain by `WellFormed`), the column step, the argument and
+schema loops, assembly with the two sorts, and the P4-order description of the sorted answers.
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
