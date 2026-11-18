@@ -507,6 +507,120 @@ lemma passS_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
     simp only [hregs, List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
     exact e3 q hq.2.1 hq.2.2.2.2.2.2.2.2.2.2
 
+/-! ## Moving all records, reversing -/
+
+/-- Move all `N` records of `src` onto `dst` (reversing the record order); `lim2 = N`. -/
+def mvAllS (src dst tmp : Fin Q) (A N done k i t lim2 : Fin R) : CStm R Q :=
+  .seq (.set done (.const 0)) (mvRecsB src dst tmp A lim2 done N k i t)
+
+lemma mvAllS_good (hw2 : 2 ≤ w) {src dst : Fin Q} (hst : src ≠ tmp) (htd : tmp ≠ dst)
+    (hsd : src ≠ dst) (hmreg : [A, lim2, done, N, k, i, t].Nodup) (s : NSt R Q) {a n : ℕ}
+    (l : List (List ℕ)) (hS : s.stk src = l.flatten) (ha : s.env A = a)
+    (hn : s.env N = n) (hl2 : s.env lim2 = n) (hl : l.length = n)
+    (hrec : ∀ y ∈ l, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (hwn : n + 1 < 2 ^ w) :
+    ∃ s', Good x w (mvAllS src dst tmp A N done k i t lim2) s s'
+        ((n + 1) * (60 * ((a + 1) * Ex.nodeCost w))) ∧
+      s'.stk = Function.update (Function.update s.stk src []) dst
+        (l.reverse.flatten ++ s.stk dst) ∧ Frame s s' [k, done, i, t] := by
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  have hdn : done ≠ N := by ndup hmreg
+  have g0 : Good x w (.set done (.const 0) : CStm R Q) s (s.set done 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  obtain ⟨s', g, k', d', fr⟩ := mvRecsB_good (x := x) hw2 hst htd hsd hmreg (s.set done 0) l []
+    (by simp [Function.update_of_ne (show A ≠ done by ndup hmreg), ha])
+    (by simp [Function.update_of_ne (show lim2 ≠ done by ndup hmreg), hl2])
+    (by simp [Function.update_of_ne hdn.symm, hn]) (by simp) (Nat.zero_le _)
+    (by simp [hS]) hrec (by rw [hl]; omega) hw hwn hwn
+  refine ⟨s', (g0.seq g).mono ?_, ?_, ?_⟩
+  · simp only [Nat.sub_zero, min_self]
+    have : 1 ≤ (a + 1) * Ex.nodeCost w := Nat.one_le_iff_ne_zero.mpr
+      (Nat.mul_ne_zero (by omega) (by omega))
+    have hN1 : Ex.nodeCost w ≤ (a + 1) * Ex.nodeCost w := Nat.le_mul_of_pos_left _ (by omega)
+    nlinarith
+  · rw [k']
+    simp only [Nat.sub_zero, min_self, recsStk, NSt.set_stk]
+    rw [List.drop_eq_nil_of_le (by omega), List.take_of_length_le (by omega)]
+    simp
+  · refine (show Frame s (s.set done 0) [k, done, i, t] from ⟨rfl, rfl, fun q hq => ?_⟩).trans fr
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
+    simp [Function.update_of_ne hq.2.1]
+
+/-- Reverse the record order of the `N` records on `X` (via `Y` and `T1`). -/
+def revS (X T1 Y tmp : Fin Q) (A N done k i t lim2 : Fin R) : CStm R Q :=
+  .seq (.set lim2 (rv N)) (.seq (mvAllS X Y tmp A N done k i t lim2)
+    (.seq (mvAllS Y T1 tmp A N done k i t lim2) (mvAllS T1 X tmp A N done k i t lim2)))
+
+lemma revS_good (hw2 : 2 ≤ w) (hstk : [X, T1, Y, tmp].Nodup)
+    (hmreg : [A, lim2, done, N, k, i, t].Nodup) (s : NSt R Q) {a n : ℕ}
+    (l : List (List ℕ)) (hX : s.stk X = l.flatten) (hT1 : s.stk T1 = []) (hY : s.stk Y = [])
+    (ha : s.env A = a) (hn : s.env N = n) (hl : l.length = n)
+    (hrec : ∀ y ∈ l, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (hwn : n + 1 < 2 ^ w) :
+    ∃ s', Good x w (revS X T1 Y tmp A N done k i t lim2) s s'
+        ((n + 1) * (200 * ((a + 1) * Ex.nodeCost w))) ∧
+      s'.stk = Function.update s.stk X l.reverse.flatten ∧ Frame s s' [k, done, i, t, lim2] := by
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have hXT : X ≠ T1 := by ndup hstk
+  have hXY : X ≠ Y := by ndup hstk
+  have hTY : T1 ≠ Y := by ndup hstk
+  have hl2N : lim2 ≠ N := by ndup hmreg
+  have g0 : Good x w (.set lim2 (rv N) : CStm R Q) s (s.set lim2 n)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [rv, Ex.Fits, hn]; omega)).of_eq (by simp [rv, Ex.eval, hn])
+      (by simp [rv, Ex.size])
+  have hrec' : ∀ y ∈ l.reverse, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w :=
+    fun y hy => hrec y (List.mem_reverse.mp hy)
+  have e0 : ∀ q, q ≠ lim2 → (s.set lim2 n).env q = s.env q := fun q hq => by
+    simp [Function.update_of_ne hq]
+  obtain ⟨s1, g1, k1, f1⟩ := mvAllS_good (x := x) hw2 (tmp := tmp) (by ndup hstk) (by ndup hstk)
+    hXY hmreg (s.set lim2 n) l hX (by rw [e0 A (by ndup hmreg), ha])
+    (by rw [e0 N hl2N.symm, hn]) (by simp) hl hrec hw hwn
+  have e1 : ∀ q, q ∉ [k, done, i, t] → s1.env q = s.env q ∨ q = lim2 := fun q hq => by
+    by_cases h : q = lim2
+    · exact Or.inr h
+    · exact Or.inl ((f1.2.2 q hq).trans (e0 q h))
+  have hA1 : s1.env A = a := by
+    rw [f1.2.2 A (by nmem hmreg), e0 A (by ndup hmreg), ha]
+  have hN1 : s1.env N = n := by rw [f1.2.2 N (by nmem hmreg), e0 N hl2N.symm, hn]
+  have hL1 : s1.env lim2 = n := by rw [f1.2.2 lim2 (by nmem hmreg)]; simp
+  obtain ⟨s2, g2, k2, f2⟩ := mvAllS_good (x := x) hw2 (tmp := tmp) (by ndup hstk) (by ndup hstk)
+    hTY.symm hmreg s1 l.reverse (by rw [k1]; simp [hY]) hA1 hN1 hL1 (by simp [hl]) hrec' hw hwn
+  have hA2 : s2.env A = a := by rw [f2.2.2 A (by nmem hmreg), hA1]
+  have hN2 : s2.env N = n := by rw [f2.2.2 N (by nmem hmreg), hN1]
+  have hL2 : s2.env lim2 = n := by rw [f2.2.2 lim2 (by nmem hmreg), hL1]
+  obtain ⟨s3, g3, k3, f3⟩ := mvAllS_good (x := x) hw2 (tmp := tmp) (by ndup hstk) (by ndup hstk)
+    hXT.symm hmreg s2 l (by
+      rw [k2]; simp [Function.update_of_ne hTY, k1, Function.update_of_ne hXT.symm, hT1])
+    hA2 hN2 hL2 hl hrec hw hwn
+  refine ⟨s3, (g0.seq (g1.seq (g2.seq g3))).mono ?_, ?_, ?_⟩
+  · show _ ≤ _
+    have : 1 ≤ (a + 1) * Ex.nodeCost w := Nat.one_le_iff_ne_zero.mpr
+      (Nat.mul_ne_zero (by omega) (by omega))
+    have hN1 : Ex.nodeCost w ≤ (a + 1) * Ex.nodeCost w := Nat.le_mul_of_pos_left _ (by omega)
+    nlinarith
+  · rw [k3, k2, k1]
+    funext q
+    by_cases hqX : q = X
+    · subst hqX
+      simp [Function.update_of_ne hXT, Function.update_of_ne hXY]
+    · by_cases hqT : q = T1
+      · subst hqT
+        simp [Function.update_of_ne hqX, Function.update_of_ne hTY, hT1]
+      · by_cases hqY : q = Y
+        · subst hqY
+          simp [Function.update_of_ne hqX, Function.update_of_ne hqT, hY]
+        · simp [Function.update_of_ne hqX, Function.update_of_ne hqT, Function.update_of_ne hqY]
+  · refine (show Frame s (s.set lim2 n) [k, done, i, t, lim2] from
+      ⟨rfl, rfl, fun q hq => ?_⟩).trans ((f1.trans (f2.trans f3)).mono ?_)
+    · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
+      exact e0 q hq.2.2.2.2
+    · intro q hq; simp only [List.mem_cons, List.not_mem_nil, or_false] at hq ⊢; tauto
+
 end Pass
 
 end CStm
