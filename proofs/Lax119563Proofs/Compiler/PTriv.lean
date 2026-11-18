@@ -100,6 +100,19 @@ variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ)
 /-- A trivial system: no coordinate and no schema. -/
 def trivSys : Prop := (∀ v, I.domain v = ∅) ∧ I.schemas = []
 
+/-- The output for a trivial system: two empty graphs. -/
+theorem gDesc_triv (h : trivSys I) (ε : ZMod 2) : gDesc I ε = [0, 0] := by
+  have hE : I.schemas.length = 0 := by rw [h.2]; rfl
+  have hc : ordCls I = [] := by
+    rw [ordCls, List.append_eq_nil_iff]
+    constructor
+    · rw [List.flatMap_eq_nil_iff]; intro e; exact absurd e.2 (by omega)
+    · rw [List.flatMap_eq_nil_iff]; intro v _
+      simp [h.1 v, coordList]
+  have he : gEdges I ε = [] := by
+    rw [gEdges, List.flatMap_eq_nil_iff]; intro e; exact absurd e.2 (by omega)
+  simp [gDesc, clsSizes, hc, he, colorsOf]
+
 /-- The loop invariant of `P0`. -/
 def p0Inv (st s : NSt CR CQ) : Prop :=
   s.env rW = I.numLocations ∧ s.stk = st.stk ∧ s.out = st.out ∧ s.env rJ ≤ I.numLocations ∧

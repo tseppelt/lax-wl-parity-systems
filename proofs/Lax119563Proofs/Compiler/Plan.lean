@@ -218,13 +218,15 @@ init value, `E`, and — only when the system is nontrivial — `ℓ`; `k` and t
 
 **State of item 4 (branch proofs/compiler-prog).** Done: `PSys` (input structure:
 `sd_eq`, `locD`, `locsPre/locsSuf`, `posAt`, `drop_posAt`, `posAt_succ`, `drop_ell`,
-`drop_W`; sizes `W_le`, `E_le`, `card_le`, `bits_lt_of_le`). WIP, *not imported, does not
-build yet*: `PTriv` (registers `CR = 40`, `CQ = 16`, `rT, rP, rW, …`; program `p0`, invariant
-`p0Inv`, `p0Body_good`). Known fixes: the `hlt` extraction from `hc` (`split_ifs` on the
-`lt` value), the cost goals (prove `≤ 20 N Δ + 50 N` with `Δ = H - pos - (H - pos')` after
-`generalize`, giving `nlinarith` the product facts), and some `Inv` field goals. Next:
-`p0_good` (compose `skipNumS_good` ×2 (`drop_zero_k`, `drop_ell`), `rdNumS_good` (`drop_W`),
-the loop by `Good.loop_var` with `μ = W - j`, `φ = H - pos`, and `p0End`), then `P1`.
+`drop_W`; sizes `W_le`, `E_le`, `card_le`, `bits_lt_of_le`); `PTriv` (registers `CR = 40`,
+`CQ = 16`, `rT, rP, rW, rJ, rNz, rA, rD, rE, rTriv`; **`p0_good`**: from cursor `0`, `p0` sets
+`rTriv = [trivSys I]`, stacks and output kept, cost `200 (H + 1) nodeCost`, under
+`2 (H + 1) ≤ 2^w`; `p0Body_good`, `p0End_good`; **`gDesc_triv`**: `gDesc I ε = [0, 0]` for a
+trivial system). Next: `P1` (locations) as in the design above; for the costs use the
+pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`);
+for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos`.
+Pitfall: in `simp`/`rw` proofs about states built with `set`, prefer `show` with the
+definitional `Function.update` form (`e5` in `p0_good`).
 
 ## Remaining work (in order)
 
