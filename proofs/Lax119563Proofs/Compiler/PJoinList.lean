@@ -76,6 +76,40 @@ def scanF : α → List (List ℕ) → List (List ℕ)
   | _, [] => []
   | c, r :: rs => if isLoc K r then scanF (curOf r) rs else ansOf c r :: scanF c rs
 
+/-- The current data after scanning a list. -/
+def curAfter : α → List (List ℕ) → α
+  | c, [] => c
+  | c, r :: rs => curAfter (if isLoc K r then curOf r else c) rs
+
+lemma scanF_append_single (c : α) (L : List (List ℕ)) (r : List ℕ) :
+    scanF K curOf ansOf c (L ++ [r]) = scanF K curOf ansOf c L ++
+      (if isLoc K r then [] else [ansOf (curAfter K curOf c L) r]) := by
+  induction L generalizing c with
+  | nil => by_cases h : isLoc K r <;> simp [scanF, curAfter, h]
+  | cons x L ih =>
+    simp only [List.cons_append, scanF, curAfter]
+    by_cases h : isLoc K x <;> simp only [h, if_true, if_false, Bool.false_eq_true] <;>
+      rw [ih] <;> simp
+
+lemma curAfter_append_single (c : α) (L : List (List ℕ)) (r : List ℕ) :
+    curAfter K curOf c (L ++ [r]) =
+      if isLoc K r then curOf r else curAfter K curOf c L := by
+  induction L generalizing c with
+  | nil => rfl
+  | cons x L ih => simp only [List.cons_append, curAfter]; exact ih _
+
+lemma curAfter_cases (c : α) (L : List (List ℕ)) :
+    curAfter K curOf c L = c ∨ ∃ m ∈ L, curAfter K curOf c L = curOf m := by
+  induction L generalizing c with
+  | nil => left; rfl
+  | cons x L ih =>
+    simp only [curAfter]
+    rcases ih (if isLoc K x then curOf x else c) with h | ⟨m, hm, h⟩
+    · rw [h]; split_ifs
+      · right; exact ⟨x, by simp, rfl⟩
+      · left; rfl
+    · right; exact ⟨m, by simp [hm], h⟩
+
 /-- **The join by a scan.** In a sorted list of records in which location records are
 determined by their keys (`g`) and every request has a location record with its key, the
 scan answers every request `r` with the data of `g (key r)`. -/
