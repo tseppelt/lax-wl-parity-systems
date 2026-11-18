@@ -216,6 +216,16 @@ init value, `E`, and — only when the system is nontrivial — `ℓ`; `k` and t
   `gEdges I ε` pushed to a stack while counting, then `m` and the edges popped in order.
   Both `ε` read the same answer stack (copied non-destructively).
 
+**State of item 4 (branch proofs/compiler-prog).** Done: `PSys` (input structure:
+`sd_eq`, `locD`, `locsPre/locsSuf`, `posAt`, `drop_posAt`, `posAt_succ`, `drop_ell`,
+`drop_W`; sizes `W_le`, `E_le`, `card_le`, `bits_lt_of_le`). WIP, *not imported, does not
+build yet*: `PTriv` (registers `CR = 40`, `CQ = 16`, `rT, rP, rW, …`; program `p0`, invariant
+`p0Inv`, `p0Body_good`). Known fixes: the `hlt` extraction from `hc` (`split_ifs` on the
+`lt` value), the cost goals (prove `≤ 20 N Δ + 50 N` with `Δ = H - pos - (H - pos')` after
+`generalize`, giving `nlinarith` the product facts), and some `Inv` field goals. Next:
+`p0_good` (compose `skipNumS_good` ×2 (`drop_zero_k`, `drop_ell`), `rdNumS_good` (`drop_W`),
+the loop by `Good.loop_var` with `μ = W - j`, `φ = H - pos`, and `p0End`), then `P1`.
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
