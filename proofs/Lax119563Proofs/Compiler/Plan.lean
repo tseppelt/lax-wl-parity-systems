@@ -186,13 +186,17 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 
 ## Remaining work (in order)
 
-3. **Library programs (rest)**: the stack-level merge sort of records (`A` words per record,
-   word-by-word comparison via `cmpW`, merge of two runs using `moveN`, passes `passX`,
-   against `CSortList.finalRecs_eq`; cost `O((R A + 1)(log R + 1))` word operations); queue
-   helpers as needed.
-4. **The compiler program** (as above): triviality check; locations pass; schema pre-scan;
-   request pass; sort / join / sort; emission of `n`, colors, `m`, edges for `ε = 0, 1` in the
-   order `ordL I`.
+3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
+4. **The compiler program**, emitting `gDesc I 0 ++ gDesc I 1` (`OutDesc.encodeGraphPair_eq`):
+   triviality check (no schema, all domains empty: emit `0,0,0,0`; `k, ℓ` are skipped, not
+   read, since they may be exponential in `H` there); locations pass (stack of
+   `(v, i, b₀ … b_{ℓ-1})` records with `locStart v`, `ι(v)`); schema pre-scan (sizes
+   `schSize`, `colW`, `nEnt`, `|coefSteps|`, union of the set bits for the coef ranks);
+   request pass (per column and argument the key `(u, f(i), bits of b + δ_i)` with a sequence
+   number); `sortS` / merge-join with the locations / `sortS` by sequence number; emission of
+   `clsSizes` sum, `colorsOf`, `|gEdges|` (count while pushing the edges to a stack, then
+   emit) and the edges, for `ε = 0, 1`. Suggested split: one module per pass, each with a
+   `Good` spec against a list function of `I`, composed with `Good.seq`.
 5. **List-level correctness (rest)**: only the per-pass correctness of the program against
    `gDesc` remains (the list-level target is done, see `OutDesc` above).
 6. **Costs**: `w = O(log(H + S + 2))`, `O((H + S) log)` word operations, then
