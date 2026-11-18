@@ -131,6 +131,49 @@ lemma drop_posAt_W : (encodeSystem I).drop (posAt I I.numLocations) =
 lemma drop_schPos : (encodeSystem I).drop (schPos I) = encodeNats (schsDesc I) := by
   rw [schPos, ← List.drop_drop, drop_posAt_W, List.drop_left]
 
+/-! ## `ℓ ≤ H` for nontrivial systems -/
+
+lemma length_permDescription (π : BlockPerm k ℓ) :
+    (permDescription π).length = k + k * ℓ := by
+  simp [permDescription, blockDescription, List.length_flatMap, sum_map_const]
+
+lemma length_schemaDescription_ge (hk : 1 ≤ k) (e : Schema k ℓ I.numLocations) :
+    ℓ ≤ (schemaDescription e).length := by
+  cases e with
+  | binary u v D σ τ =>
+    have := length_permDescription σ
+    simp only [schemaDescription, List.length_append]
+    nlinarith
+  | ternary u v w' D σ τ π =>
+    have := length_permDescription σ
+    simp only [schemaDescription, List.length_append]
+    nlinarith
+
+lemma ell_le_H (hk : 1 ≤ k) (h : ¬ trivSys I) : ℓ ≤ H I := by
+  have h2 := length_sd_le I
+  rw [sd_eq] at h2
+  simp only [List.length_cons, List.length_append] at h2
+  by_cases hd : ∀ v, I.domain v = ∅
+  · have hs : I.schemas ≠ [] := fun hs => h ⟨hd, hs⟩
+    obtain ⟨e, he⟩ := List.exists_mem_of_ne_nil _ hs
+    have h1 : (schemaDescription e).length ≤ (schsDesc I).length := by
+      rw [schsDesc, List.length_flatMap]
+      exact List.le_sum_of_mem (List.mem_map_of_mem he)
+    have := length_schemaDescription_ge I hk e
+    omega
+  · push Not at hd
+    obtain ⟨v, hv⟩ := hd
+    have h1 : (locD I v).length ≤ (locsDesc I).length := by
+      rw [locsDesc, List.length_flatMap]
+      exact List.le_sum_of_mem (List.mem_map_of_mem (List.mem_finRange v))
+    have hpos : 1 ≤ (coordList (I.domain v)).length := by
+      rw [← card_image_coordNum]
+      exact Nat.one_le_iff_ne_zero.mpr (fun h0 => (Finset.nonempty_iff_ne_empty.mp hv) ((card_image_eq_zero_iff).mp h0))
+    have := length_flatten_cnd I v
+    rw [locD_eq'] at h1
+    simp only [List.length_cons] at h1
+    nlinarith
+
 open CStm
 
 /-! ## The program -/
