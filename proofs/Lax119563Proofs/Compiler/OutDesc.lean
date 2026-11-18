@@ -66,6 +66,13 @@ lemma zipIdx_flatMap_blocks (G : β × γ → ℕ → List δ) :
         simpa [sizeOf'] using this
       rw [e1, List.length_map, Nat.add_assoc]
 
+lemma filterMap_congr' {f g : α → Option β} : ∀ {l : List α}, (∀ a ∈ l, f a = g a) →
+    l.filterMap f = l.filterMap g
+  | [], _ => rfl
+  | a :: l, h => by
+    rw [List.filterMap_cons, List.filterMap_cons, h a (by simp),
+      filterMap_congr' (fun b hb => h b (List.mem_cons_of_mem _ hb))]
+
 end Generic
 
 variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ) (ε : ZMod 2)
@@ -131,5 +138,63 @@ theorem edgeList_hubsCls :
     rw [nbrPos_of_not_hub I ε (not_hub_of_mem_nonhubsE I hx).1]; rfl
   rw [hnon, List.append_nil]
   rfl
+
+/-! ## Slot positions by closed formulas -/
+
+/-- The position of the slot `(Y, b)` (class `Y`, required first effective bit `b`) in the
+order, by the closed formulas: a coordinate class of an initialized location has one name
+(present iff `b = ε · initSeed`), all other slot classes two names (offset `b`). -/
+noncomputable def slotPos : ICls I → ZMod 2 → Option ℕ
+  | .coord v c, b =>
+    if (I.init v).isSome then
+      (if b = ε * initSeed I v c then some (locStart I v + (coordList (I.domain v)).idxOf c)
+        else none)
+    else some (locStart I v + (coordList (I.domain v)).idxOf c * 2 + b.val)
+  | .sum e c, b => some (schBase I e + hubSize I e + 2 * (coordList (dom I e)).idxOf c + b.val)
+  | .track e σ c, b => some (schBase I e + hubSize I e + sumSize I e +
+      2 * (entBefore I e c + (stepsC c).idxOf σ) + b.val)
+  | .coef e σ, b => some (schBase I e + hubSize I e + sumSize I e + 2 * nEnt I e +
+      2 * (coefSteps I e).idxOf σ + b.val)
+  | _, _ => none
+
+/-- **Slot positions.** -/
+theorem posOpt_slot {x : VName I} (hx : x ∈ ordL I) {l : Lab} {s : ICls I × ZMod 2}
+    (hs : s ∈ slotsOf I x.1 l) : posOpt I ε s.1 s.2 = slotPos I ε s.1 s.2 := by
+  have hm := slot_mem_ordCls I hx hs
+  have hv := valid_slots I hx hs
+  have hh : isHub I s.1 = false :=
+    (hubB_hub I ((hubB_iff_slotsOf I x.1 s.1 l (s.2, 0)).mpr hs)).2
+  obtain ⟨Y, b⟩ := s
+  simp only at hm hv hh ⊢
+  cases Y with
+  | coord v c =>
+    have hc : c ∈ I.domain v := hv
+    by_cases hi : (I.init v).isSome
+    · have hm' : (Cls.coord v c, [((0 : ZMod 2), (0 : ZMod 2))]) ∈ ordCls I := by
+        simpa [slotLabs, isSingleton, hi] using hm
+      rw [posOpt_single I ε hm', clsStart_coord I hc]
+      simp [slotPos, hi, coordLabs, initBit]
+    · have hm' : (Cls.coord v c, bits1) ∈ ordCls I := by
+        simpa [slotLabs, isSingleton, hi] using hm
+      have hn : I.init v = none := Option.not_isSome_iff_eq_none.mp hi
+      rw [posOpt_bits1 I ε hm', clsStart_coord I hc]
+      simp [slotPos, hi, coordLabs, initBit, initSeed, hn, bits1]
+  | sum e c =>
+    obtain ⟨ht, hc⟩ := hv
+    have hm' : (Cls.sum e c, bits1) ∈ ordCls I := by simpa [slotLabs, isSingleton] using hm
+    rw [posOpt_bits1 I ε hm', clsStart_sum I ht hc]
+    simp [slotPos, initBit]
+  | track e σ c =>
+    obtain ⟨hσ, hc, hent⟩ := hv
+    have hm' : (Cls.track e σ c, bits1) ∈ ordCls I := by simpa [slotLabs, isSingleton] using hm
+    rw [posOpt_bits1 I ε hm', clsStart_track I hc ((mem_stepsC).mpr ⟨hσ, hent⟩)]
+    simp [slotPos, initBit]
+  | coef e σ =>
+    have hm' : (Cls.coef e σ, bits1) ∈ ordCls I := by simpa [slotLabs, isSingleton] using hm
+    rw [posOpt_bits1 I ε hm', clsStart_coef I ((mem_coefSteps I).mpr hv)]
+    simp [slotPos, initBit]
+  | upd => simp [isHub] at hh
+  | junc => simp [isHub] at hh
+  | link => simp [isHub] at hh
 
 end Lax119563Proofs.Compiler
