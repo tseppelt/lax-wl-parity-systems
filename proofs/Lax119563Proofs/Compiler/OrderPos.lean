@@ -105,4 +105,113 @@ lemma sum_map_const (L : List α) (n : ℕ) : (L.map fun _ => n).sum = L.length 
 
 end Generic
 
+section Generic2
+
+variable {α β γ : Type*} [DecidableEq α] [DecidableEq β]
+
+/-- Blocks of one class each, all with the labels `ls`. -/
+lemma startIn_map_inj (g : α → β) (hg : Function.Injective g) (ls : List γ) (a : α) :
+    ∀ L : List α, startIn (L.map fun b => (g b, ls)) (g a) = L.idxOf a * ls.length
+  | [] => by simp [startIn]
+  | b :: L => by
+    by_cases h : b = a
+    · subst h; simp [startIn, List.takeWhile_cons]
+    · have hgb : g b ≠ g a := fun e => h (hg e)
+      have ih := startIn_map_inj g hg ls a L
+      simp only [startIn, ne_eq, decide_not] at ih ⊢
+      simp only [List.map_cons, List.takeWhile_cons, hgb, decide_false, Bool.not_false,
+        if_true, List.sum_cons, ih, List.idxOf_cons_ne _ h]
+      rw [Nat.succ_eq_add_one]; ring
+
+lemma sizeOf'_map_const (g : α → β) (ls : List γ) (L : List α) :
+    sizeOf' (L.map fun b => (g b, ls)) = L.length * ls.length := by
+  induction L with
+  | nil => simp
+  | cons b L ih => simp [ih]; ring
+
+lemma sum_take_const (L : List α) (i n : ℕ) (hi : i ≤ L.length) :
+    ((L.take i).map fun _ => n).sum = i * n := by
+  rw [sum_map_const, List.length_take, min_eq_left hi]
+
+end Generic2
+
+/-! ## The sections of the order -/
+
+variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ)
+
+/-- The number of names of schema `e`. -/
+noncomputable def schSize (e : Fin I.schemas.length) : ℕ :=
+  sizeOf' (hubsCls I e ++ nonhubsCls I e)
+
+/-- The position of the first name of schema `e`. -/
+noncomputable def schBase (e : Fin I.schemas.length) : ℕ :=
+  (((List.finRange I.schemas.length).take e).map (schSize I)).sum
+
+/-- The position of the first coordinate name. -/
+noncomputable def locBase : ℕ := ((List.finRange I.schemas.length).map (schSize I)).sum
+
+/-- The number of names of location `v`. -/
+def locSize (v : Fin I.numLocations) : ℕ :=
+  (coordList (I.domain v)).length * (coordLabs I v).length
+
+/-- The position of the first name of location `v`. -/
+noncomputable def locStart (v : Fin I.numLocations) : ℕ :=
+  locBase I + (((List.finRange I.numLocations).take v).map (locSize I)).sum
+
+/-- The width of a column in the junction/link section: `4 + 2` (ternary) or `2`. -/
+def colW (e : Fin I.schemas.length) : ℕ := (if isTern (sch I e) then 4 else 0) + 2
+
+/-- The number of entries of schema `e`. -/
+def nEnt (e : Fin I.schemas.length) : ℕ :=
+  ((coordList (dom I e)).map fun c => (stepsC c).length).sum
+
+/-- The number of entries of the columns before `c`. -/
+def entBefore (e : Fin I.schemas.length) (c : Coord k ℓ) : ℕ :=
+  (((coordList (dom I e)).take ((coordList (dom I e)).idxOf c)).map
+    fun c => (stepsC c).length).sum
+
+/-- The number of hub names of schema `e`. -/
+def hubSize (e : Fin I.schemas.length) : ℕ :=
+  (coordList (dom I e)).length * colW I e + 4 * nEnt I e
+
+/-- The size of the sum section of schema `e`. -/
+def sumSize (e : Fin I.schemas.length) : ℕ :=
+  if isTern (sch I e) then 2 * (coordList (dom I e)).length else 0
+
+lemma keySchema_of_mem {e : Fin I.schemas.length} {p : ICls I × List Lab}
+    (hp : p ∈ hubsCls I e ++ nonhubsCls I e) : keySchema I p.1 = some e := by
+  simp only [hubsCls, nonhubsCls, List.mem_append, List.mem_flatMap, List.mem_map] at hp
+  rcases hp with (⟨c, -, hp⟩ | ⟨c, -, σ, -, rfl⟩) | (⟨c, -, hp⟩ | ⟨c, -, σ, -, rfl⟩) |
+      ⟨σ, -, rfl⟩
+  · rcases hp with hp | hp
+    · split at hp
+      · simp only [List.mem_singleton] at hp; subst hp; rfl
+      · simp at hp
+    · simp only [List.mem_singleton] at hp; subst hp; rfl
+  · rfl
+  · split at hp
+    · simp only [List.mem_singleton] at hp; subst hp; rfl
+    · simp at hp
+  · rfl
+  · rfl
+
+/-- A class of schema `e` starts at `schBase e` plus its start within the schema. -/
+lemma clsStart_sch {e : Fin I.schemas.length} {X : ICls I}
+    (hX : X ∈ (hubsCls I e ++ nonhubsCls I e).map Prod.fst) :
+    clsStart I X = schBase I e + startIn (hubsCls I e ++ nonhubsCls I e) X := by
+  have hk : keySchema I X = some e := by
+    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp hX; exact keySchema_of_mem I hp
+  unfold clsStart ordCls
+  rw [startIn_append_left (by
+    simp only [List.map_flatMap, List.mem_flatMap]
+    exact ⟨e, List.mem_finRange _, hX⟩)]
+  rw [startIn_flatMap_of_mem _ (List.nodup_finRange _) _ (List.mem_finRange e) hX
+    (fun e' _ hne hX' => by
+      obtain ⟨p, hp, he⟩ := List.mem_map.mp hX'
+      have := keySchema_of_mem I hp
+      rw [he, hk] at this
+      exact hne (Option.some.inj this).symm)]
+  simp [schBase]
+  congr 3; funext b; simp [schSize]
+
 end Lax119563Proofs.Compiler
