@@ -165,6 +165,186 @@ lemma mrgS_good (hw2 : 2 ≤ w) (hstk : [T1, T2, Y, tmp, C1, C2].Nodup)
 
 end Merge
 
+/-! ## One pass -/
+
+/-- Proves `a ∉ l` for entries of a duplicate-free list `h`. -/
+macro "nmem" h:ident : tactic =>
+  `(tactic| (simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]; (repeat' apply And.intro); all_goals first | (intro hh; subst hh; simp at $h:ident) | simp))
+
+/-- Proves `l.Nodup` for a list of entries of a duplicate-free list `h`. -/
+macro "nodupT" h:ident : tactic =>
+  `(tactic| (simp only [List.nodup_cons, List.nodup_nil, and_true]; (repeat' apply And.intro); all_goals nmem $h))
+
+lemma take_min_len (l : List (List ℕ)) (r : ℕ) : l.take (min r l.length) = l.take r := by
+  rcases le_total r l.length with h | h
+  · rw [min_eq_left h]
+  · rw [min_eq_right h, List.take_of_length_le le_rfl, List.take_of_length_le h]
+
+lemma drop_min_len (l : List (List ℕ)) (r : ℕ) : l.drop (min r l.length) = l.drop r := by
+  rcases le_total r l.length with h | h
+  · rw [min_eq_left h]
+  · rw [min_eq_right h, List.drop_eq_nil_of_le le_rfl, List.drop_eq_nil_of_le h]
+
+/-- The stacks during a pass: the unprocessed records `rs'` on `X`, the merged runs `Lacc`
+on top of `Y`. -/
+def passStk (S : Fin Q → List ℕ) (X Y : Fin Q) (rs' Lacc : List (List ℕ)) : Fin Q → List ℕ :=
+  Function.update (Function.update S X rs'.flatten) Y (Lacc.flatten ++ S Y)
+
+/-- Split off two runs of `r` records and merge them onto `Y`. -/
+def pairBody (X T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t r N done k : Fin R) :
+    CStm R Q :=
+  .seq (mvRecsB X T1 tmp A r done N k i t)
+    (.seq (mvRecsB X T2 tmp A r done N k i t) (mrgS T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t))
+
+lemma update_self_eq {S : Fin Q → List ℕ} {q : Fin Q} {l : List ℕ} (h : S q = l) :
+    Function.update S q l = S := by
+  subst h; exact Function.update_eq_self _ _
+
+section Pass
+
+variable {X T1 T2 Y tmp C1 C2 : Fin Q} {A dir c f1 f2 kc t1 t2 i t r N done k : Fin R}
+
+set_option maxHeartbeats 1000000 in
+lemma pairBody_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
+    (hreg : [A, dir, c, f1, f2, kc, t1, t2, i, t, r, N, done, k].Nodup)
+    (S : Fin Q → List ℕ) (hT1 : S T1 = []) (hT2 : S T2 = []) (d : Bool) (s : NSt R Q)
+    {a rr n : ℕ} (rs' Lacc : List (List ℕ)) (hne : rs' ≠ [])
+    (hs : s.stk = passStk S X Y rs' Lacc) (ha : s.env A = a) (ha1 : 1 ≤ a)
+    (hdir : s.env dir = if d then 1 else 0) (hr : s.env r = rr) (hr1 : 1 ≤ rr)
+    (hn : s.env N = n) (hd : s.env done = n - rs'.length) (hl : rs'.length ≤ n)
+    (hrec : ∀ y ∈ rs', y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (hwr : rr + 1 < 2 ^ w) (hwn : n + 1 < 2 ^ w) :
+    ∃ s', Good x w (pairBody X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k) s s'
+        ((rs'.length - (rs'.drop (2 * rr)).length + 1) * (240 * (a + 1) * Ex.nodeCost w)) ∧
+      s'.stk = passStk S X Y (rs'.drop (2 * rr))
+        (CSort.mrg d (rs'.take rr).reverse ((rs'.drop rr).take rr).reverse [] ++ Lacc) ∧
+      s'.env done = n - (rs'.drop (2 * rr)).length ∧
+      Frame s s' [k, done, i, t, c, kc, t1, t2, f1, f2] := by
+  have hXT1 : X ≠ T1 := by ndup hstk
+  have hXT2 : X ≠ T2 := by ndup hstk
+  have hXY : X ≠ Y := by ndup hstk
+  have hXt : X ≠ tmp := by ndup hstk
+  have hT1Y : T1 ≠ Y := by ndup hstk
+  have hT2Y : T2 ≠ Y := by ndup hstk
+  have hT12 : T1 ≠ T2 := by ndup hstk
+  have hmreg : [A, r, done, N, k, i, t].Nodup := by nodupT hreg
+  have hgreg : [A, dir, c, f1, f2, kc, t1, t2, i, t].Nodup := by nodupT hreg
+  have hgstk : [T1, T2, Y, tmp, C1, C2].Nodup := by nodupT hstk
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have hsX : s.stk X = rs'.flatten ++ [] := by
+    rw [hs]; simp [passStk, Function.update_of_ne hXY]
+  -- the first run
+  obtain ⟨s1, g1, k1, d1, fr1⟩ := mvRecsB_good (x := x) hw2 (src := X) (dst := T1) (tmp := tmp)
+    (by ndup hstk) (by ndup hstk) hXT1 hmreg s rs' [] ha hr hn hd (by omega) hsX
+    hrec (by omega) hw hwr hwn
+  set m1 := min rr (n - (n - rs'.length)) with hm1
+  have hm1' : m1 = min rr rs'.length := by rw [hm1]; congr 1; omega
+  have e1 : ∀ q, q ∉ [k, done, i, t] → s1.env q = s.env q := fun q hq => fr1.2.2 q hq
+  have hA1 : s1.env A = a := by rw [e1 A (by nmem hreg), ha]
+  have hr1' : s1.env r = rr := by rw [e1 r (by nmem hreg), hr]
+  have hn1 : s1.env N = n := by rw [e1 N (by nmem hreg), hn]
+  have hsX1 : s1.stk X = (rs'.drop m1).flatten ++ [] := by
+    rw [k1]; simp [recsStk, Function.update_of_ne hXT1]
+  have hlen1 : (rs'.drop m1).length = rs'.length - m1 := List.length_drop
+  have hm1le : m1 ≤ rs'.length := by rw [hm1']; exact min_le_right _ _
+  -- the second run
+  obtain ⟨s2, g2, k2, d2, fr2⟩ := mvRecsB_good (x := x) hw2 (src := X) (dst := T2) (tmp := tmp)
+    (by ndup hstk) (by ndup hstk) hXT2 hmreg s1 (rs'.drop m1) [] hA1 hr1' hn1 d1 (by omega)
+    hsX1 (fun y hy => hrec y (List.mem_of_mem_drop hy)) (by rw [hlen1]; omega) hw hwr hwn
+  set m2 := min rr (n - (n - rs'.length + m1)) with hm2
+  have hm2' : m2 = min rr (rs'.drop m1).length := by rw [hm2, hlen1]; congr 1; omega
+  have e2 : ∀ q, q ∉ [k, done, i, t] → s2.env q = s1.env q := fun q hq => fr2.2.2 q hq
+  have hA2 : s2.env A = a := by rw [e2 A (by nmem hreg), hA1]
+  have hdir2 : s2.env dir = if d then 1 else 0 := by
+    rw [e2 dir (by nmem hreg), e1 dir (by nmem hreg), hdir]
+  have hm2le : m2 ≤ (rs'.drop m1).length := by rw [hm2']; exact min_le_right _ _
+  -- the stacks before the merge
+  set u := (rs'.take m1).reverse
+  set v := ((rs'.drop m1).take m2).reverse
+  have hs2T1 : s2.stk T1 = u.flatten := by
+    rw [k2]; simp only [recsStk, Function.update_of_ne hT12, Function.update_of_ne hXT1.symm]
+    rw [k1]; simp [recsStk, hs, passStk, Function.update_of_ne hT1Y, Function.update_of_ne hXT1.symm, hT1, u]
+  have hs2T2 : s2.stk T2 = v.flatten := by
+    rw [k2]; simp only [recsStk, Function.update_self]
+    rw [k1]; simp [recsStk, hs, passStk, Function.update_of_ne hT2Y, Function.update_of_ne hXT2.symm,
+      Function.update_of_ne hT12.symm, hT2, v]
+  have hs2m : s2.stk = mrgStk s2.stk T1 T2 Y u v [] := by
+    funext q
+    simp only [mrgStk, Function.update_apply, List.flatten_nil, List.nil_append]
+    split_ifs with h1 h2 h3
+    · rw [h1]
+    · rw [h2, hs2T2]
+    · rw [h3, hs2T1]
+    · rfl
+  -- the merge
+  obtain ⟨s3, g3, k3, fr3⟩ := mrgS_good (x := x) (tmp := tmp) (C1 := C1) (C2 := C2) (c := c)
+    (f1 := f1) (f2 := f2) (kc := kc) (t1 := t1) (t2 := t2) (i := i) (t := t) hw2 hgstk hgreg
+    s2.stk d s2 u v [] hA2 ha1 hdir2 hs2m
+    (fun y hy => by
+      simp only [List.mem_append, List.mem_reverse, u, v] at hy
+      rcases hy with hy | hy
+      · exact hrec y (List.mem_of_mem_take hy)
+      · exact hrec y (List.mem_of_mem_drop (List.mem_of_mem_take hy))) hw
+  -- the list identities
+  have htu : rs'.take m1 = rs'.take rr := by rw [hm1']; exact take_min_len rs' rr
+  have hdu : rs'.drop m1 = rs'.drop rr := by rw [hm1']; exact drop_min_len rs' rr
+  have htv : (rs'.drop m1).take m2 = (rs'.drop rr).take rr := by
+    rw [hm2', take_min_len, hdu]
+  have hdv : (rs'.drop m1).drop m2 = rs'.drop (2 * rr) := by
+    rw [hm2', drop_min_len, hdu, CSort.drop_drop_two]
+  have hlen2 : ((rs'.drop m1).drop m2).length = (rs'.drop m1).length - m2 := List.length_drop
+  refine ⟨s3, (g1.seq (g2.seq g3)).mono ?_, ?_, ?_, ?_⟩
+  · simp only [u, v, List.length_reverse, List.length_take]
+    rw [← hdv, hlen2, hlen1]
+    have hmin1 : min m1 rs'.length = m1 := min_eq_left hm1le
+    have hmin2 : min m2 (rs'.drop m1).length = m2 := min_eq_left hm2le
+    have hmin2' : min m2 (rs'.length - m1) = m2 := by rw [← hlen1]; exact hmin2
+    rw [hmin1, hmin2']
+    have : rs'.length - (rs'.length - m1 - m2) = m1 + m2 := by rw [hlen1] at hm2le; omega
+    rw [this]
+    have key : 50 * (m1 + 1) + 50 * (m2 + 1) + 140 * (m1 + m2 + 1) ≤ 240 * (m1 + m2 + 1) := by
+      omega
+    calc _ = (50 * (m1 + 1) + 50 * (m2 + 1) + 140 * (m1 + m2 + 1)) *
+          ((a + 1) * Ex.nodeCost w) := by ring
+      _ ≤ (240 * (m1 + m2 + 1)) * ((a + 1) * Ex.nodeCost w) := Nat.mul_le_mul_right _ key
+      _ = _ := by ring
+  · rw [k3]
+    funext q
+    unfold mrgStk passStk
+    by_cases hqY : q = Y
+    · subst hqY
+      simp only [Function.update_self, List.flatten_append, List.append_assoc]
+      congr 1
+      · simp only [u, v, htu, htv]
+      · rw [k2]; simp only [recsStk, Function.update_of_ne hT2Y.symm, Function.update_of_ne hXY.symm]
+        rw [k1]; simp [recsStk, Function.update_of_ne hT1Y.symm, Function.update_of_ne hXY.symm, hs,
+          passStk]
+    · by_cases hq2 : q = T2
+      · subst hq2
+        simp [Function.update_of_ne hqY, Function.update_of_ne hXT2.symm, hT2]
+      · by_cases hq1 : q = T1
+        · subst hq1
+          simp [Function.update_of_ne hqY, Function.update_of_ne hq2, Function.update_of_ne hXT1.symm, hT1]
+        · simp only [Function.update_of_ne hqY, Function.update_of_ne hq2, Function.update_of_ne hq1]
+          rw [k2]; simp only [recsStk, Function.update_of_ne hq2]
+          by_cases hqX : q = X
+          · subst hqX; simp [hdv]
+          · simp only [Function.update_of_ne hqX]
+            rw [k1]; simp [recsStk, Function.update_of_ne hq1, Function.update_of_ne hqX, hs,
+              passStk, Function.update_of_ne hqY]
+  · rw [fr3.2.2 done (by nmem hreg), d2, ← hdv, hlen2, hlen1]
+    rw [hlen1] at hm2le; omega
+  · have s1 : [k, done, i, t] ⊆ [k, done, i, t, c, kc, t1, t2, f1, f2] := by
+      intro q hq; simp only [List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
+      rcases hq with h | h | h | h <;> simp [h]
+    have s3 : [c, kc, t1, t2, i, t, f1, f2] ⊆ [k, done, i, t, c, kc, t1, t2, f1, f2] := by
+      intro q hq; simp only [List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
+      rcases hq with h | h | h | h | h | h | h | h <;> simp [h]
+    exact (fr1.mono s1).trans ((fr2.mono s1).trans (fr3.mono s3))
+
+end Pass
+
 end CStm
 
 end Lax119563Proofs.Compiler
