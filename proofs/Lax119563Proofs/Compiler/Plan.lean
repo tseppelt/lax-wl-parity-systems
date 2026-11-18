@@ -222,11 +222,30 @@ init value, `E`, and — only when the system is nontrivial — `ℓ`; `k` and t
 `CQ = 16`, `rT, rP, rW, rJ, rNz, rA, rD, rE, rTriv`; **`p0_good`**: from cursor `0`, `p0` sets
 `rTriv = [trivSys I]`, stacks and output kept, cost `200 (H + 1) nodeCost`, under
 `2 (H + 1) ≤ 2^w`; `p0Body_good`, `p0End_good`; **`gDesc_triv`**: `gDesc I ε = [0, 0]` for a
-trivial system). Next: `P1` (locations) as in the design above; for the costs use the
-pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`);
-for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos`.
+trivial system). `CSkip` (**`skipNumsS_good`**: skip `n` numbers of any size,
+**`skipBlocksS_good`**: skip `d` blocks of `m` numbers; existential final state with stacks,
+cursor, output and the untouched registers). `PLoc` (pass `P1`, branch proofs/compiler-p1):
+registers `rL = ℓ`, `rL1 = ℓ + 1`, `rOff`, counters `rK, rI`, stack `qLoc = 0`;
+`coordNum_injective`, `card_image_coordNum` (`|D.image coordNum| = |coordList D|`),
+`locNums`, `locD_eq'` (`locD = ι :: |D| :: (locNums.map coordNumDescription).flatten`),
+`locSize_eq`, `locOff j` (`locStart v = locBase + locOff v`, `locOff_succ`, `locOff_le_H`),
+`locOffs`, `schPos`, `drop_schPos`; **`p1_good`**: under `4 (H + 1) ≤ 2^w` and `ℓ ≤ H` (to be
+proved for nontrivial systems with `k ≥ 1`), from any state with `pos ≤ H`, `p1` ends at
+`schPos I` with `rW = W`, `rL = ℓ`, `rE = E`, `rOff = locOff I W`, `qLoc` :=
+`(locOffs I).reverse ++ qLoc`, other stacks and output kept, cost `500 (H + 1) nodeCost`.
+Next: `ℓ ≤ H` for nontrivial systems; `P1'` (records `(v, i, b₀ … b_{ℓ-1})` with the
+coordinate rank for the join, if `E > 0`); `P2`. For the costs use the
+pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`;
+if `nlinarith` times out in a big context, `nlinarith only [hU, hU', hint products]`);
+for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos` (or
+`P - pos` for a fixed end `P` when the loop reads only a sublist).
 Pitfall: in `simp`/`rw` proofs about states built with `set`, prefer `show` with the
-definitional `Function.update` form (`e5` in `p0_good`).
+definitional `Function.update` form (`e5` in `p0_good`). With `open CStm`, write
+`CStm.nodeCost_ge`, `CStm.unitCost_ge` (ambiguous with `Reduction.nodeCost_ge`).
+**Cost obstruction to check:** `sortS` costs `(n+1)(log₂ n + 2) · 700 (a+1) nodeCost`, i.e.
+`(L+1)³` per record word, but `machine_of_program` asks for `K (H+S+1)(L+1)²`; either
+generalise `machine_of_program`/`final_bound` to `(L+1)³` (the concept allows any `c`) or
+avoid the `log` factor.
 
 ## Remaining work (in order)
 

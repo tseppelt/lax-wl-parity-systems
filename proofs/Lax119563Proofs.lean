@@ -222,3 +222,5 @@ import Lax119563Proofs.Compiler.OutLen
 import Lax119563Proofs.Compiler.Bound
 import Lax119563Proofs.Compiler.PSys
 import Lax119563Proofs.Compiler.PTriv
+import Lax119563Proofs.Compiler.CSkip
+import Lax119563Proofs.Compiler.PLoc
