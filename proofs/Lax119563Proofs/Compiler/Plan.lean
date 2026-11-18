@@ -254,10 +254,9 @@ for loops `Good.loop_var` with `μ` = remaining iterations and `φ = H - pos` (o
 Pitfall: in `simp`/`rw` proofs about states built with `set`, prefer `show` with the
 definitional `Function.update` form (`e5` in `p0_good`). With `open CStm`, write
 `CStm.nodeCost_ge`, `CStm.unitCost_ge` (ambiguous with `Reduction.nodeCost_ge`).
-**Cost obstruction to check:** `sortS` costs `(n+1)(log₂ n + 2) · 700 (a+1) nodeCost`, i.e.
-`(L+1)³` per record word, but `machine_of_program` asks for `K (H+S+1)(L+1)²`; either
-generalise `machine_of_program`/`final_bound` to `(L+1)³` (the concept allows any `c`) or
-avoid the `log` factor.
+**Cost obstruction (resolved):** `sortS` costs `(n+1)(log₂ n + 2) · 700 (a+1) nodeCost`, i.e.
+`(L+1)³` per record word; `machine_of_program`/`final_bound` now take any exponent `e ≥ 1`
+(`cost ≤ K (H+S+1)(L+1)^e`), so use `e = 3`.
 
 ## Remaining work (in order)
 
@@ -276,9 +275,10 @@ avoid the `log` factor.
    `gDesc` remains (the list-level target is done, see `OutDesc` above).
 6. **Costs**: the wrapper is done (see below); what remains is, for the program `c` of
    item 4 with `w = a (L + 1)` (`L = log₂(H + S + 2)`): `c.Fits`, `exec … .out =
-   gDesc I 0 ++ gDesc I 1` and `c.cost ≤ K (H + S + 1)(L + 1)²` (all program costs are
-   `O(#word operations · nodeCost w)` and `nodeCost_le_sq` bounds `nodeCost w` by
-   `64 (a + 3)² (L + 1)²`, so `O(H + S)` word operations suffice). Then
+   gDesc I 0 ++ gDesc I 1` and `c.cost ≤ K (H + S + 1)(L + 1)^e` for some `e ≥ 1`
+   (all program costs are `O(#word operations · nodeCost w)` and `nodeCost_le_sq` bounds
+   `nodeCost w` by `64 (a + 3)² (L + 1)²`, so `O((H + S)(L + 1))` word operations suffice
+   with `e = 3`, which covers the `log` factor of `sortS`). Then
    `machine_of_program` + `matrix_compiler_of_machine` give the concept statement; rewrite
    `Matrix/Main.lean` (frontmatter `conclusion: Lax119563.MatrixCompiler.matrix_compiler`)
    as these two applications.
@@ -288,6 +288,7 @@ avoid the `log` factor.
    **`matrix_compiler_of_machine`** (the concept statement from a machine emitting
    `encodeNats (gDesc I 0 ++ gDesc I 1)` within the bound); `length_out_le`, `gDesc_le`,
    `length_ordL_le` (`n ≤ 16 S`); `nodeCost_le_sq`, `out_width`, `final_bound`,
-   `one_le_bitLength`, **`machine_of_program`** (the machine of a `CStm` with the three
-   facts above computes the output within `(90 (K + 3400) + 30)(H + S) L²`).
+   `one_le_bitLength`, `succ_pow_le`, **`machine_of_program`** (branch proofs/compiler-bound:
+   for any exponent `e ≥ 1`, the machine of a `CStm` with the three facts above computes the
+   output within `((2^(e+1) + 80)(K + 3400) + 30)(H + S) L^e`).
 -/
