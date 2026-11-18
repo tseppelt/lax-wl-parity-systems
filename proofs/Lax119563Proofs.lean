@@ -218,3 +218,4 @@ import Lax119563Proofs.Compiler.CSortMain
 import Lax119563Proofs.Compiler.OrderPos
 import Lax119563Proofs.Compiler.OutDesc
 import Lax119563Proofs.Compiler.PSys
+import Lax119563Proofs.Compiler.PTriv

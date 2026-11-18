@@ -132,9 +132,7 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
   have hU' := unitCost_ge w
   obtain ⟨hW, hstk, hout, hjW, hcase⟩ := hI
   have hlt : s.env rJ < I.numLocations := by
-    simp only [Ex.eval, rv] at hc; split_ifs at hc with h
-    · omega
-    · exact absurd rfl hc
+    by_contra h; apply hc; simp only [Ex.eval, rv, hW]; rw [if_neg h]
   rcases hcase with ⟨hnz, hpos, hemp⟩ | ⟨-, hj, -⟩
   swap; · omega
   set j := s.env rJ with hjdef
@@ -147,9 +145,12 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
         I.schemas.length :: schsDesc I))) := by
     rw [hpos, drop_posAt, locsSuf_cons I hlt, hloc]
     simp [encNats_cons, encodeNats_append]
+  have hposle : s.pos ≤ H I := by rw [hpos]; exact posAt_le I j
   have hlenx : s.pos + (encodeNat a).length + (encodeNat d).length ≤ H I := by
     have := congrArg List.length hx
     simp only [List.length_drop, List.length_append] at this
+    show _ ≤ (encodeSystem I).length
+    have : s.pos ≤ (encodeSystem I).length := hposle
     omega
   have ha : (Nat.bits a).length < w := bits_lt_of_le (le_trans (initNum_le _)
     (by have := three_le_H I; omega)) hH
@@ -175,15 +176,21 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
   · -- empty domain: next location
     have hemp' : I.domain v = ∅ := (card_image_eq_zero_iff).mp hd0
     have hjw : s2.env rJ + 1 < 2 ^ w := by
+      have := W_le I
       rw [e2 rJ (by decide) (by decide) (by decide) (by decide)]; omega
     have r3 := Good.set (x := encodeSystem I) (w := w) (r := rJ) (st := s2)
       (e := .add (rv rJ) (.const 1)) (by simp only [Ex.Fits, Ex.eval, rv]; omega)
     refine ⟨_, (r1.seq (r2.seq (Good.iteF (by simp only [Ex.Fits, rv, e2D]; omega)
       (by simp [Ex.eval, rv, e2D, hd0]) r3))).mono ?_, ?_, ?_, ?_⟩
     · simp only [condCost, Ex.size, rv, NSt.set_pos, hp2]
-      have : H I - (s.pos + (encodeNat a).length + (encodeNat d).length) + (encodeNat a).length +
-          (encodeNat d).length = H I - s.pos := by omega
+      have hΔ : H I - s.pos - (H I - (s.pos + (encodeNat a).length + (encodeNat d).length)) =
+          (encodeNat a).length + (encodeNat d).length := by omega
+      rw [hΔ]
       generalize Ex.nodeCost w = N at *
+      generalize unitCost w = U at *
+      generalize (encodeNat a).length = la at *
+      generalize (encodeNat d).length = ld at *
+      ring_nf
       nlinarith
     · have hj' : (s2.set rJ (Ex.eval s2.env (.add (rv rJ) (.const 1)))).env rJ = j + 1 := by
         simp [Ex.eval, rv, e2 rJ (by decide) (by decide) (by decide) (by decide), j]
@@ -196,7 +203,7 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
       · rw [hj', NSt.set_pos, hp2, hpos, posAt_succ I hlt]
         have : locD I v = [a, 0] := by
           rw [locD, hemp', domainDescription_empty]
-        rw [this]; simp [encNats_cons, encodeNats]; omega
+        rw [this]; simp [encNats_cons, encodeNats, hd0]; omega
       · intro u hu
         rw [hj'] at hu
         rcases Nat.lt_succ_iff_lt_or_eq.mp hu with hu | hu
@@ -216,9 +223,14 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
     refine ⟨_, (r1.seq (r2.seq (Good.iteT (by simp only [Ex.Fits, rv, e2D]; omega)
       (by simp [Ex.eval, rv, e2D, hd0]) r3))).mono ?_, ?_, ?_, ?_⟩
     · simp only [condCost, Ex.size, rv, NSt.set_pos, hp2]
-      have : H I - (s.pos + (encodeNat a).length + (encodeNat d).length) + (encodeNat a).length +
-          (encodeNat d).length = H I - s.pos := by omega
+      have hΔ : H I - s.pos - (H I - (s.pos + (encodeNat a).length + (encodeNat d).length)) =
+          (encodeNat a).length + (encodeNat d).length := by omega
+      rw [hΔ]
       generalize Ex.nodeCost w = N at *
+      generalize unitCost w = U at *
+      generalize (encodeNat a).length = la at *
+      generalize (encodeNat d).length = ld at *
+      ring_nf
       nlinarith
     · have hj' : ((s2.set rNz (Ex.eval s2.env (.const 1))).set rJ
           (Ex.eval (s2.set rNz (Ex.eval s2.env (.const 1))).env (rv rW))).env rJ =
@@ -230,7 +242,7 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
       · simp only [NSt.set_env, Function.update_of_ne (show rW ≠ rJ by decide),
           Function.update_of_ne (show rW ≠ rNz by decide)]
         rw [e2 rW (by decide) (by decide) (by decide) (by decide), hW]
-      · simp [Ex.eval]
+      · simp [Ex.eval, Function.update_of_ne (show rNz ≠ rJ by decide)]
     · simp only [NSt.set_env, Function.update_self, Ex.eval, rv,
         Function.update_of_ne (show rW ≠ rNz by decide),
         e2 rW (by decide) (by decide) (by decide) (by decide), hW]; omega
