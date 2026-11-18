@@ -262,6 +262,18 @@ frames; `Good.env_of/stk_of/out_of/pos_of`, closed by `decide`, e.g. `hall.env_o
 `qOr = qOr2 = []`, under `1 ≤ k`, `E > 0`, `16 (H + locBase + 1) ≤ 2^w`: `rLB = locBase I`,
 `qSch := (schRecsUpTo I E).reverse ++ qSch` with `schRec I e = orsL D ++ [blkRows D, nEnt, |coefSteps|]`,
 `pos = H`, cost `2000 (H + 1) nodeCost`).
+Order of the passes (nontrivial case, `E > 0`): `p0`, `p1`, `p1r` (reads `k`), `p2` (directly
+after `p1r`, at `posAt I W`). Notes for `P3`/`P4`: the cursor can only be rewound (`rst`), so a
+pass over the schemas must skip the location section again (write a generic location-skip
+loop: per location skip `ι`, read `|D|`, `skipBlocksS |D| (ℓ+1)`; or merge the request
+generation into the `p2` scan, which already visits every coordinate but skips the
+permutations). Per-entry loops (`k + 1` repetitions of the rows of a column) are paid by `S`;
+per-coordinate bit loops by `H`; never loop `ℓ` times per entry (store the row ranks of a
+column on a stack once). `Ex` has no subtraction/multiplication: use `predS`, `mulS`,
+counters. Cost tips: for a big body, prove the final arithmetic as a standalone lemma over
+`ℕ` variables (`p2Sch_cost_arith`) and close with `exact`; `generalize … at *` and `nlinarith`
+in a large context time out. Facts stated after `set e := ⟨j, hlt⟩` must be type-ascribed
+with `e` (else `omega` sees different atoms).
 Next: `P3`. For the costs use the
 pattern of `p0_good` (`generalize` the lengths, `nodeCost`, `unitCost`, then `nlinarith`;
 if `nlinarith` times out in a big context, `nlinarith only [hU, hU', hint products]`);
