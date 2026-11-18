@@ -275,4 +275,21 @@ theorem clsStart_link {e : Fin I.schemas.length} {c : Coord k ℓ} (hc : c ∈ d
   · simp [startIn, List.takeWhile_cons, bits2]; omega
   · simp [startIn_cons_self]
 
+
+/-- Classes indexed by a column and an entry of the column. -/
+lemma startIn_cols {α β γ δ : Type*} [BEq α] [LawfulBEq α] [BEq δ] [LawfulBEq δ]
+    [DecidableEq β] (D : List α) (hD : D.Nodup) (S : α → List δ) (g : α → δ → β)
+    (hg : ∀ a b a' b', g a b = g a' b' → a = a' ∧ b = b') (ls : List γ) {c : α} (hc : c ∈ D)
+    {σ : δ} (hσ : σ ∈ S c) :
+    startIn (D.flatMap fun c => (S c).map fun σ => (g c σ, ls)) (g c σ) =
+      ((D.take (D.idxOf c)).map fun c => (S c).length).sum * ls.length +
+        (S c).idxOf σ * ls.length := by
+  rw [startIn_flatMap_of_mem D hD _ hc (by simp; exact ⟨σ, hσ, rfl⟩) (fun c' _ hne h => by
+    simp only [List.map_map, List.mem_map, Function.comp_apply] at h
+    obtain ⟨σ', -, he⟩ := h
+    exact hne (hg _ _ _ _ he).1)]
+  rw [startIn_map_inj (g c) (fun b b' h => (hg _ _ _ _ h).2)]
+  simp only [sizeOf'_map_const]
+  rw [List.sum_map_mul_right]
+
 end Lax119563Proofs.Compiler
