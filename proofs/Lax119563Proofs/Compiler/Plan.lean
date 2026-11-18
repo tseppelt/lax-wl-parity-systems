@@ -184,6 +184,38 @@ the edge count `m` by emitting the edges of `G_ε` to a stream while counting, t
 * Worktree-isolated agents: shell commands combining `cd` with heredocs/git are refused;
   the shared scratchpad holds other sessions' files (use the `cm2-` prefix).
 
+## Design of the compiler program (item 4)
+
+One statement `CStm CR CQ` with fixed sizes (`Compiler/PDefs`: `CR` registers, `CQ` stacks,
+named constants for every register and stack; distinctness by `decide`). The input is
+`x = encodeNats (systemDescription I)`; `H = |x|`.
+
+**Size facts.** Numbers that are *read* into registers must be `≤ H` (then they fit, since
+`w` is chosen with `4 (H + S + 2) ≤ 2^w`, `PDefs.bits_lt_of_le`): `W`, every `|D|`, every
+init value, `E`, and — only when the system is nontrivial — `ℓ`; `k` and the block indices
+`i` only when `E > 0`. Otherwise the numbers are *skipped* (`skipNumS`, any size).
+
+**Passes** (each a module with a `Good` spec against a list function of `I`):
+* `P0` (`Compiler/PTriv`): skip `k`, `ℓ`; read `W`; for `v < W` read `ι(v)` and `|D_v|`,
+  stopping at the first nonempty domain (its coordinates cannot be skipped without `ℓ`); if
+  all are empty read `E`. Result: register `triv = [no coordinate ∧ E = 0]`
+  (`PTriv.triv_iff`). If `triv`, the output is `[0,0,0,0]` (`gDesc` of the empty pair) and the
+  program stops.
+* `P1` (locations, nontrivial case): `rst`; skip `k`; read `ℓ`, `W`; for each location
+  read `ι(v)`, `|D_v|` and its coordinates — the block index skipped or read depending on `E`
+  (unknown yet: so `P1` skips them and only computes `locSize`, `locStart` (pushed on a
+  stack, one per location) and reads `E` at the end); `P1'` (if `E > 0`) re-reads the
+  locations pushing the records `(v, i, b₀ … b_{ℓ-1})` for the join (already sorted by key).
+* `P2` (schema pre-scan): per schema `schSize`, `colW`, `nEnt`, `|coefSteps|`, `schBase`;
+  `locBase = Σ schSize`.
+* `P3` (requests): per column and slot argument the key `(u, f(i), b + δ_i bitwise)` with a
+  sequence number; `sortS`, merge-join with the `P1'` records (answer: `idxOf c' (coordList
+  (I.domain u))`), `sortS` by sequence number.
+* `P4` (emission, for `ε = 0` then `ε = 1`, all data reused): `n = Σ clsSizes`, the colors
+  `colorsOf 0 clsSizes` (per schema its class sizes, then per location), then the edges of
+  `gEdges I ε` pushed to a stack while counting, then `m` and the edges popped in order.
+  Both `ε` read the same answer stack (copied non-destructively).
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
