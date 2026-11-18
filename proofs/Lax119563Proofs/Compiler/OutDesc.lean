@@ -295,4 +295,91 @@ theorem encodeGraphPair_eq :
       encodeNats (gDesc I 0 ++ gDesc I 1) := by
   rw [encodeGraphPair, graphDescription_eq_gDesc, graphDescription_eq_gDesc]
 
+/-! ## Sorted forms of the neighbor lists -/
+
+/-- `mergeSort` returns the sorted permutation. -/
+lemma mergeSort_eq_of {L L' : List ℕ} (hp : L'.Perm L) (hs : L'.Pairwise (· ≤ ·)) :
+    L.mergeSort (fun a b => decide (a ≤ b)) = L' := by
+  have h1 := List.pairwise_mergeSort (le := fun a b : ℕ => decide (a ≤ b))
+    (fun a b c h₁ h₂ => by simp only [decide_eq_true_eq] at *; omega)
+    (fun a b => by simp only [Bool.or_eq_true, decide_eq_true_eq]; omega) L
+  refine List.Perm.eq_of_pairwise (le := fun a b : ℕ => a ≤ b)
+    (fun a b _ _ h₁ h₂ => le_antisymm h₁ h₂) (by simpa using h1) hs
+    ((List.mergeSort_perm L _).trans hp.symm)
+
+lemma schSize_eq (e : Fin I.schemas.length) :
+    schSize I e = hubSize I e + sumSize I e + 2 * nEnt I e + 2 * (coefSteps I e).length := by
+  rw [schSize, sizeOf'_append, sizeOf'_hubsCls, nonhubsCls_eq, sizeOf'_append, sizeOf'_append,
+    sizeOf'_sumPart, trackPart, sizeOf'_ent, sizeOf'_map_const]
+  simp [bits1]; ring
+
+lemma ent_lt_nEnt {e : Fin I.schemas.length} {c : Coord k ℓ} (hc : c ∈ dom I e) {σ : ℕ}
+    (hσ : σ ∈ stepsC c) : entBefore I e c + (stepsC c).idxOf σ < nEnt I e := by
+  have hcD : c ∈ coordList (dom I e) := mem_coordList.mpr hc
+  have hi : (coordList (dom I e)).idxOf c < (coordList (dom I e)).length :=
+    List.idxOf_lt_length_of_mem hcD
+  have hj : (stepsC c).idxOf σ < (stepsC c).length := List.idxOf_lt_length_of_mem hσ
+  unfold nEnt entBefore
+  have e1 := List.take_append_drop ((coordList (dom I e)).idxOf c) (coordList (dom I e))
+  rw [List.drop_eq_getElem_cons hi, List.getElem_idxOf hi] at e1
+  conv_rhs => rw [← e1]
+  rw [List.map_append, List.sum_append, List.map_cons, List.sum_cons]
+  omega
+
+lemma val_lt_two (b : ZMod 2) : b.val < 2 := ZMod.val_lt b
+
+/-- Track positions lie before the coefficient section. -/
+lemma track_lt_coef {e : Fin I.schemas.length} {c : Coord k ℓ} (hc : c ∈ dom I e) {σ : ℕ}
+    (hσ : σ ∈ stepsC c) (b : ZMod 2) :
+    schBase I e + hubSize I e + sumSize I e + 2 * (entBefore I e c + (stepsC c).idxOf σ) +
+      b.val < schBase I e + hubSize I e + sumSize I e + 2 * nEnt I e := by
+  have := ent_lt_nEnt I hc hσ; have := val_lt_two b; omega
+
+/-- Coefficient positions lie before the location section. -/
+lemma coef_lt_locBase {e : Fin I.schemas.length} {σ : ℕ} (hσ : σ ∈ coefSteps I e)
+    (b : ZMod 2) :
+    schBase I e + hubSize I e + sumSize I e + 2 * nEnt I e + 2 * (coefSteps I e).idxOf σ +
+      b.val < locBase I := by
+  have h1 := schBase_add_le I e
+  rw [schSize_eq] at h1
+  have := List.idxOf_lt_length_of_mem hσ; have := val_lt_two b; omega
+
+lemma coord_ge_locBase {v : Fin I.numLocations} {c : Coord k ℓ} {b : ZMod 2} {q : ℕ}
+    (h : slotPos I ε (.coord v c) b = some q) : locBase I ≤ q := by
+  simp only [slotPos] at h
+  split_ifs at h <;> simp only [Option.some.injEq, reduceCtorEq] at h <;> rw [← h] <;>
+    simp only [locStart] <;> omega
+
+lemma coef_mem {e : Fin I.schemas.length} {c : Coord k ℓ} (hc : c ∈ dom I e) {σ : ℕ}
+    (hσ : σ ∈ stepsC c) : σ ∈ coefSteps I e :=
+  (mem_coefSteps I).mpr ⟨((mem_stepsC).mp hσ).1, c, hc, ((mem_stepsC).mp hσ).2⟩
+
+/-- All elements of `o.toList` are at least `a`. -/
+lemma pairwise_cons_toList {a : ℕ} {o : Option ℕ} (h : ∀ q, o = some q → a ≤ q) :
+    (a :: o.toList).Pairwise (· ≤ ·) := by
+  cases o with
+  | none => simp
+  | some q => simp [h q rfl]
+
+/-- **Links**: the last track of the column, then the end coordinate (if present). -/
+theorem hubNbrs_link (hk : 2 ≤ k) {e : Fin I.schemas.length} {c : Coord k ℓ}
+    (hc : c ∈ dom I e) (l : Lab) :
+    hubNbrs I ε (.link e c) l =
+      (slotPos I ε (trackAt I e c (numSteps k ℓ)) l.1).toList ++
+        (slotPos I ε (endCls I e c) l.1).toList := by
+  have hne := stepsC_ne_nil hk c
+  have hσ : (stepsC c).getLast hne ∈ stepsC c := List.getLast_mem hne
+  rw [hubNbrs, trackAt_numSteps, dif_neg hne]
+  refine mergeSort_eq_of ?_ ?_
+  · simp only [slotsOf, trackAt_numSteps, dif_neg hne, List.filterMap_cons, List.filterMap_nil]
+    cases h1 : slotPos I ε (Cls.track e ((stepsC c).getLast hne) c) l.1 <;>
+      cases h2 : slotPos I ε (endCls I e c) l.1 <;> simp
+  · simp only [slotPos, Option.toList_some, List.singleton_append]
+    apply pairwise_cons_toList
+    intro q hq
+    have h1 := coord_ge_locBase I ε hq
+    have h2 := track_lt_coef I hc hσ l.1
+    have h3 := coef_lt_locBase I (coef_mem I hc hσ) 0
+    omega
+
 end Lax119563Proofs.Compiler
