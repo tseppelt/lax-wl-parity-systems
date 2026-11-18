@@ -233,3 +233,5 @@ import Lax119563Proofs.Compiler.PSch
 import Lax119563Proofs.Compiler.PSchLoop
 import Lax119563Proofs.Compiler.PJoinList
 import Lax119563Proofs.Compiler.PJoin
+import Lax119563Proofs.Compiler.PReqBits
+import Lax119563Proofs.Compiler.PReqList
