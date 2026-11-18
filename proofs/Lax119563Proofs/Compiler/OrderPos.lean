@@ -639,4 +639,82 @@ theorem trackAt_numSteps (e : Fin I.schemas.length) (c : Coord k ℓ) :
         have := idx_lt_of_lt hP (by have := List.length_pos_of_ne_nil h0; omega) hi g1
         omega)]
 
+/-- For `k ≥ 2` every column has an entry (row `c.1`, or row `0` for the last block). -/
+theorem stepsC_ne_nil (hk : 2 ≤ k) (c : Coord k ℓ) : stepsC c ≠ [] := by
+  set σ : ℕ := if (c.1 : ℕ) < k - 1 then c.1 else 0 with hσdef
+  have hσ : σ < k - 1 := by
+    simp only [hσdef]; split_ifs <;> omega
+  have hM : 0 < k - 1 + ℓ := by omega
+  have hent : ent σ c ≠ 0 := by
+    unfold ent stepRow
+    rw [dif_pos hM]
+    have e1 : (⟨σ % (k - 1 + ℓ), Nat.mod_lt _ hM⟩ : Fin (k - 1 + ℓ)) =
+        Fin.castAdd ℓ (⟨σ, hσ⟩ : Fin (k - 1)) := by
+      ext; simp [Nat.mod_eq_of_lt (show σ < k - 1 + ℓ by omega)]
+    rw [e1, finSumFinEquiv_symm_apply_castAdd]
+    simp only [checkMatrix, Matrix.of_apply]
+    have : (c.1 : ℕ) = σ ∨ (c.1 : ℕ) = k - 1 := by
+      simp only [hσdef]; split_ifs with h
+      · left; rfl
+      · right; have := c.1.isLt; omega
+    rw [if_pos this]; exact one_ne_zero
+  intro h
+  have : σ ∈ stepsC c := (mem_stepsC).mpr ⟨by unfold numSteps; nlinarith, hent⟩
+  rw [h] at this; simp at this
+
+/-! ## Order of the sections -/
+
+lemma schBase_add_le (e : Fin I.schemas.length) :
+    schBase I e + schSize I e ≤ locBase I := by
+  unfold schBase locBase
+  have h := List.take_append_drop (e : ℕ) (List.finRange I.schemas.length)
+  conv_rhs => rw [← h]
+  rw [List.map_append, List.sum_append]
+  have hd : List.drop (e : ℕ) (List.finRange I.schemas.length) =
+      e :: List.drop ((e : ℕ) + 1) (List.finRange I.schemas.length) := by
+    rw [List.drop_eq_getElem_cons (by simp)]; simp
+  rw [hd]; simp
+
+/-- Coordinate classes come after all schema names. -/
+lemma locBase_le_clsStart_coord {v : Fin I.numLocations} {c : Coord k ℓ}
+    (hc : c ∈ I.domain v) : locBase I ≤ clsStart I (Cls.coord v c) := by
+  rw [clsStart_coord I hc, locStart]; omega
+
+/-- Names of schema `e` lie below `schBase e + schSize e`. -/
+lemma clsStart_add_le_sch {e : Fin I.schemas.length} {p : ICls I × List Lab}
+    (hp : p ∈ hubsCls I e ++ nonhubsCls I e) :
+    clsStart I p.1 + p.2.length ≤ schBase I e + schSize I e := by
+  rw [clsStart_sch I (List.mem_map.mpr ⟨p, hp, rfl⟩), schSize]
+  have nd : ((hubsCls I e ++ nonhubsCls I e).map Prod.fst).Nodup := by
+    have := nodup_ordCls_fst I
+    unfold ordCls at this
+    rw [List.map_append, List.map_flatMap] at this
+    have h1 := (List.nodup_append.mp this).1
+    exact (List.nodup_flatMap.mp h1).1 e (List.mem_finRange e)
+  suffices H : ∀ P : List (ICls I × List Lab), (P.map Prod.fst).Nodup → p ∈ P →
+      startIn P p.1 + p.2.length ≤ sizeOf' P by have := H _ nd hp; omega
+  intro P
+  induction P with
+  | nil => intro _ h; simp at h
+  | cons q P ih =>
+    intro hnd hm
+    simp only [List.map_cons, List.nodup_cons] at hnd
+    rcases List.mem_cons.mp hm with rfl | hm
+    · have : startIn (p :: P) p.1 = 0 := by
+        obtain ⟨X, ls⟩ := p; exact startIn_cons_self X ls P
+      rw [this, sizeOf'_cons]; omega
+    · have hq : q.1 ≠ p.1 := fun h => hnd.1 (h ▸ List.mem_map.mpr ⟨p, hm, rfl⟩)
+      have := ih hnd.2 hm
+      have e1 : startIn (q :: P) p.1 = q.2.length + startIn P p.1 := by
+        have := startIn_append_right (P := [q]) (P' := P) (X := p.1)
+          (by simpa using Ne.symm hq)
+        simpa using this
+      rw [e1, sizeOf'_cons]; omega
+
+/-- Sorted slot positions are kept by `nbrPos`. -/
+lemma nbrPos_of_pairwise (ε : ZMod 2) (x : VName I)
+    (h : ((slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2).Pairwise (· ≤ ·)) :
+    nbrPos I ε x = (slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2 :=
+  List.mergeSort_of_pairwise (by simpa using h)
+
 end Lax119563Proofs.Compiler
