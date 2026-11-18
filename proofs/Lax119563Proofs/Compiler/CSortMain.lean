@@ -202,7 +202,7 @@ lemma update_self_eq {S : Fin Q → List ℕ} {q : Fin Q} {l : List ℕ} (h : S 
 
 section Pass
 
-variable {X T1 T2 Y tmp C1 C2 : Fin Q} {A dir c f1 f2 kc t1 t2 i t r N done k : Fin R}
+variable {X T1 T2 Y tmp C1 C2 : Fin Q} {A dir c f1 f2 kc t1 t2 i t r N done k lim2 : Fin R}
 
 set_option maxHeartbeats 1000000 in
 lemma pairBody_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
@@ -342,6 +342,170 @@ lemma pairBody_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
       intro q hq; simp only [List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
       rcases hq with h | h | h | h | h | h | h | h <;> simp [h]
     exact (fr1.mono s1).trans ((fr2.mono s1).trans (fr3.mono s3))
+
+/-- One merge pass with run length `r` on the `N` records of `X`. -/
+def passS (X T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t r N done k lim2 : Fin R) :
+    CStm R Q :=
+  .seq (.set done (.const 0))
+    (.seq (.loop (.lt (rv done) (rv N))
+        (pairBody X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k))
+      (.seq (.set done (.const 0)) (.seq (.set lim2 (rv N))
+        (mvRecsB Y X tmp A lim2 done N k i t))))
+
+set_option maxHeartbeats 1000000 in
+/-- **One merge pass.** -/
+lemma passS_good (hw2 : 2 ≤ w) (hstk : [X, T1, T2, Y, tmp, C1, C2].Nodup)
+    (hreg : [A, dir, c, f1, f2, kc, t1, t2, i, t, r, N, done, k, lim2].Nodup)
+    (d : Bool) (s : NSt R Q) {a rr n : ℕ} (rs : List (List ℕ))
+    (hX : s.stk X = rs.flatten) (hT1 : s.stk T1 = []) (hT2 : s.stk T2 = [])
+    (ha : s.env A = a) (ha1 : 1 ≤ a)
+    (hdir : s.env dir = if d then 1 else 0) (hr : s.env r = rr) (hr1 : 1 ≤ rr)
+    (hn : s.env N = n) (hl : rs.length = n)
+    (hrec : ∀ y ∈ rs, y.length = a ∧ ∀ z ∈ y, z < 2 ^ w) (hw : a + 1 < 2 ^ w)
+    (hwr : rr + 1 < 2 ^ w) (hwn : n + 1 < 2 ^ w) :
+    ∃ s', Good x w (passS X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k lim2) s s'
+        ((n + 1) * (600 * (a + 1) * Ex.nodeCost w)) ∧
+      s'.stk = Function.update s.stk X (CSort.passX d rr rs).flatten ∧
+      Frame s s' [k, done, i, t, c, kc, t1, t2, f1, f2, lim2] := by
+  have hXY : X ≠ Y := by ndup hstk
+  have hU := Ex.unitCost_le_nodeCost w
+  have hU' := unitCost_ge w
+  have h4 := two_le_pow hw2
+  have hpreg : [A, dir, c, f1, f2, kc, t1, t2, i, t, r, N, done, k].Nodup := by nodupT hreg
+  have hmreg : [A, lim2, done, N, k, i, t].Nodup := by nodupT hreg
+  set S := s.stk
+  set regs : List (Fin R) := [k, done, i, t, c, kc, t1, t2, f1, f2, lim2] with hregs
+  set K := 240 * (a + 1) * Ex.nodeCost w
+  -- the pair loop
+  set Inv : NSt R Q → Prop := fun s₁ => ∃ rs' Lacc, s₁.stk = passStk S X Y rs' Lacc ∧
+    (CSort.passX d rr rs').reverse ++ Lacc = (CSort.passX d rr rs).reverse ∧
+    (∀ y ∈ rs', y ∈ rs) ∧ s₁.env done = n - rs'.length ∧ rs'.length ≤ n ∧
+    s₁.env A = a ∧ s₁.env dir = (if d then 1 else 0) ∧ s₁.env r = rr ∧ s₁.env N = n ∧
+    Frame s s₁ regs
+  have hloop := Good.loop_var (x := x) (w := w) (e := .lt (rv done) (rv N))
+    (body := pairBody X T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t r N done k)
+    Inv (fun s₁ => n - s₁.env done) (fun s₁ => n - s₁.env done) K K (by
+      intro s₁ hI
+      obtain ⟨rs', Lacc, hs₁, hp, hsub, hd, hle, hA, hdr, hrr, hN, hfr⟩ := hI
+      refine ⟨⟨show s₁.env done < 2 ^ w by omega, show s₁.env N < 2 ^ w by omega⟩, ?_⟩
+      intro hc
+      have hne : rs' ≠ [] := by
+        rintro rfl
+        apply hc; simp [rv, Ex.eval, hd, hN]
+      obtain ⟨s₂, g, k₂, d₂, fr⟩ := pairBody_good (x := x) (C1 := C1) (C2 := C2) (c := c)
+        (f1 := f1) (f2 := f2) (kc := kc) (t1 := t1) (t2 := t2) (i := i) (t := t)
+        hw2 hstk hpreg S
+        (by simp [S, hT1]) (by simp [S, hT2]) d s₁ rs' Lacc hne hs₁ hA ha1 hdr hrr hr1 hN hd hle
+        (fun y hy => hrec y (hsub y hy)) hw hwr hwn
+      have hlt : (rs'.drop (2 * rr)).length < rs'.length := by
+        have : rs'.length ≠ 0 := by simpa using hne
+        simp; omega
+      have hfr' : ∀ q, q ∉ [k, done, i, t, c, kc, t1, t2, f1, f2] → s₂.env q = s₁.env q :=
+        fun q hq => fr.2.2 q hq
+      refine ⟨s₂, g.mono (le_of_eq ?_), ⟨rs'.drop (2 * rr), _, k₂, ?_, ?_, d₂, by omega,
+        by rw [hfr' A (by nmem hreg), hA], by rw [hfr' dir (by nmem hreg), hdr],
+        by rw [hfr' r (by nmem hreg), hrr], by rw [hfr' N (by nmem hreg), hN],
+        hfr.trans (fr.mono (by
+          intro q hq; simp only [hregs, List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
+          rcases hq with h | h | h | h | h | h | h | h | h | h <;> simp [h]))⟩, ?_, ?_⟩
+      · rw [d₂, hd]
+        have : (rs'.drop (2 * rr)).length ≤ rs'.length := by simp
+        have e : n - (n - rs'.length) - (n - (n - (rs'.drop (2 * rr)).length)) =
+            rs'.length - (rs'.drop (2 * rr)).length := by omega
+        rw [e]; simp only [K]; ring
+      · rw [← hp, CSort.passX_cons d (by omega) hne, List.reverse_append, List.reverse_reverse,
+          List.append_assoc]
+      · exact fun y hy => hsub y (List.mem_of_mem_drop hy)
+      · rw [d₂, hd]; omega
+      · rw [d₂, hd]; omega)
+  -- initialization
+  have g0 : Good x w (.set done (.const 0) : CStm R Q) s (s.set done 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have hne' : ∀ q, q ≠ done → (s.set done 0).env q = s.env q := fun q hq => by
+    simp [Function.update_of_ne hq]
+  have hI0 : Inv (s.set done 0) := by
+    refine ⟨rs, [], ?_, by simp, fun y hy => hy, by simp [hl], by omega,
+      by rw [hne' A (by ndup hreg), ha], by rw [hne' dir (by ndup hreg), hdir],
+      by rw [hne' r (by ndup hreg), hr], by rw [hne' N (by ndup hreg), hn],
+      ⟨rfl, rfl, fun q hq => hne' q (by intro h; subst h; simp [hregs] at hq)⟩⟩
+    funext q
+    simp only [NSt.set_stk, passStk, List.flatten_nil, List.nil_append, Function.update_apply]
+    split_ifs with h1 h2
+    · rw [h1]
+    · rw [h2, ← hX]
+    · rfl
+  obtain ⟨s₁, g₁, ⟨rs', Lacc, hs₁, hp, hsub, hd, hle, hA, hdr, hrr, hN, hfr⟩, hend⟩ :=
+    hloop _ hI0
+  have hrs' : rs' = [] := by
+    by_contra h
+    have : rs'.length ≠ 0 := by simpa using h
+    have hh : s₁.env N ≤ s₁.env done := by
+      by_contra hh0; push_neg at hh0; simp [rv, Ex.eval, hh0] at hend
+    rw [hd, hN] at hh; omega
+  subst hrs'
+  simp only [CSort.passX_nil, List.reverse_nil, List.nil_append] at hp
+  -- move back
+  have g2 : Good x w (.set done (.const 0) : CStm R Q) s₁ (s₁.set done 0)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [Ex.Fits]; omega)).of_eq (by simp [Ex.eval]) (by simp [Ex.size])
+  have g3 : Good x w (.set lim2 (rv N) : CStm R Q) (s₁.set done 0) ((s₁.set done 0).set lim2 n)
+      (Ex.nodeCost w + unitCost w) :=
+    (Good.set (by simp only [rv, Ex.Fits, NSt.set_env, Function.update_of_ne
+      (show N ≠ done by ndup hreg), hN]; omega)).of_eq
+      (by simp [rv, Ex.eval, Function.update_of_ne (show N ≠ done by ndup hreg), hN])
+      (by simp [rv, Ex.size])
+  set s₃ := (s₁.set done 0).set lim2 n
+  have e3 : ∀ q, q ≠ done → q ≠ lim2 → s₃.env q = s₁.env q := fun q h1 h2 => by
+    simp [s₃, Function.update_of_ne h1, Function.update_of_ne h2]
+  have hY3 : s₃.stk Y = (CSort.passX d rr rs).reverse.flatten ++ S Y := by
+    simp [s₃, hs₁, passStk, ← hp]
+  have hlenP : (CSort.passX d rr rs).reverse.length = n := by
+    simp [CSort.passX_length, hl]
+  obtain ⟨s₄, g₄, k₄, d₄, fr₄⟩ := mvRecsB_good (x := x) hw2 (src := Y) (dst := X) (tmp := tmp)
+    (by ndup hstk) (by ndup hstk) hXY.symm hmreg s₃ (CSort.passX d rr rs).reverse (S Y)
+    (by rw [e3 A (by ndup hreg) (by ndup hreg), hA]) (by simp [s₃])
+    (by rw [e3 N (by ndup hreg) (by ndup hreg), hN])
+    (by simp [s₃, Function.update_of_ne (show done ≠ lim2 by ndup hreg)]) (Nat.zero_le _) hY3
+    (fun y hy => hrec y ((CSort.passX_perm d rr rs).subset (List.mem_reverse.mp hy)))
+    (by rw [hlenP]; omega) hw hwn hwn
+  refine ⟨s₄, (g0.seq (g₁.seq (g2.seq (g3.seq g₄)))).mono ?_, ?_, ?_⟩
+  · simp only [condCost, rv, Ex.size, NSt.set_env, Function.update_self, Nat.sub_zero, K]
+    have hP : 1 ≤ (a + 1) * Ex.nodeCost w := Nat.one_le_iff_ne_zero.mpr
+      (Nat.mul_ne_zero (by omega) (by omega))
+    have hmin : min n n = n := min_self n
+    rw [hmin]
+    have hN1 : Ex.nodeCost w ≤ (a + 1) * Ex.nodeCost w := Nat.le_mul_of_pos_left _ (by omega)
+    set P := (a + 1) * Ex.nodeCost w
+    have e1 : 240 * (a + 1) * Ex.nodeCost w = 240 * P := by ring
+    rw [e1]
+    have e2 : 600 * (a + 1) * Ex.nodeCost w = 600 * P := by ring
+    rw [e2]
+    have hNP : (1 + 1 + 1) * Ex.nodeCost w + 1 ≤ 4 * P := by omega
+    have hnK : n * (240 * P + ((1 + 1 + 1) * Ex.nodeCost w + 1)) ≤ n * (244 * P) :=
+      Nat.mul_le_mul_left _ (by omega)
+    have hnK' : (n + 1) * (50 * P) = n * (50 * P) + 50 * P := by ring
+    have hgoal : (n + 1) * (600 * P) = n * (600 * P) + 600 * P := by ring
+    have : 240 * P * n = n * (240 * P) := by ring
+    nlinarith
+  · funext q
+    rw [k₄]
+    unfold recsStk
+    have hdrop : (CSort.passX d rr rs).reverse.drop n = [] := List.drop_eq_nil_of_le (by omega)
+    have htake : (CSort.passX d rr rs).reverse.take n = (CSort.passX d rr rs).reverse :=
+      List.take_of_length_le (by omega)
+    by_cases hqX : q = X
+    · subst hqX
+      simp [htake, s₃, hs₁, passStk, Function.update_of_ne hXY]
+    · by_cases hqY : q = Y
+      · subst hqY; simp [Function.update_of_ne hqX, hdrop, Function.update_of_ne hXY.symm]
+      · simp [Function.update_of_ne hqX, Function.update_of_ne hqY, s₃, hs₁, passStk]
+  · have s1 : [k, done, i, t] ⊆ regs := by
+      intro q hq; simp only [hregs, List.mem_cons, List.not_mem_nil, or_false] at hq ⊢
+      rcases hq with h | h | h | h <;> simp [h]
+    refine hfr.trans (Frame.trans (show Frame s₁ s₃ regs from ⟨rfl, rfl, fun q hq => ?_⟩) (fr₄.mono s1))
+    simp only [hregs, List.mem_cons, List.not_mem_nil, or_false, not_or] at hq
+    exact e3 q hq.2.1 hq.2.2.2.2.2.2.2.2.2.2
 
 end Pass
 
