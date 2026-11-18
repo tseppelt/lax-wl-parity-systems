@@ -21,7 +21,7 @@ def p3Adv : CStm CR CQ :=
   .seq (moveN qDl2 qJunk rL rI2 rT) (.seq (.pop qF2 rFi) (.set rCur (.add (rv rCur) (.const 1))))
 
 /-- Advance to the block of the column. -/
-def p3Advs : CStm CR CQ := .loop (.lt (rv rCur) (rv rBi)) p3Adv
+def p3Advs : CStm CR CQ := .loop (.lt (rv rCur) (rv rGb)) p3Adv
 
 set_option maxHeartbeats 1000000 in
 /-- **Advancing the block.** -/
@@ -29,7 +29,7 @@ lemma p3Advs_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
     (F : List ℕ) (Dl : List (List ℕ)) (hFD : F.length = Dl.length) (hi : i < F.length)
     (hci : c ≤ i) (hDl : ∀ d ∈ Dl, d.length = ℓ ∧ ∀ v ∈ d, v ≤ 1) (hF : ∀ v ∈ F, v < 2 ^ w)
     (hℓw : ℓ + 1 < 2 ^ w) (hiw : i + 1 < 2 ^ w)
-    (hC : st.env rCur = c) (hB : st.env rBi = i) (hL : st.env rL = ℓ)
+    (hC : st.env rCur = c) (hB : st.env rGb = i) (hL : st.env rL = ℓ)
     (hD2 : st.stk qDl2 = (Dl.drop c).flatten) (hF2 : st.stk qF2 = F.drop (c + 1))
     (hFi : st.env rFi = F.getD c 0) :
     ∃ st', Good x w p3Advs st st' ((i - c + 1) * ((ℓ + 3) * (12 * Ex.nodeCost w))) ∧
@@ -40,12 +40,12 @@ lemma p3Advs_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
       ∀ r, wReg r p3Advs = false → st'.env r = st.env r := by
   have hU := Ex.unitCost_le_nodeCost w
   have hU' := unitCost_ge w
-  set Inv : NSt CR CQ → Prop := fun s => c ≤ s.env rCur ∧ s.env rCur ≤ i ∧ s.env rBi = i ∧
+  set Inv : NSt CR CQ → Prop := fun s => c ≤ s.env rCur ∧ s.env rCur ≤ i ∧ s.env rGb = i ∧
     s.env rL = ℓ ∧ s.stk qDl2 = (Dl.drop (s.env rCur)).flatten ∧
     s.stk qF2 = F.drop (s.env rCur + 1) ∧ s.env rFi = F.getD (s.env rCur) 0 ∧
     (∀ q, q ≠ qDl2 → q ≠ qF2 → q ≠ qJunk → s.stk q = st.stk q) ∧ s.pos = st.pos ∧
     s.out = st.out ∧ ∀ r, wReg r p3Advs = false → s.env r = st.env r with hInv
-  have hloop := Good.loop_var (x := x) (w := w) (e := .lt (rv rCur) (rv rBi)) (body := p3Adv)
+  have hloop := Good.loop_var (x := x) (w := w) (e := .lt (rv rCur) (rv rGb)) (body := p3Adv)
     Inv (fun s => i - s.env rCur) (fun _ => 0) 0 ((ℓ + 2) * (12 * Ex.nodeCost w)) (by
       intro s ⟨hc1, hc2, hb, hl, hd, hf, hfi, hS, hp, ho, he⟩
       refine ⟨⟨by simp only [rv, Ex.Fits]; omega, by simp only [rv, Ex.Fits]; omega⟩, ?_⟩
@@ -134,7 +134,7 @@ end bitsStk
 
 /-- One column: push its request. -/
 def p3Col : CStm CR CQ :=
-  .seq (.pop qDom2 rBi) (.seq (.push qDom (rv rBi)) (.seq p3Advs (.seq (.push qRec (rv rU))
+  .seq (.pop qDom2 rGb) (.seq (.push qDom (rv rGb)) (.seq p3Advs (.seq (.push qRec (rv rU))
     (.seq (.push qRec (rv rFi)) (.seq p3Bits (.seq (moveN qAux qDl2 rL rI2 rT)
       (.seq (.push qRec (.const 1)) (.seq (.push qRec (rv rSq)) (.seq (.push qRec (.const 0))
         (.seq (.push qRec (.const 0)) (.seq (.set rSq (.add (rv rSq) (rv rStr)))
@@ -182,13 +182,13 @@ lemma p3Col_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ 
   have hdrop : (Dl.drop i).flatten = d ++ (Dl.drop (i + 1)).flatten := by
     rw [List.drop_eq_getElem_cons hiD, List.flatten_cons]
   -- pop the block, save it
-  have r1 := Good.pop_cons (x := x) (w := w) (r := rBi) hX2
-  set s1 := (st.setS qDom2 (bs ++ R)).set rBi i
-  have r2 := Good.push_val (x := x) (w := w) (q := qDom) (e := rv rBi) (st := s1) (v := i)
+  have r1 := Good.pop_cons (x := x) (w := w) (r := rGb) hX2
+  set s1 := (st.setS qDom2 (bs ++ R)).set rGb i
+  have r2 := Good.push_val (x := x) (w := w) (q := qDom) (e := rv rGb) (st := s1) (v := i)
     (by simp [s1, rv, Ex.eval])
     (by simp only [Ex.Fits, rv, s1, NSt.set_env, Function.update_self]; omega)
   set s2 := s1.setS qDom (i :: s1.stk qDom)
-  have e2 : ∀ r, r ≠ rBi → s2.env r = st.env r := fun r h => by
+  have e2 : ∀ r, r ≠ rGb → s2.env r = st.env r := fun r h => by
     simp [s2, s1, Function.update_of_ne h]
   -- advance
   obtain ⟨s3, r3, h3C, h3Fi, h3D, h3F, h3S, h3p, h3o, h3e⟩ := p3Advs_good (x := x) hw s2 F Dl
@@ -196,7 +196,7 @@ lemma p3Col_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ 
     (by rw [e2 _ (by decide), hL]) (by simp only [s2, s1, NSt.setS_stk, NSt.set_stk, Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qF2 by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qF2 by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qF2 by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qF2 ≠ qDom2 by decide), Function.update_of_ne (show qF2 ≠ qDom by decide), Function.update_of_ne (show qF2 ≠ qDl2 by decide), Function.update_of_ne (show qF2 ≠ qAux by decide), Function.update_of_ne (show qF2 ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qF2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qF2 by decide), Function.update_of_ne (show qRec ≠ qAux by decide)]; exact hD2)
     (by simp only [s2, s1, NSt.setS_stk, NSt.set_stk, Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qF2 by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qF2 by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qF2 by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qF2 ≠ qDom2 by decide), Function.update_of_ne (show qF2 ≠ qDom by decide), Function.update_of_ne (show qF2 ≠ qDl2 by decide), Function.update_of_ne (show qF2 ≠ qAux by decide), Function.update_of_ne (show qF2 ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qF2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qF2 by decide), Function.update_of_ne (show qRec ≠ qAux by decide)]; exact hF2)
     (by rw [e2 _ (by decide), hFi])
-  have e3 : ∀ r, r ≠ rBi → wReg r p3Advs = false → s3.env r = st.env r := fun r h h' => by
+  have e3 : ∀ r, r ≠ rGb → wReg r p3Advs = false → s3.env r = st.env r := fun r h h' => by
     rw [h3e r h', e2 r h]
   -- push `u` and `f(i)`
   have r4 := Good.push_val (x := x) (w := w) (q := qRec) (e := rv rU) (st := s3) (v := u)

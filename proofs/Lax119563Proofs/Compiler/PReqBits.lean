@@ -29,8 +29,8 @@ def qDom2 : Fin CQ := 15
 def rU : Fin CR := 20
 def rFi : Fin CR := 21
 def rCur : Fin CR := 22
-def rBi : Fin CR := 23
-def rB : Fin CR := 24
+def rGb : Fin CR := 23
+def rGx : Fin CR := 24
 def rDb : Fin CR := 25
 def rSq : Fin CR := 26
 def rStr : Fin CR := 27
@@ -38,7 +38,7 @@ def rAi : Fin CR := 28
 def rTn : Fin CR := 29
 def rNw : Fin CR := 30
 def rKL : Fin CR := 31
-def rJ2 : Fin CR := 32
+def rGj : Fin CR := 32
 def rI2 : Fin CR := 33
 def rT2 : Fin CR := 35
 
@@ -58,8 +58,8 @@ lemma xorL_take_succ (bs ds : List ℕ) {j : ℕ} (h1 : j < bs.length) (h2 : j <
 
 /-- One bit. -/
 def p3Bit : CStm CR CQ :=
-  .seq (.pop qDom2 rB) (.seq (.push qDom (rv rB)) (.seq (.pop qDl2 rDb)
-    (.seq (.push qAux (rv rDb)) (.seq (.push qRec (.odd (.add (rv rB) (rv rDb))))
+  .seq (.pop qDom2 rGx) (.seq (.push qDom (rv rGx)) (.seq (.pop qDl2 rDb)
+    (.seq (.push qAux (rv rDb)) (.seq (.push qRec (.odd (.add (rv rGx) (rv rDb))))
       (.set rI (.add (rv rI) (.const 1)))))))
 
 /-- The bit loop. -/
@@ -112,11 +112,11 @@ lemma p3Bits_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
         hb2 _ (List.mem_take_iff_getElem.mpr ⟨j, by simp; omega, rfl⟩)
       have e1 : s.stk qDom2 = (S qDom2)[j] :: (S qDom2).drop (j + 1) := by
         rw [hs, ← hd1]; simp [bitsStk, qRec, qAux, qDl2, qDom, qDom2]
-      have r1 := Good.pop_cons (x := x) (w := w) (r := rB) e1
-      set s1 := (s.setS qDom2 ((S qDom2).drop (j + 1))).set rB (S qDom2)[j]
-      have r2 := Good.push (x := x) (w := w) (q := qDom) (e := rv rB) (st := s1)
+      have r1 := Good.pop_cons (x := x) (w := w) (r := rGx) e1
+      set s1 := (s.setS qDom2 ((S qDom2).drop (j + 1))).set rGx (S qDom2)[j]
+      have r2 := Good.push (x := x) (w := w) (q := qDom) (e := rv rGx) (st := s1)
         (by simp only [Ex.Fits, rv, s1, NSt.set_env, Function.update_self]; omega)
-      set s2 := s1.setS qDom ((rv rB : Ex CR).eval s1.env :: s1.stk qDom)
+      set s2 := s1.setS qDom ((rv rGx : Ex CR).eval s1.env :: s1.stk qDom)
       have e2 : s2.stk qDl2 = (S qDl2)[j] :: (S qDl2).drop (j + 1) := by
         simp only [s2, s1, NSt.setS_stk, NSt.set_stk]
         rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), hs, ← hd2]
@@ -126,17 +126,17 @@ lemma p3Bits_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
       have r4 := Good.push (x := x) (w := w) (q := qAux) (e := rv rDb) (st := s3)
         (by simp only [Ex.Fits, rv, s3, NSt.set_env, Function.update_self]; omega)
       set s4 := s3.setS qAux ((rv rDb : Ex CR).eval s3.env :: s3.stk qAux)
-      have eB : s4.env rB = (S qDom2)[j] := by
-        simp [s4, s3, s2, s1, Function.update_of_ne (show rB ≠ rDb by decide)]
+      have eB : s4.env rGx = (S qDom2)[j] := by
+        simp [s4, s3, s2, s1, Function.update_of_ne (show rGx ≠ rDb by decide)]
       have eD : s4.env rDb = (S qDl2)[j] := by simp [s4, s3]
-      have r5 := Good.push (x := x) (w := w) (q := qRec) (e := .odd (.add (rv rB) (rv rDb)))
+      have r5 := Good.push (x := x) (w := w) (q := qRec) (e := .odd (.add (rv rGx) (rv rDb)))
         (st := s4) (by
           simp only [Ex.Fits, Ex.eval, rv, eB, eD]
           have := Nat.mod_lt ((S qDom2)[j] + (S qDl2)[j]) (show 2 > 0 by norm_num)
           (repeat' constructor) <;> omega)
-      set s5 := s4.setS qRec ((Ex.odd (.add (rv rB) (rv rDb)) : Ex CR).eval s4.env :: s4.stk qRec)
+      set s5 := s4.setS qRec ((Ex.odd (.add (rv rGx) (rv rDb)) : Ex CR).eval s4.env :: s4.stk qRec)
       have eI : s5.env rI = j := by
-        show Function.update (Function.update s.env rB (S qDom2)[j]) rDb (S qDl2)[j] rI = j
+        show Function.update (Function.update s.env rGx (S qDom2)[j]) rDb (S qDl2)[j] rI = j
         rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide)]
       have r6 := Good.set (x := x) (w := w) (r := rI) (e := .add (rv rI) (.const 1)) (st := s5)
         (by simp only [Ex.Fits, Ex.eval, rv, eI]; omega)
@@ -146,17 +146,17 @@ lemma p3Bits_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
       · simp only [NSt.set_env, Function.update_self, Ex.eval, rv, eI]; omega
       · simp only [NSt.set_env, Function.update_of_ne (show rL ≠ rI by decide)]
         simp [s5, s4, s3, s2, s1, Function.update_of_ne (show rL ≠ rDb by decide),
-          Function.update_of_ne (show rL ≠ rB by decide), hl]
+          Function.update_of_ne (show rL ≠ rGx by decide), hl]
       · simp only [NSt.set_env, Function.update_self, Ex.eval, rv, eI, NSt.set_stk]
         funext q
         by_cases q1 : q = qRec
         · subst q1
           simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self, Ex.eval, rv,
-            eB, eD, Function.update_of_ne (show rB ≠ rDb by decide)]
+            eB, eD, Function.update_of_ne (show rGx ≠ rDb by decide)]
           rw [xorL_take_succ _ _ (by omega) (by omega)]; simp
         by_cases q2 : q = qAux
         · subst q2
-          simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self, Ex.eval, rv, Function.update_of_ne (show rB ≠ rDb by decide)]
+          simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self, Ex.eval, rv, Function.update_of_ne (show rGx ≠ rDb by decide)]
           rw [List.take_add_one, List.getElem?_eq_getElem (show j < (S qDl2).length by omega)]
           simp only [Option.toList_some, List.reverse_append, List.reverse_cons, List.reverse_nil,
             List.nil_append, List.singleton_append, List.cons_append, List.append_assoc]
@@ -165,7 +165,7 @@ lemma p3Bits_good {x : List Bool} {w : ℕ} (hw : 2 ≤ w) (st : NSt CR CQ) {ℓ
           simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self]
         by_cases q4 : q = qDom
         · subst q4
-          simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self, Ex.eval, rv, Function.update_of_ne (show rB ≠ rDb by decide)]
+          simp [s5, s4, s3, s2, s1, hs, bitsStk, Function.update_of_ne (show qRec ≠ qAux by decide), Function.update_of_ne (show qRec ≠ qDl2 by decide), Function.update_of_ne (show qRec ≠ qDom by decide), Function.update_of_ne (show qRec ≠ qDom2 by decide), Function.update_of_ne (show qAux ≠ qRec by decide), Function.update_of_ne (show qAux ≠ qDl2 by decide), Function.update_of_ne (show qAux ≠ qDom by decide), Function.update_of_ne (show qAux ≠ qDom2 by decide), Function.update_of_ne (show qDl2 ≠ qRec by decide), Function.update_of_ne (show qDl2 ≠ qAux by decide), Function.update_of_ne (show qDl2 ≠ qDom by decide), Function.update_of_ne (show qDl2 ≠ qDom2 by decide), Function.update_of_ne (show qDom ≠ qRec by decide), Function.update_of_ne (show qDom ≠ qAux by decide), Function.update_of_ne (show qDom ≠ qDl2 by decide), Function.update_of_ne (show qDom ≠ qDom2 by decide), Function.update_of_ne (show qDom2 ≠ qRec by decide), Function.update_of_ne (show qDom2 ≠ qAux by decide), Function.update_of_ne (show qDom2 ≠ qDl2 by decide), Function.update_of_ne (show qDom2 ≠ qDom by decide), Function.update_self, Ex.eval, rv, Function.update_of_ne (show rGx ≠ rDb by decide)]
           rw [List.take_add_one, List.getElem?_eq_getElem (show j < (S qDom2).length by omega)]
           simp only [Option.toList_some, List.reverse_append, List.reverse_cons, List.reverse_nil,
             List.nil_append, List.singleton_append, List.cons_append, List.append_assoc]
