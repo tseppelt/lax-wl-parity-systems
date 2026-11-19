@@ -314,7 +314,14 @@ needs the column blocks nondecreasing, `curB`), `p3Arg_good` (`PReqArg`: one arg
 `f`/shifts via `rdNumsS` + `moveAllS`, `p3Seq` sets the first sequence number
 `base + sqOff tern a |D|`, stride `sqStr tern`; needs `st.Bdd w` for `moveAllS`),
 `p3Args_good` (`PReqArgs`: all arguments, requests `argsReqs locs perms cs base tern A`).
-Remaining for P3: (1) `p3Sch` (one schema: `rdNumS rA`, `rTn := [2 < rA]`, `rStr := 1 + 2 rTn`,
+**Done:** `p3Sch_good` (`PReqSch`, commit c58fe26): at a schema description (`hx`), with
+`rKk = k`, `rKL = k ℓ`, `rL = ℓ`, `rL1 = ℓ + 1`, `rSB = base`, `rJ = j`, generation stacks empty,
+`st.Bdd w`, and one bound `Hb` (`2 (Hb + 1) ≤ 2^w`, all description numbers, `|D|(ℓ+1)`,
+`kℓ + k + 1`, `base + 3|D| + 3`, `j + 1`, `ℓ + 2` all `≤ Hb`): pushes
+`argsReqs (schLocs sc) (schPerms sc) (coordList D) base tern (arity sc)` (reversed) on `qRec`,
+`rSB := base + arity · |D|`, `rJ := j + 1`, stacks empty again, cost
+`10000 (|encodeNats (schemaDescription sc)| + 1) nodeCost`.
+Remaining for P3 (was step (1): only the schema *loop* is left of it): (1) `p3Sch` (one schema: `rdNumS rA`, `rTn := [2 < rA]`, `rStr := 1 + 2 rTn`,
 locations `rdNumsS qLs rA` + `moveAllS qLs qLs2`, `rdNumS rD`, `mulS rNw rD rL1`, coordinates
 `rdNumsS qDom rNw` + `moveAllS qDom qDom2`, `p3Args`, `moveAllS qDom2 qJunk`,
 `rSB += rA · rD` (`mulS`), `rJ += 1`) and its loop over the schemas, with
