@@ -418,8 +418,8 @@ lemma pairwise_ansAll : (ansAll I).Pairwise fun a b => CSort.rle a b = true := b
 /-- **The answers of the join.** For any permutation `L0` of the location records and the
 requests, the scan over `L0` sorted by `rle`, with its answers (pushed in reverse order) sorted
 by `rle`, gives the answers in the order of `P4`. -/
-theorem p3_answers (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ) :
-    (jScan ℓ c0 (L0.mergeSort CSort.rle)).reverse.mergeSort CSort.rle = ansAll I := by
+theorem jScan_perm (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ) :
+    (jScan ℓ c0 (L0.mergeSort CSort.rle)).Perm (ansAll I) := by
   set S := L0.mergeSort CSort.rle
   have hS : S.Perm (union I) := (List.mergeSort_perm _ _).trans hp
   have hsorted : S.Pairwise fun a b => CSort.rle a b = true :=
@@ -441,10 +441,180 @@ theorem p3_answers (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × 
     · intro r hr
       obtain ⟨v, c, -, rfl⟩ := (mem_locRecs I).mp hr
       simp [isLoc_locRecC]
-  have hperm : (jScan ℓ c0 S).reverse.Perm (ansAll I) := by
-    refine (List.reverse_perm _).trans ?_
-    rw [jScan, hscan]
-    exact (hfilt.map (ansF I)).trans (map_reqs_perm I)
-  exact (CSort.eq_sortedRecs hperm.symm (pairwise_ansAll I)).symm
+  rw [jScan, hscan]
+  exact (hfilt.map (ansF I)).trans (map_reqs_perm I)
+
+theorem p3_answers (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ) :
+    (jScan ℓ c0 (L0.mergeSort CSort.rle)).reverse.mergeSort CSort.rle = ansAll I :=
+  (CSort.eq_sortedRecs ((List.reverse_perm _).trans (jScan_perm I L0 hp c0)).symm
+    (pairwise_ansAll I)).symm
+
+/-- The answers of the scan have four words. -/
+lemma length_of_mem_jScan (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ)
+    {a : List ℕ} (ha : a ∈ jScan ℓ c0 (L0.mergeSort CSort.rle)) : a.length = 4 :=
+  length_of_mem_ansAll I ((jScan_perm I L0 hp c0).mem_iff.mp ha)
+
+/-- The number of answers. -/
+lemma length_jScan (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ) :
+    (jScan ℓ c0 (L0.mergeSort CSort.rle)).length = ansBase I I.schemas.length := by
+  rw [(jScan_perm I L0 hp c0).length_eq, ← List.length_map (f := fun a : List ℕ => a.headD 0),
+    map_head_ansAll, List.length_range]
+
+/-! ## Counts and word bounds -/
+
+/-- The number of requests. -/
+theorem length_reqs : (reqs I).length = ansBase I I.schemas.length := by
+  rw [length_reqs_eq, ← List.length_map (f := fun a : List ℕ => a.headD 0), map_head_ansAll,
+    List.length_range]
+
+lemma length_coordList_le (D : Finset (Coord k ℓ)) : (coordList D).length ≤ k * 2 ^ ℓ := by
+  have h1 : (allBlockCoords ℓ).length = 2 ^ ℓ := by
+    rw [← List.length_map (f := blockNum), map_blockNum_allBlockCoords, List.length_range]
+  have h2 : (allCoords k ℓ).length = k * 2 ^ ℓ := by
+    simp [allCoords, List.length_flatMap, h1]
+  rw [← h2]; exact List.length_filter_le _ _
+
+lemma arity_mul_le {W : ℕ} (s : Schema k ℓ W) :
+    arity s * (coordList s.domain).length ≤ (schemaDescription s).length := by
+  rw [schemaDescription_eq']
+  have hp := length_perms s
+  have hc : ((coordList s.domain).flatMap cdesc).length = (coordList s.domain).length * (ℓ + 1) := by
+    rw [List.length_flatMap]; simp [length_cdesc]
+  have ha : arity s ≤ 3 := by unfold arity; split_ifs <;> omega
+  have hd := length_coordList_le s.domain
+  simp only [List.length_cons, List.length_append, hc, hp]
+  rcases Nat.lt_or_ge ℓ 2 with hl | hl
+  · have h2 : 2 ^ ℓ = ℓ + 1 := by interval_cases ℓ <;> rfl
+    have : arity s * (coordList s.domain).length ≤ arity s * (k + k * ℓ) :=
+      Nat.mul_le_mul_left _ (by rw [h2] at hd; linarith)
+    omega
+  · have : arity s * (coordList s.domain).length ≤ (coordList s.domain).length * (ℓ + 1) := by
+      nlinarith
+    omega
+
+lemma ansBase_le_H : ansBase I I.schemas.length ≤ H I := by
+  have h1 : ansBase I I.schemas.length ≤ (schsDesc I).length := by
+    rw [ansBase, List.take_of_length_le (by simp), schsDesc_eq, List.length_flatMap]
+    exact List.sum_le_sum fun e _ => arity_mul_le (sch I e)
+  have h2 := length_sd_le I
+  rw [sd_eq] at h2
+  simp only [List.length_cons, List.length_append] at h2
+  omega
+
+lemma val_le_one (b : ZMod 2) : b.val ≤ 1 := Nat.le_of_lt_succ (ZMod.val_lt b)
+
+lemma lt_of_mem_bd {b : BlockCoord ℓ} {x : ℕ} (hx : x ∈ blockDescription b) : x ≤ 1 := by
+  simp only [blockDescription, List.mem_map, List.mem_finRange, true_and] at hx
+  obtain ⟨t, rfl⟩ := hx
+  exact val_le_one _
+
+/-- Entries of location records are at most `2 H` (systems with a schema). -/
+lemma le_of_mem_locRecs (hE : I.schemas ≠ []) {m : List ℕ} (hm : m ∈ locRecs I) :
+    ∀ x ∈ m, x ≤ 2 * H I := by
+  obtain ⟨v, c, hc, rfl⟩ := (mem_locRecs I).mp hm
+  have hW := W_le I
+  have hv := v.2
+  have hk := k_le_H I hE
+  have hlab : labsN I v ≤ 2 := by rw [labsN_eq]; split_ifs <;> omega
+  have hlab1 : 1 ≤ labsN I v := by rw [labsN_eq]; omega
+  have hinit : initNum (I.init v) ≤ 2 := by
+    unfold initNum; split
+    · omega
+    · have := val_le_one ‹ZMod 2›; omega
+  have hidx : (coordList (I.domain v)).idxOf c < (coordList (I.domain v)).length :=
+    List.idxOf_lt_length_of_mem (mem_coordList.mpr hc)
+  have hoff : locOff I v + (coordList (I.domain v)).idxOf c * labsN I v ≤ 2 * H I := by
+    have h1 := locOff_succ I v.2
+    have h2 := locOff_le_H I (v + 1)
+    have h3 : (coordList (I.domain v)).idxOf c * labsN I v + labsN I v ≤ locSize I v := by
+      rw [locSize, ← labsN]; nlinarith
+    have : locSize I ⟨v, v.2⟩ = locSize I v := rfl
+    omega
+  intro x hx
+  simp only [locRecC, cdesc, List.cons_append, List.mem_cons, List.mem_append,
+    List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | hx | rfl | rfl | rfl | rfl
+  · omega
+  · have := c.1.2; omega
+  · have := lt_of_mem_bd hx; omega
+  · omega
+  · exact hoff
+  · omega
+  · omega
+
+/-- The sequence number of a request is below the number of requests. -/
+lemma seq_lt {r : List ℕ} (hr : r ∈ reqs I) : r.getD (ℓ + 3) 0 < ansBase I I.schemas.length := by
+  have h : (ansF I r).headD 0 ∈ (ansAll I).map (·.headD 0) :=
+    List.mem_map_of_mem ((map_reqs_perm I).mem_iff.mp (List.mem_map_of_mem hr))
+  rw [map_head_ansAll, List.mem_range, headD_ansF] at h
+  exact h
+
+/-- Entries of requests are at most `H` (systems with a schema). -/
+lemma le_of_mem_reqs (hE : I.schemas ≠ []) {r : List ℕ} (hr : r ∈ reqs I) :
+    ∀ x ∈ r, x ≤ H I := by
+  have hs := seq_lt I hr
+  have hN := ansBase_le_H I
+  obtain ⟨e, p, hp, c, hc, s, rfl⟩ := mem_reqs I hr
+  have hsr : (reqRec p.1 p.2 c s).getD (ℓ + 3) 0 = s :=
+    getD_rec p.1 (cdesc (p.2.apply c)) 1 s 0 0 1 (ℓ + 3) (by simp [length_cdesc]) (by omega)
+  rw [hsr] at hs
+  have hW := W_le I
+  have hk := k_le_H I hE
+  have hu := schLocs_le (sch I e) p.1 (List.of_mem_zip hp).1
+  intro x hx
+  simp only [reqRec, cdesc, List.cons_append, List.mem_cons, List.mem_append,
+    List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | hx | rfl | rfl | rfl | rfl
+  · omega
+  · have := (p.2.apply c).1.2; omega
+  · have := lt_of_mem_bd hx; have := E_le I
+    have : 0 < I.schemas.length := List.length_pos_of_ne_nil hE
+    omega
+  · have : 0 < I.schemas.length := List.length_pos_of_ne_nil hE
+    have := E_le I; omega
+  · omega
+  · omega
+  · omega
+
+/-- **Word bounds** of the union (systems with a schema): every entry is below `2 ^ w`. -/
+theorem lt_of_mem_union (hE : I.schemas ≠ []) {w : ℕ} (hw : 4 * (H I + 1) ≤ 2 ^ w)
+    {r : List ℕ} (hr : r ∈ union I) : ∀ x ∈ r, x < 2 ^ w := by
+  intro x hx
+  rcases List.mem_append.mp hr with h | h
+  · have := le_of_mem_locRecs I hE h x hx; omega
+  · have := le_of_mem_reqs I hE h x hx; omega
+
+/-- The number of records of the union. -/
+lemma length_union :
+    (union I).length = (locRecs I).length + ansBase I I.schemas.length := by
+  rw [union, List.length_append, length_reqs]
+
+/-- **Word bounds** of the answers (systems with a schema). -/
+theorem lt_of_mem_ansAll (hE : I.schemas ≠ []) {w : ℕ} (hw : 4 * (H I + 1) ≤ 2 ^ w)
+    {a : List ℕ} (ha : a ∈ ansAll I) : ∀ x ∈ a, x < 2 ^ w := by
+  obtain ⟨r, hr, rfl⟩ := List.mem_map.mp ((map_reqs_perm I).mem_iff.mpr ha)
+  obtain ⟨e, p, hp, c, hc, s, rfl⟩ := mem_reqs I hr
+  rw [ansF_req I hp hc]
+  obtain ⟨h, hd, -⟩ := req_loc I hp hc s
+  have hm := le_of_mem_locRecs I hE ((mem_locRecs I).mpr ⟨_, _, hd, rfl⟩)
+  have hs := seq_lt I hr
+  have hN := ansBase_le_H I
+  have hsr : (reqRec p.1 p.2 c s).getD (ℓ + 3) 0 = s :=
+    getD_rec p.1 (cdesc (p.2.apply c)) 1 s 0 0 1 (ℓ + 3) (by simp [length_cdesc]) (by omega)
+  rw [hsr] at hs
+  have hoff := hm _ (show locOff I p.1 + (coordList (I.domain ⟨p.1, h⟩)).idxOf (p.2.apply c) *
+      labsN I ⟨p.1, h⟩ ∈ locRecC I ⟨p.1, h⟩ (p.2.apply c) by simp [locRecC])
+  rw [off_eq I hd] at hoff
+  have hlab : labsN I ⟨p.1, h⟩ ≤ 2 := by rw [labsN_eq]; split_ifs <;> omega
+  have hseed := val_le_one (initSeed I ⟨p.1, h⟩ (p.2.apply c))
+  intro x hx
+  simp only [ansU, dif_pos h, ansRec, List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | rfl | rfl <;> omega
+
+/-- Word bounds of the answers of the scan. -/
+lemma lt_of_mem_jScan (hE : I.schemas ≠ []) {w : ℕ} (hw : 4 * (H I + 1) ≤ 2 ^ w)
+    (L0 : List (List ℕ)) (hp : L0.Perm (union I)) (c0 : ℕ × ℕ × ℕ)
+    {a : List ℕ} (ha : a ∈ jScan ℓ c0 (L0.mergeSort CSort.rle)) : ∀ x ∈ a, x < 2 ^ w :=
+  lt_of_mem_ansAll I hE hw ((jScan_perm I L0 hp c0).mem_iff.mp ha)
 
 end Lax119563Proofs.Compiler
