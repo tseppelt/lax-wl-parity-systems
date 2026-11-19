@@ -6,7 +6,7 @@ import Lax119563Proofs.Compiler.P3Aux
 
 `p3Join` sorts the `rCnt + rSB` records of `ℓ + 6` words on `qX` (`sortS`), answers the
 requests by the scan `pJScan` (answers on `qAns`) and sorts the `rSB` answers of `4` words
-(**`p3Join_good`**: `qAns` ends holding `(p3Ans I).flatten`).
+(**`p3Join_good`**: `qAns` ends holding `(ansAll I).flatten`, the order of `P4`).
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler
@@ -30,7 +30,7 @@ def rsT2 : Fin CR := 26
 def rsI : Fin CR := 27
 def rsT : Fin CR := 29
 def rsR : Fin CR := 30
-def rsDone : Fin CR := 31
+def rsDone : Fin CR := 39
 def rsK : Fin CR := 32
 def rsLim : Fin CR := 33
 
@@ -90,7 +90,7 @@ lemma p3Join_arith (N U n m ℓ h lg ln lm : ℕ) (hU : U ≤ N) (hn : n * (ℓ 
     nlinarith
   have e : 700 * (29 * (h + 1)) * (4 * (lg + 1)) * N + 12 * (105 * (h + 1)) * (lg + 1) * N +
       3500 * (3 * (h + 1)) * (4 * (lg + 1)) * N + 20 * (h + 1) * (lg + 1) * N =
-      125280 * ((h + 1) * (lg + 1) * N) := by ring
+      124480 * ((h + 1) * (lg + 1) * N) := by ring
   have e' : 150000 * (h + 1) * (lg + 1) * N = 150000 * ((h + 1) * (lg + 1) * N) := by ring
   rw [e']
   omega
@@ -98,19 +98,17 @@ lemma p3Join_arith (N U n m ℓ h lg ln lm : ℕ) (hU : U ≤ N) (hn : n * (ℓ 
 variable {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ)
 
 set_option maxHeartbeats 4000000 in
-/-- **The join part of `P3`.** With `(locRecs I ++ reqs I).flatten` on `qX`, `rCnt = |locRecs I|`,
+/-- **The join part of `P3`.** With `(union I).flatten` on `qX`, `rCnt = |locRecs I|`,
 `rSB = |reqs I|`, `rL = ℓ` and `qT1, qT2, qY, qAns` empty, `p3Join` leaves the sorted answers
-`(p3Ans I).flatten` on `qAns` and empties `qX`; open hypothesis: the word bound `hwd` of the
-union records. -/
+`(ansAll I).flatten` on `qAns` and empties `qX`. -/
 theorem p3Join_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [])
     (hS : 16 * (H I + 1) ≤ 2 ^ w)
-    (hwd : ∀ m ∈ locRecs I ++ reqs I, ∀ v ∈ m, v ≤ 3 * H I)
-    (s : NSt CR CQ) (hX : s.stk qX = (locRecs I ++ reqs I).flatten) (hT1 : s.stk qT1 = [])
+    (s : NSt CR CQ) (hX : s.stk qX = (union I).flatten) (hT1 : s.stk qT1 = [])
     (hT2 : s.stk qT2 = []) (hY : s.stk qY = []) (hAns : s.stk qAns = []) (hL : s.env rL = ℓ)
     (hC : s.env rCnt = (locRecs I).length) (hSB : s.env rSB = (reqs I).length) :
     ∃ s', Good (encodeSystem I) w p3Join s s'
         (150000 * (H I + 1) * (Nat.log 2 (H I + 1) + 1) * Ex.nodeCost w) ∧
-      s'.stk qAns = (p3Ans I).flatten ∧ s'.stk qX = [] ∧
+      s'.stk qAns = (ansAll I).flatten ∧ s'.stk qX = [] ∧
       (∀ q, q ≠ qX → q ≠ qAns → q ≠ qJunk → s'.stk q = s.stk q) ∧
       s'.pos = s.pos ∧ s'.out = s.out ∧ ∀ r, wReg r p3Join = false → s'.env r = s.env r := by
   have hU := CStm.nodeCost_ge w
@@ -125,13 +123,13 @@ theorem p3Join_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ 
   have hn1 : n ≤ n * (ℓ + 1) := Nat.le_mul_of_pos_right _ (by omega)
   have hm1 : m ≤ m * (ℓ + 1) := Nat.le_mul_of_pos_right _ (by omega)
   have hw0 : 0 < 2 ^ w := by positivity
-  have hrw : ∀ y ∈ locRecs I ++ reqs I, y.length = ℓ + 6 ∧ ∀ z ∈ y, z < 2 ^ w :=
-    fun y hy => ⟨length_union I hy, fun z hz => by have := hwd y hy z hz; omega⟩
+  have hrw : ∀ y ∈ union I, y.length = ℓ + 6 ∧ ∀ z ∈ y, z < 2 ^ w :=
+    fun y hy => ⟨length_of_mem_union I hy, lt_of_mem_union I hE (by omega) hy⟩
   -- `rN := rCnt + rSB`
   have r1 := Good.set (x := encodeSystem I) (w := w) (st := s) (r := rN)
     (e := .add (rv rCnt) (rv rSB)) (by simp only [Ex.Fits, Ex.eval, rv, hC, hSB]; omega)
   set s1 := s.set rN ((Ex.add (rv rCnt) (rv rSB)).eval s.env)
-  have e1N : s1.env rN = n := by simp [s1, Ex.eval, rv, hC, hSB, n]
+  have e1N : s1.env rN = n := by simp [s1, Ex.eval, rv, hC, hSB, n, m]
   have r2 := Good.set (x := encodeSystem I) (w := w) (st := s1) (r := rsA)
     (e := .add (rv rL) (.const 6)) (by
       have : s1.env rL = ℓ := by simp [s1, Function.update_of_ne (show rL ≠ rN by decide), hL]
@@ -145,8 +143,8 @@ theorem p3Join_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ 
   obtain ⟨s3, r3, h3S, f3⟩ := sortS_good (x := encodeSystem I) (X := qX) (T1 := qT1) (T2 := qT2)
     (Y := qY) (tmp := qTmp) (C1 := qC1) (C2 := qC2) (A := rsA) (dir := rsDir) (c := rsC)
     (f1 := rsF1) (f2 := rsF2) (kc := rsKc) (t1 := rsT1) (t2 := rsT2) (i := rsI) (t := rsT)
-    (r := rsR) (N := rN) (done := rsDone) (k := rsK) (lim2 := rsLim) hw (by decide) (by decide)
-    s2 (locRecs I ++ reqs I) hX hT1 hT2 hY e2A (by omega) e2N (by simp [n]) hrw (by omega)
+    (r := rsR) (N := rN) (done := rsDone) (k := rsK) (lim2 := rsLim) (a := ℓ + 6) (n := n) hw (by decide) (by decide)
+    s2 (union I) hX hT1 hT2 hY e2A (by omega) e2N (by simp [n, union]) hrw (by omega)
     (by omega)
   have r4 := Good.set (x := encodeSystem I) (w := w) (st := s3) (r := rCo) (e := .const 0)
     (by simp only [Ex.Fits]; omega)
@@ -171,17 +169,19 @@ theorem p3Join_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ 
     rw [f36 _ (by decide) (by decide) (by decide), f3.2.2 rSB (by decide)]
     simp [s2, s1, Function.update_of_ne (show rSB ≠ rN by decide),
       Function.update_of_ne (show rSB ≠ rsA by decide), hSB, m]
-  have e6c : (s6.env rCo, s6.env rCl, s6.env rCs) = (0, 0, 0) := by
+  have e6a : s6.env rCo = 0 := by
     simp [s6, s5, s4, Ex.eval, Function.update_of_ne (show rCo ≠ rCs by decide),
-      Function.update_of_ne (show rCo ≠ rCl by decide),
-      Function.update_of_ne (show rCl ≠ rCs by decide)]
+      Function.update_of_ne (show rCo ≠ rCl by decide)]
+  have e6b : s6.env rCl = 0 := by
+    simp [s6, s5, Ex.eval, Function.update_of_ne (show rCl ≠ rCs by decide)]
+  have e6d : s6.env rCs = 0 := by simp [s6, Ex.eval]
   -- the scan
   have hU3 : ∀ y ∈ p3Union I, y.length = ℓ + 6 ∧ ∀ z ∈ y, z < 2 ^ w :=
     fun y hy => hrw y ((mem_p3Union I).mp hy)
   obtain ⟨s7, r7, h7X, h7A, h7S, h7p, h7o, h7e⟩ := pJScan_good (x := encodeSystem I) hw s6
     (p3Union I) (by rw [h6S, h3S, Function.update_self]; rfl) e6L
     (by rw [e6N, length_p3Union]) (fun r hr => (hU3 r hr).1) (fun r hr => (hU3 r hr).2)
-    (by omega) (by rw [length_p3Union]; omega) (by rw [e6c]; simp [hw0])
+    (by omega) (by rw [length_p3Union]; omega) (by rw [e6a, e6b, e6d]; simp [hw0])
   have h6A : s6.stk qAns = [] := by
     rw [h6S, h3S, Function.update_of_ne (by decide)]; exact hAns
   -- `rN := rSB`, `rsA := 4`
@@ -194,35 +194,35 @@ theorem p3Join_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ 
   set s9 := s8.set rsA ((Ex.const 4 : Ex CR).eval s8.env)
   have h9S : s9.stk = s7.stk := rfl
   have hscan : (p3Scan I).length = m := length_p3Scan I
-  have hwB := p3Scan_words I hwd (by omega)
+  have hwB := p3Scan_words I hE (w := w) (by omega)
   -- the sort of the answers
   obtain ⟨s10, r10, h10S, f10⟩ := sortS_good (x := encodeSystem I) (X := qAns) (T1 := qT1)
     (T2 := qT2) (Y := qY) (tmp := qTmp) (C1 := qC1) (C2 := qC2) (A := rsA) (dir := rsDir)
     (c := rsC) (f1 := rsF1) (f2 := rsF2) (kc := rsKc) (t1 := rsT1) (t2 := rsT2) (i := rsI)
-    (t := rsT) (r := rsR) (N := rN) (done := rsDone) (k := rsK) (lim2 := rsLim) hw (by decide)
+    (t := rsT) (r := rsR) (N := rN) (done := rsDone) (k := rsK) (lim2 := rsLim) (a := 4) (n := m) hw (by decide)
     (by decide) s9 (p3Scan I).reverse
-    (by rw [h9S, h7A, h6A, List.append_nil, ← e6c]; rfl)
+    (by rw [h9S, h7A, h6A, List.append_nil, e6a, e6b, e6d]; rfl)
     (by rw [h9S, h7S _ (by decide) (by decide) (by decide), h6S, h3S,
-      Function.update_of_ne (by decide), hT1])
+      Function.update_of_ne (by decide)]; exact hT1)
     (by rw [h9S, h7S _ (by decide) (by decide) (by decide), h6S, h3S,
-      Function.update_of_ne (by decide), hT2])
+      Function.update_of_ne (by decide)]; exact hT2)
     (by rw [h9S, h7S _ (by decide) (by decide) (by decide), h6S, h3S,
-      Function.update_of_ne (by decide), hY])
+      Function.update_of_ne (by decide)]; exact hY)
     (by simp [s9, Ex.eval]) (by omega)
     (by simp [s9, s8, Ex.eval, rv, Function.update_of_ne (show rN ≠ rsA by decide), e7SB])
     (by rw [List.length_reverse, hscan])
     (fun y hy => by
       have := hwB y (List.mem_reverse.mp hy)
-      exact ⟨this.1, fun z hz => by have := this.2 z hz; omega⟩)
+      exact this)
     (by omega) (by omega)
   have hall := r1.seq (r2.seq (r3.seq (r4.seq (r5.seq (r6.seq (r7.seq (r8.seq (r9.seq r10))))))))
   refine ⟨s10, hall.mono ?_, ?_, ?_, ?_, ?_, ?_, fun r hr => hall.env_of hr⟩
-  · rw [length_p3Union, List.length_reverse, hscan]
+  · rw [length_p3Union]
     simp only [condCost, Ex.size, rv]
     have hlg1 : Nat.log 2 n ≤ Nat.log 2 (H I + 1) + 2 := log_le_of_le_four (by omega)
     have hlg2 : Nat.log 2 m ≤ Nat.log 2 (H I + 1) + 2 := log_le_of_le_four (by omega)
     exact p3Join_arith _ _ n m ℓ (H I) _ _ _ hU0 hcnt hℓ (by omega) hlg1 hlg2 h3H
-  · rw [h10S, Function.update_self]; rfl
+  · rw [h10S, Function.update_self, p3Ans_eq]
   · rw [h10S, Function.update_of_ne (by decide), h9S, h7X]
   · intro q h1 h2 h3
     rw [h10S, Function.update_of_ne h2, h9S, h7S q h1 h2 h3, h6S, h3S, Function.update_of_ne h1]

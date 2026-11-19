@@ -5,12 +5,10 @@ import Lax119563Proofs.Compiler.P3Join
 # Pass `P3` (requests and the join): the assembly
 
 `p3 = p3Gen; p3Join` (**`p3_good`**): from a state with `rW = W`, `rL = ℓ`, `rL1 = ℓ + 1`,
-empty generation stacks and `qAns = []`, `p3` leaves the sorted answers `(p3Ans I).flatten` on
-`qAns` within `200000 (H + 1) (log₂ (H + 1) + 1) · nodeCost w`.
+empty generation stacks and `qAns = []`, `p3` leaves the sorted answers on
+`qAns` (`ansAll I`, the order of `P4`) within `200000 (H + 1) (log₂ (H + 1) + 1) · nodeCost w`.
 
-Open hypothesis (list level, `PJoinFacts`): `hwd`, every word of a location record or a request
-is `≤ 3 H`. The identification of `p3Ans I` with the list consumed by `P4` (via
-`Join.scanF_eq`, `p3Scan_eq`) is separate.
+The answers are `ansAll I` (`PJoinFacts.p3_answers`): the order in which `P4` consumes them.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler
@@ -37,13 +35,12 @@ set_option maxHeartbeats 4000000 in
 /-- **Pass `P3`.** -/
 theorem p3_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [])
     (hS : 16 * (H I + 1) ≤ 2 ^ w)
-    (hwd : ∀ m ∈ locRecs I ++ reqs I, ∀ v ∈ m, v ≤ 3 * H I)
     (st : NSt CR CQ) (hb : st.Bdd w) (hp : st.pos ≤ H I)
     (hW : st.env rW = I.numLocations) (hL : st.env rL = ℓ) (hL1 : st.env rL1 = ℓ + 1)
     (hG : GenEmpty st) (hAns : st.stk qAns = []) (hRecL : (st.stk qRec).length ≤ 6 * (H I + 1)) :
     ∃ st', Good (encodeSystem I) w p3 st st'
         (200000 * (H I + 1) * (Nat.log 2 (H I + 1) + 1) * Ex.nodeCost w) ∧
-      st'.stk qAns = (p3Ans I).flatten ∧ st'.stk qX = [] ∧ st'.stk qRec = [] ∧
+      st'.stk qAns = (ansAll I).flatten ∧ st'.stk qX = [] ∧ st'.stk qRec = [] ∧
       st'.stk qLs = [] ∧ st'.stk qLs2 = [] ∧ st'.stk qF2 = [] ∧ st'.stk qDl = [] ∧
       st'.stk qDl2 = [] ∧ st'.stk qDom = [] ∧ st'.stk qDom2 = [] ∧ st'.stk qAux = [] ∧
       (∀ q, q ≠ qLs → q ≠ qLs2 → q ≠ qF → q ≠ qF2 → q ≠ qDl → q ≠ qDl2 → q ≠ qDom →
@@ -58,7 +55,7 @@ theorem p3_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [])
   have h1A : s1.stk qAns = [] := by
     rw [hO1 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide) (by decide) (by decide), hAns]
-  obtain ⟨s2, r2, h2A, h2X, h2S, h2p, h2o, h2e⟩ := p3Join_good I hw hk hE hS hwd s1 h1X g3 g4
+  obtain ⟨s2, r2, h2A, h2X, h2S, h2p, h2o, h2e⟩ := p3Join_good I hw hk hE hS s1 h1X g3 g4
     g5 h1A e1L e1C e1SB
   have hall := r1.seq r2
   have hS2 : ∀ q, q ≠ qX → q ≠ qAns → q ≠ qJunk → s2.stk q = s1.stk q := h2S

@@ -69,8 +69,10 @@ lemma p3Loop_step {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ []
     Nat.le_mul_of_pos_right _ (by omega)
   have hab := ansBase_mul_le I j
   have hab' : ansBase I j ≤ ansBase I j * (ℓ + 1) := Nat.le_mul_of_pos_right _ (by omega)
-  have hpre := schsPre_enc_le I (j + 1)
-  rw [schsPre_succ I hlt, encodeNats_append, List.length_append] at hpre
+  have hpre : (encodeNats (schsPre I j)).length + (encodeNats (schD I e)).length ≤ H I := by
+    have := schsPre_enc_le I (j + 1)
+    rw [schsPre_succ I hlt, encodeNats_append, List.length_append] at this
+    exact this
   have hpx : s.pos ≤ (encodeSystem I).length := by rw [hpos]; exact schAt_le I j
   obtain ⟨s', r, h1, h2, h3, h4, h5, h6, h7, h8, h9, hRec', hOth', hSB', hJ', hp', ho', he'⟩ :=
     p3Sch_good (x := encodeSystem I) hw s hb hpx (sch I e) (ansBase I j) j (3 * (H I + 1))
@@ -99,17 +101,24 @@ lemma p3Loop_step {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ []
   · rw [hSB', hJ', ansBase_succ I hlt]; rfl
   · rw [hJ', hlen]
   · rw [hRec', hRec, hJ', reqsUpTo_succ I hlt, argsReqs_eq_reqsE]
-    simp
+    simp; rfl
   · intro q n1 n2 n3 n4 n5 n6 n7 n8 n9 n10 n11
     rw [hOth' q n1 n2 n3 n4 n5 n6 n7 n8 n9 n10 n11, hOth q n1 n2 n3 n4 n5 n6 n7 n8 n9 n10 n11]
   · rw [ho', hout]
   · rw [hJ']; omega
   · rw [hlen, hpos]; omega
 
-lemma p3Loop_arith (N U h E φ : ℕ) (hU : U ≤ N) (hφ : φ ≤ h) (hE : E ≤ h) :
+lemma p3Loop_arith (N U h E φ : ℕ) (hU : 1 ≤ N) (hφ : φ ≤ h) (hE : E ≤ h) :
     10000 * N * φ + E * (10000 * N + ((1 + 1 + 1) * N + 1)) + ((1 + 1 + 1) * N + 1) ≤
       30000 * (h + 1) * N + U := by
-  nlinarith
+  have e1 : 10000 * N * φ ≤ 10000 * N * h := Nat.mul_le_mul_left _ hφ
+  have e2 : E * (10000 * N + ((1 + 1 + 1) * N + 1)) ≤ h * (10000 * N + ((1 + 1 + 1) * N + 1)) :=
+    Nat.mul_le_mul_right _ hE
+  have e3 : h ≤ h * N := Nat.le_mul_of_pos_right _ hU
+  have e4 : 10000 * N * h + h * (10000 * N + ((1 + 1 + 1) * N + 1)) = 20003 * (h * N) + h := by
+    ring
+  have e5 : 30000 * (h + 1) * N = 30000 * (h * N) + 30000 * N := by ring
+  omega
 
 set_option maxHeartbeats 2000000 in
 /-- **The schema loop.** -/
@@ -144,6 +153,7 @@ theorem p3Loop_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ 
     by rw [hSB7, hj, ← length_reqsUpTo, reqsUpTo_all], by rw [hp7, hj, schAt_all], ho7, hb7,
     fun q hq => r.env_of (by simpa [wReg] using hq)⟩
   have hU0 := Ex.unitCost_le_nodeCost w
+  have hU' := CStm.unitCost_ge w
   simp only [condCost, Ex.size, rv]
   have := p3Loop_arith (Ex.nodeCost w) 0 (H I) (I.schemas.length - st.env rJ) (H I - st.pos)
     (by omega) (by omega) (by have := E_le I; omega)

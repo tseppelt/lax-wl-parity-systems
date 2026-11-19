@@ -1,13 +1,14 @@
 import Lax119563Proofs.Compiler.PReqSch
 import Lax119563Proofs.Compiler.PReqList
 import Lax119563Proofs.Compiler.PSchLoop
+import Lax119563Proofs.Compiler.PJoinFacts
 
 /-!
 # Pass `P3`, request generation: list facts for the schema loop
 
 * `argsReqs_eq_reqsE`: the requests pushed by `p3Sch` for schema `e` at the sequence base
   `ansBase I e` are `reqsE I e` (via `seqOff_eq`);
-* `ansBase_succ`, `reqsUpTo_succ`, `reqsUpTo_all`;
+* `reqsUpTo_succ`, `reqsUpTo_all`;
 * sizes: `ansBase_mul_le` (`ansBase I j · (ℓ + 1) ≤ 3 |encodeNats (schsPre I j)|`),
   `length_reqsUpTo`, `schD_vals_le` (every number of a schema description is `≤ H`),
   `length_locRecs_mul_le` (`|locRecs I| (ℓ + 1) ≤ H`).
@@ -34,12 +35,6 @@ lemma argsReqs_eq_reqsE (e : Fin I.schemas.length) :
   refine List.map_congr_left fun q _ => ?_
   rw [seqOff_eq _ _ _ _ (by unfold arity at hp2; split_ifs at hp2 <;> simp_all), add_assoc]
   rfl
-
-lemma ansBase_succ {j : ℕ} (hj : j < I.schemas.length) :
-    ansBase I (j + 1) = ansBase I j +
-      arity (sch I ⟨j, hj⟩) * (coordList (dom I ⟨j, hj⟩)).length := by
-  rw [ansBase, List.take_add_one, List.getElem?_eq_getElem (by simpa using hj)]
-  simp [ansBase]
 
 lemma reqsUpTo_succ {j : ℕ} (hj : j < I.schemas.length) :
     reqsUpTo I (j + 1) = reqsUpTo I j ++ reqsE I ⟨j, hj⟩ := by

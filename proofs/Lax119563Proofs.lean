@@ -241,3 +241,9 @@ import Lax119563Proofs.Compiler.PReqArg
 import Lax119563Proofs.Compiler.PReqArgs
 import Lax119563Proofs.Compiler.PReqSch
 import Lax119563Proofs.Compiler.PJoinFacts
+import Lax119563Proofs.Compiler.PReqLoopList
+import Lax119563Proofs.Compiler.PReqLoop
+import Lax119563Proofs.Compiler.P3Aux
+import Lax119563Proofs.Compiler.P3Gen
+import Lax119563Proofs.Compiler.P3Join
+import Lax119563Proofs.Compiler.P3

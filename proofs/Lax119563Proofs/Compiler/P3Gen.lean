@@ -7,7 +7,7 @@ import Lax119563Proofs.Compiler.P3Aux
 `p3Gen` drops the old records (`moveAllS qRec qJunk`), pushes the location records again
 (`p1r`, which leaves the cursor at the position of `E`), reads `E`, sets `rKL = k ℓ`,
 `rSB = 0`, `rJ = 0`, runs the schema loop `p3Loop` and moves everything onto `qX`, which then
-holds `(locRecs I ++ reqs I).flatten` (**`p3Gen_good`**).
+holds `(union I).flatten` (**`p3Gen_good`**).
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler
@@ -25,7 +25,7 @@ def p3Gen : CStm CR CQ :=
     (.seq (mulS rKL rKk rL rGj) (.seq (.set rSB (.const 0)) (.seq (.set rJ (.const 0))
       (.seq p3Loop (moveAllS qRec qX rT rT2)))))))
 
-lemma p3Gen_arith (N U h q ℓ c d lE X : ℕ) (hU : U ≤ N) (hq : q ≤ 6 * (h + 1))
+lemma p3Gen_arith (N U h q ℓ lE X : ℕ) (hU : U ≤ N) (hq : q ≤ 6 * (h + 1))
     (hlE : lE ≤ h) (hℓ : ℓ ≤ h) (hX : X * (ℓ + 1) ≤ 4 * h) :
     (q + 1) * (10 * N) + (600 * (h + 1) * N + ((lE + 1) * (20 * N) + ((ℓ + 1) * (12 * N) +
       (1 * N + U + (1 * N + U + (30000 * (h + 1) * N +
@@ -41,7 +41,7 @@ lemma p3Gen_arith (N U h q ℓ c d lE X : ℕ) (hU : U ≤ N) (hq : q ≤ 6 * (h
       (24 * h + 1) * (10 * N) ≤ 32000 * (h + 1) * N := by
     have : (6 * (h + 1) + 1) * (10 * N) + 600 * (h + 1) * N + (h + 1) * (20 * N) +
       (h + 1) * (12 * N) + 1 * N + N + (1 * N + N + (30000 * (h + 1) * N)) +
-      (24 * h + 1) * (10 * N) = 31012 * (h * N) + 31024 * N := by ring
+      (24 * h + 1) * (10 * N) = 30932 * (h * N) + 30716 * N := by ring
     rw [this]
     have : 32000 * (h + 1) * N = 32000 * (h * N) + 32000 * N := by ring
     rw [this]; omega
@@ -49,14 +49,14 @@ lemma p3Gen_arith (N U h q ℓ c d lE X : ℕ) (hU : U ≤ N) (hq : q ≤ 6 * (h
 
 set_option maxHeartbeats 4000000 in
 /-- **The generation part of `P3`.** From any state with `rW = W`, `rL = ℓ`, `rL1 = ℓ + 1`
-and empty generation stacks, `p3Gen` leaves `(locRecs I ++ reqs I).flatten` on `qX`, empties
+and empty generation stacks, `p3Gen` leaves `(union I).flatten` on `qX`, empties
 `qRec` and ends at the end of the input with `rCnt = |locRecs I|`, `rSB = |reqs I|`. -/
 theorem p3Gen_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [])
     (hS : 16 * (H I + 1) ≤ 2 ^ w) (st : NSt CR CQ) (hb : st.Bdd w) (hp : st.pos ≤ H I)
     (hW : st.env rW = I.numLocations) (hL : st.env rL = ℓ) (hL1 : st.env rL1 = ℓ + 1)
     (hG : GenEmpty st) (hRecL : (st.stk qRec).length ≤ 6 * (H I + 1)) :
     ∃ st', Good (encodeSystem I) w p3Gen st st' (32000 * (H I + 1) * Ex.nodeCost w) ∧
-      st'.stk qX = (locRecs I ++ reqs I).flatten ∧ st'.stk qRec = [] ∧
+      st'.stk qX = (union I).flatten ∧ st'.stk qRec = [] ∧
       st'.stk qLs = [] ∧ st'.stk qLs2 = [] ∧ st'.stk qF2 = [] ∧ st'.stk qDl = [] ∧
       st'.stk qDl2 = [] ∧ st'.stk qDom = [] ∧ st'.stk qDom2 = [] ∧ st'.stk qAux = [] ∧
       OtherStk st st' ∧
@@ -91,7 +91,9 @@ theorem p3Gen_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [
   have r4 := mulS_good (x := encodeSystem I) (w := w) (Q := CQ) hw (dst := rKL) (a := rKk)
     (b := rL) (j := rGj) (by decide) (by decide) (by decide) (by decide) (by decide) s3
     (by rw [e3 _ (by decide) (by decide) (by decide), h2K])
-    (by rw [e3 _ (by decide) (by decide) (by decide), e2L]) (by nlinarith) (by omega)
+    (by rw [e3 _ (by decide) (by decide) (by decide), e2L])
+    (by have := kl_le_H I hE; have : k * ℓ ≤ k * (ℓ + 1) := Nat.mul_le_mul_left _ (by omega)
+        omega) (by omega)
   set s4 := (s3.set rKL (k * ℓ)).set rGj ℓ
   have r5 := Good.set (x := encodeSystem I) (w := w) (st := s4) (r := rSB) (e := .const 0)
     (by simp only [Ex.Fits]; omega)
@@ -126,7 +128,8 @@ theorem p3Gen_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [
     hb6.1 (by simp [s6, Ex.eval])
     (by rw [h46.env_of (by decide)]; exact rdNumFinal_env_r (by decide) (by decide) _)
     (by rw [h36.env_of (by decide), h2K])
-    (by simp [s6, s5, s4, Function.update_of_ne (show rKL ≠ rGj by decide)])
+    (by simp [s6, s5, s4, Function.update_of_ne (show rKL ≠ rGj by decide),
+      Function.update_of_ne (show rKL ≠ rJ by decide), Function.update_of_ne (show rKL ≠ rSB by decide)])
     (by rw [h36.env_of (by decide), e2L]) (by rw [h36.env_of (by decide), h2L1])
     (by simp [s6, s5, Ex.eval, Function.update_of_ne (show rSB ≠ rJ by decide)])
     (by show s2.pos + _ = _; rw [h2p]; rfl) hG6
@@ -137,24 +140,25 @@ theorem p3Gen_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [
   have h8S' : ∀ q, q ≠ qRec → q ≠ qX → s8.stk q = s7.stk q := fun q hq hq' => by
     rw [h8S, Function.update_of_ne hq', Function.update_of_ne hq]
   obtain ⟨k1, k2, k3, k4, k5, k6, k7, k8, k9⟩ := hG7
-  have h7R : s7.stk qRec = ((locRecs I ++ reqs I).flatten).reverse := by
-    rw [h7Rec, h6Rec, List.flatten_append, List.reverse_append]
+  have h7R : s7.stk qRec = ((union I).flatten).reverse := by
+    rw [h7Rec, h6Rec, union, List.flatten_append, List.reverse_append]
   refine ⟨s8, hall.mono ?_, ?_, ?_, by rw [h8S' _ (by decide) (by decide), k1],
     by rw [h8S' _ (by decide) (by decide), k2], by rw [h8S' _ (by decide) (by decide), k4],
     by rw [h8S' _ (by decide) (by decide), k5], by rw [h8S' _ (by decide) (by decide), k6],
     by rw [h8S' _ (by decide) (by decide), k7], by rw [h8S' _ (by decide) (by decide), k8],
     by rw [h8S' _ (by decide) (by decide), k9], ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    by rw [h8p, h7p], by rw [h8o, h7o, hall.out_of (by decide)],
+    by rw [h8p, h7p], by rw [h8o, h7o]; exact hpre.out_of (by decide),
     (r8.bdd hw hb7 (by rw [h7p])).1, fun r hr => hall.env_of hr⟩
   · -- cost
     rw [h7R, List.length_reverse, length_flatten_union]
     have hlE : (encodeNat I.schemas.length).length ≤ H I := by
       have h := congrArg List.length (drop_posAt_W I)
       simp only [List.length_drop, List.length_append] at h
+      show _ ≤ (encodeSystem I).length
       omega
     simp only [condCost, Ex.size, rv]
-    exact p3Gen_arith _ _ _ _ _ _ _ _ _ hU0 hRecL hlE hℓ (union_mul_le I)
-  · rw [h8S, Function.update_self, h7R, List.reverse_reverse, k3, List.append_nil]
+    exact p3Gen_arith _ _ _ _ _ _ _ hU0 hRecL hlE hℓ (union_mul_le I)
+  · rw [h8S, Function.update_self, h7R, List.reverse_reverse, show s7.stk qX = [] from k3, List.append_nil]
   · rw [h8S, Function.update_of_ne (by decide), Function.update_self]
   · intro q n1 n2 n3 n4 n5 n6 n7 n8 n9 n10 n11
     have hqX : q ≠ qX := n3
@@ -170,7 +174,8 @@ theorem p3Gen_good {w : ℕ} (hw : 2 ≤ w) (hk : 1 ≤ k) (hE : I.schemas ≠ [
   · rw [h8e _ (by decide) (by decide), h7e _ (by decide), h46.env_of (by decide)]
     exact rdNumFinal_env_r (by decide) (by decide) _
   · rw [h8e _ (by decide) (by decide), h7e _ (by decide)]
-    simp [s6, s5, s4, Function.update_of_ne (show rKL ≠ rGj by decide)]
+    simp [s6, s5, s4, Function.update_of_ne (show rKL ≠ rGj by decide),
+      Function.update_of_ne (show rKL ≠ rJ by decide), Function.update_of_ne (show rKL ≠ rSB by decide)]
   · rw [h8e _ (by decide) (by decide), h7e _ (by decide), h46.env_of (by decide),
       e3 _ (by decide) (by decide) (by decide), h2C]
   · rw [h8e _ (by decide) (by decide), h7SB]
