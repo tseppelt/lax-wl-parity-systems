@@ -373,6 +373,57 @@ Item (3) of the P3 remaining work. With `union I := locRecs I ++ reqs I`:
   `length_jScan` (`ansBase I E`). No ordering problem was found: `seqOff` matches the hub
   order (`hubNbrs_junc` needs `U, V`, `hubNbrs_link` the end `W`/`V`, `hubNbrs_upd_first` `U`).
 
+## P4 (branch proofs/compiler-p4, in progress)
+
+**Start-state interface** (= end of `p3_good`, after `p0, p1, p1r, p2, p3`; nontrivial, `E > 0`):
+`qAns = (ansAll I).flatten`, `qSch = (schRecsUpTo I E).reverse` (p3 does not write stacks 0, 2,
+3, 4), empty: stacks `1, 2, 3, 5–11, 14, 15` (qOr/qOr2 empty after `p2`); garbage: `qJunk = 13`,
+`qLoc = 0`. Registers not written by `p3` (checked with `#eval`, `wReg r p3 = false` exactly for
+`r ∈ {2, 4, 8, 9, 10, 17, 18, 19, 34}`) plus those `p3_good` sets: `rW = W`, `rL = ℓ`,
+`rL1 = ℓ+1`, `rE = E`, `rKk = k`, `rKm1 = k-1`, `rK1 = k+1`, `rLB = locBase I`, `rPL = k(ℓ+1)`,
+`rTriv = 8` (do not write). `pos = H`. (The case `E = 0`, domains nonempty: `gEdges = []`, only
+colors; P2/P3 do not run there, so `p4` must then be run with `rLB = 0` and an empty `qSch`,
+`qAns`; the schema loop runs `0` times — `k` is never used.)
+
+**Design.** `p4 = rEps := 0; p4Round; rEps := 1; p4Round`, one lemma `p4Round_good ε` (output
+`++ gDesc I ε`, `qAns`, `qSch` restored, scratch stacks empty again). `p4Round`:
+1. `moveAllS qSch qS2` (records forward); `rst`; skip `k, ℓ, W`; location loop (`ι` → labels
+   `1 + [ι = 0]`, `|D_v|`, push the labels `|D_v|` times on `qSzL`, `skipBlocksS |D_v| (ℓ+1)`;
+   counts `rNt += …`); skip `E`.
+2. schema loop (`p4Sch`): read arity, `tern`, skip locations, read `|D|`; move the record from
+   `qS2` back onto `qSch` (restoring it) copying `orsL` to `qOrsF` (forward), `blkRows, nEnt,
+   |coef|` to registers; push `schSizes I e` on `qSzS`; section bases `sumBase, trackBase,
+   coefBase` (`PEmitHub`); **section 1** per column (index `r`): read block and bits from the
+   input, compute the ranks of its rows (`rowsL_eq`: block part `[c.1]` or `range (k-1)`;
+   checksum ranks `chkRk (orsL D) bd blkRows` in one pass over the bits with `qOrsF`) and push
+   them on `qRk`, its row count on `qCnt`, `rEB += (k+1) rows`; pop the answers (`U, V, W`
+   ternary / `V` binary; pushed to `qA2` for restoring) and push the junction/link edges
+   (`hubE_junc`, `hubE_link`, `cposA` = `slotPos_coord_ans`); **section 2** per column (ranks and
+   counts reversed to forward order): for `q ≤ k`, for the ranks `ρ` (index `p`): entry
+   `t = q n + p`, hub `schBase + |D| colW + 4 (EB + t)`, coef index `q |R| + ρ`
+   (`idxOf_coefSteps`, `rank_blk`, `chkRanks_eq`); edges `hubE_upd` / `hubE_updF` (binary first
+   entry: pops the `U` answer); skip the permutations (`arity · k(ℓ+1)` numbers via `rPL`).
+   Each edge `(u, v)`: push `u`, push `v` on `qE`, `rM += 1`.
+3. `moveAllS qSzL qSz; moveAllS qSzS qSz` (sizes in order), `moveAllS qE qE2`, `moveAllS qA2
+   qAns`; emit `rNt`; `colorsS qSz` (`rP := 0`); emit `rM`; `emitAllS qE2`.
+
+**Done (no sorry):** `CEmit` (`emitAllS_good`), `CColors` (`repS_good`, `colorsS_loop_good`:
+output `++ colorsOf P (stk q)`); list level: `PEmitHub` (`cposA`, **`slotPos_coord_ans`**,
+`sort2`/`mergeSort_two`, `hubE`, `hubE_bits2/1`, **`hubE_junc`, `hubE_link`, `hubE_upd`,
+`hubE_updF`** with explicit `junE1, lnkE1, updE1, updF1`, `sumBase/trackBase/coefBase`,
+`prevBase`), `PEmitSteps` (`stepsC_eq` q-major, `rowsR`, `coefSteps_eq`,
+**`idxOf_coefSteps`** = `q |rowsR| + idxOf j rowsR`), `PEmitRank` (`rowsL_eq`, `chkT`, `chkRk`,
+**`chkRanks_eq`**, `rank_blk` (= `(range j).countP (PA I e)`), `rank_chk`), `PEmitSch`
+(**`schE_eq`**: `gEdges = flatMap schE`, `schE e` = section 1 per column `colE1` ++ section 2
+per column and entry), `PEmitSizes` (**`clsSizes_eq`** via `schSizes`, `locSizes`).
+
+**Remaining (P4):** (list) block rank by the running distinct-block count (`rank_blk` +
+`dChg`: if `blkRows ≠ k-1`, no block `k-1` occurs and `countP (range c.1) PA = dChg k (blocks
+of D.take (r+1)) - 1`); section 2 per column as `(range (k+1)).flatMap q, (rowsL c).zipIdx`
+(`stepsC_eq` + a `zipIdx` of equal blocks, cf. `zipIdx_flatMap_range` in `PEmitSch`);
+(machine) every step of the design above with `Good` lemmas, `p4Round_good`, `p4_good`, cost
+`O((H + S + 1) nodeCost)` per round (all loops are per input number or per output class/edge).
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
