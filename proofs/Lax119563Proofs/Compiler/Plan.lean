@@ -456,6 +456,28 @@ In the `E = 0` case `rLB` is not set by the chain: `P4` must use `locBase I = 0`
 (set `rLB := 0` under `ite (rv rE)`), and the location sizes come from its own location scan
 (`qLoc` holds only offsets).
 
+## P4 location part / framing (branch proofs/compiler-p4l, in progress)
+
+**Round layout** (decided): `p4Round = p4Loc; ite (rv rE) (p4SzS; SCH) skip; p4Emit` with
+`p4Loc`: `rst`, skip `k, ℓ, W`, `rL1 := rL + 1`, `rNt := 0`, `r4M := 0`, per location push
+`labsN v` (`|D_v|` times) on `qSzA` (adding to `rNt`), skip `E`, then `moveAllS qSzA qSzB`
+(`qSzB = locAll`); `p4SzS` (only `E > 0`): scan of the schema descriptions (arity, skip
+locations, `|D|`, skip coordinates and permutations) and of the `qSch` records (moved forward
+onto a scratch stack and pushed back, so `qSch` is restored) pushing `schSizes I e` on `qSzA`,
+then `moveAllS qSzA qSzB` (`qSzB = clsSizes I`, `clsSizes_eq`); `SCH` = the schema edge part
+(other branch); `p4Emit` (`n`, colors, `m`, edges; `moveAllS q4E qSzA` reverses the edges).
+**Registers/stacks claimed** (the schema part must not use them / must keep them):
+`rNt = 4` (total of the sizes, kept by `SCH`), stacks `qSzA = 14` (empty at `SCH`, so kept by
+`EdgeEff`), `qSzB = 15` (holds the sizes during `SCH`, kept by `EdgeEff`). Scratch of this part
+(only outside `SCH`): `0, 1, 3, 5, 6, 11, 12, 13, 14, 15, 20–30, 32, 33, 37–39`; this part never
+writes `2, 7, 8, 9, 16, 17, 18, 19, 31, 34, 35` (`rW, rE, rTriv, rL, rKk, rKm1, rK1, rLB, rKL,
+rPL, r4Eps`) and sets `r4M := 0`, `rL1 := ℓ + 1` before `SCH`.
+**Interface expected from `SCH`** (a hypothesis of `p4Round_good`): from every state with
+`Bdd w`, `pos = H`, `r4Eps = ε ≤ 1`, `r4M = 0`, `rW, rL, rL1, rE, rKk, rKL, rLB` as in
+`ChainSch`, `qAns`, `qSch` as in `ChainSch`, every stack other than `qLoc, qSch, qAns, qJunk,
+qSzB` empty: `∃ st', Good x w SCH st st' C ∧ EdgeEff st st' (gEdges I ε)` and `rTriv, rW, rL,
+rL1, rE, rKk, rKL, rLB, rNt` kept.
+
 ## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
 
 Program `pre = p0; ite (rv rTriv) skip (p1; ite (rv rE) (p1r; p2; p3) skip)` (`preNT`,
