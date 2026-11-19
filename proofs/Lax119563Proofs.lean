@@ -259,3 +259,14 @@ import Lax119563Proofs.Compiler.PEmitSizes
 import Lax119563Proofs.Compiler.P4Edge
 import Lax119563Proofs.Compiler.PChainSize
 import Lax119563Proofs.Compiler.PChain
+import Lax119563Proofs.Compiler.P4Rep
+import Lax119563Proofs.Compiler.P4Emit
+import Lax119563Proofs.Compiler.P4Loc
+import Lax119563Proofs.Compiler.P4LocPass
+import Lax119563Proofs.Compiler.P4SzPush
+import Lax119563Proofs.Compiler.P4SzRec
+import Lax119563Proofs.Compiler.P4SzRead
+import Lax119563Proofs.Compiler.P4SzLoop
+import Lax119563Proofs.Compiler.P4SzS
+import Lax119563Proofs.Compiler.P4Round
+import Lax119563Proofs.Compiler.P4Main
