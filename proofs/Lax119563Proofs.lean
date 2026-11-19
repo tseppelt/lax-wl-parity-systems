@@ -247,3 +247,13 @@ import Lax119563Proofs.Compiler.P3Aux
 import Lax119563Proofs.Compiler.P3Gen
 import Lax119563Proofs.Compiler.P3Join
 import Lax119563Proofs.Compiler.P3
+import Lax119563Proofs.Compiler.CEmit
+import Lax119563Proofs.Compiler.CColors
+import Lax119563Proofs.Compiler.PEmitHub
+import Lax119563Proofs.Compiler.PEmitSteps
+import Lax119563Proofs.Compiler.PEmitRank
+import Lax119563Proofs.Compiler.PEmitBlk
+import Lax119563Proofs.Compiler.PEmitSch
+import Lax119563Proofs.Compiler.PEmitCol2
+import Lax119563Proofs.Compiler.PEmitSizes
+import Lax119563Proofs.Compiler.P4Edge

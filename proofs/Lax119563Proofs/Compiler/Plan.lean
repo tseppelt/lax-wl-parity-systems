@@ -417,12 +417,30 @@ output `++ colorsOf P (stk q)`); list level: `PEmitHub` (`cposA`, **`slotPos_coo
 (**`schE_eq`**: `gEdges = flatMap schE`, `schE e` = section 1 per column `colE1` ++ section 2
 per column and entry), `PEmitSizes` (**`clsSizes_eq`** via `schSizes`, `locSizes`).
 
-**Remaining (P4):** (list) block rank by the running distinct-block count (`rank_blk` +
-`dChg`: if `blkRows ≠ k-1`, no block `k-1` occurs and `countP (range c.1) PA = dChg k (blocks
-of D.take (r+1)) - 1`); section 2 per column as `(range (k+1)).flatMap q, (rowsL c).zipIdx`
-(`stepsC_eq` + a `zipIdx` of equal blocks, cf. `zipIdx_flatMap_range` in `PEmitSch`);
-(machine) every step of the design above with `Good` lemmas, `p4Round_good`, `p4_good`, cost
-`O((H + S + 1) nodeCost)` per round (all loops are per input number or per output class/edge).
+Also done: `PEmitBlk` (**`rank_blk_eq`**: block-row rank of `D[r]` (`c.1 < k-1`) is `c.1` if
+`blkRows D = k-1`, else `dChg k (blocks of D.take (r+1)) - 1` — the program keeps `dChg` as in
+`p2Blk`, `dChg_append`), `PEmitCol2` (`rkL`, `updEnt`, **`colE2_eq`**: update edges of a column
+as `(range (k+1)).flatMap q, (rkL I e c).zipIdx` with entry `q n + p`, coef index
+`q |rowsR| + ρ`), `P4Edge` (program pieces: `q4E = 1`, `r4M = 36`, `r4Eps = 35`, `r4F/r4V =
+21/22`; `pairsRev`, **`EdgeEff`** (+ `trans`, `refl`, `of_frame`), `pE_good`, `pEo_good`,
+`cposN`, `ansMode` (`2` for two labels, else `ε · seed`), `cposA_eq` (`cposA = cposN …
+(ansMode ε a)`), **`cposS_good`**).
+
+**Remaining (P4, all machine level):** hub emitters (junction label loop over `i < 4` with
+`half`/`odd`, `junE1` = sum edge then `sort2` of `cposS` for `U, a` and `V, b`; link; update
+`updE1`/`updF1`), column loops (section 1: read block (`rdNumS`), bits loop with `qOrsF`,
+`chkRk`, block ranks via `rank_blk_eq`, push ranks/count; section 2 via `colE2_eq`), schema
+body (record transfer `qS2 → qSch`, sizes push `schSizes`, bases), location loop
+(`locSizes`), round assembly (`clsSizes_eq`, `colorsS_loop_good`, `emitAllS_good`,
+`graphDescription_eq_gDesc`), `p4_good`, costs.
+**Register pressure (obstruction to watch):** `CR = 40` (`PTriv`). Kept: `rT, rP` (parsing),
+`rL, rL1, rKk, rKm1, rK1, rLB, rPL, rTriv`; free for `P4`: the other 30 (re-read `W`, `E` from
+the input in each round instead of keeping `rW`, `rE`). Estimated need at the deepest point
+(section 2): round 6 (`rEps, rM, rNt, rJ, rE, schema base`), schema ~10 (`tern, |D|, nEnt,
+blkRows, |R|, sumBase, trackBase, coefBase, upd hub base, perm-skip count`), column ~9
+(`r, EB, n, q, q|R|, p, ρ`, `U` answer `off, mode`), hub ~4 (`i`, flag/value, temp): ≈ 29 — fits
+only with care; if not, raise `CR` in `PTriv` (all register facts there are `decide` on
+numerals) — not done here.
 
 ## Remaining work (in order)
 
