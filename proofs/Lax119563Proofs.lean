@@ -247,3 +247,5 @@ import Lax119563Proofs.Compiler.P3Aux
 import Lax119563Proofs.Compiler.P3Gen
 import Lax119563Proofs.Compiler.P3Join
 import Lax119563Proofs.Compiler.P3
+import Lax119563Proofs.Compiler.PChainSize
+import Lax119563Proofs.Compiler.PChain
