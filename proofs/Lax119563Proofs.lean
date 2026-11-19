@@ -240,3 +240,4 @@ import Lax119563Proofs.Compiler.PReqCols
 import Lax119563Proofs.Compiler.PReqArg
 import Lax119563Proofs.Compiler.PReqArgs
 import Lax119563Proofs.Compiler.PReqSch
+import Lax119563Proofs.Compiler.PJoinFacts
