@@ -486,6 +486,36 @@ with `p4Keep = [rTriv, rW, rL, rE, rKk, rKL, rLB, rNt]` (`EdgeEff` keeps all sta
 in particular `qAns, qSch` restored and `qSzB` untouched). `ε` enters as `(ε : ZMod 2)`.
 The schema part may use every register except `p4Keep` (and must not touch stack 15).
 
+## P4 schema part (branch proofs/compiler-p4s, in progress)
+
+Target: `p4Sch_spec : SchSpec I w p4Sch C` (see above). Registers (`P4SchLab`): `r4PL = 34`,
+schema data `r4SB 5, r4Tn 6, r4D 11, r4BR 12, r4R2 13 (= 2|rowsR|), r4SumB 14, r4TrkB 15`,
+column loop `r4Dist 17, r4Prev 18 (section 2: coefBase), r4H 20, r4SP 23, r4TP 24, r4K 25`,
+column scratch `rc1..rc8 = 26–30, 37, 32, 33` (`rc6 = 37` since `rKL = 31` is kept); plus
+`rT, rP`, `r4F, r4V` (`cposS`), `r4M`. Stacks: `qS2 2` (records forward), `qA2 3` (consumed
+answers), `qOrsF 5 / qOrsB 6` (OR bits, also the section-2 temp), `qRk 7 / qRkF 8` (rank codes
+`rcode ρ = 2ρ+1` per column, terminated by `0`).
+Program per schema: read arity/`tern`, skip locations, read `|D|`, move the record `qS2 → qSch`
+(OR bits forward to `qOrsF`, `blkRows, nEnt, |coef|`), section bases; **section 1** per column
+(`p4C1`: block (`p4Hd`, `dist1` = running `dChg - 1`), block ranks (`p4Blk`, `blkCodes`), bit
+pass (`p4Bits`, `chkRk`), last track (`p4LT`), junction (`c1Jun`, `jLabs`), link (`c1Lnk`,
+`lLabs`), advance); `moveAllS qRk qRkF`, skip the permutations; **section 2** per column
+(`p4C2`: start answer for binary schemas (`c2Ans`), `q ≤ k` loop (`p4Qs`/`p4QB`: rank loop
+`p4Rks` over the codes, entry `p4Ent` = `fLabs`/`uLabs`, codes restored via `qOrsB`), drop
+the codes (`p4Drop`)). Edge lists in numbers: `junL, lnkL, updL, updFL, entE, rksE, col2E,
+col1E`; `EE`/`EM` = `EdgeEff` restricted to `q4E`/`r4M`.
+**Done (no sorry):** `P4SchLib` (`Good.loop_idx(C)`, `lf`/`scost`/`good_lf`), `P4SchLab`/
+`P4SchLab2`/`P4SchHub` (label and hub emitters, `pAns_good`), `P4SchEnt` (`p4Ent_good`),
+`P4SchRk` (`p4Rks_good`), `P4SchQ` (`p4QB_good`), `P4SchC2` (`p4Qs_good`, `p4Drop_good`),
+`P4SchC2b` (**`p4C2_good`**: one column of section 2), `P4SchBits` (**`p4Bits_good`**),
+`P4SchC1` (`p4Hd_good`, `p4Blk_good`), `P4SchC1b` (`p4LT_good`, `c1Jun_good`, `c1Lnk_good`,
+`p4Adv1_good`), `P4SchC1c` (**`p4C1_good`**: one column of section 1).
+**Remaining:** column loops of both sections (invariants over `coordList (dom I e)`), list glue
+(`codesC … = (rkL I e c).map rcode` via `rowsL_eq`, `rank_blk_eq`, `chkRanks_eq`, `dChg_append`;
+`colE1 = col1E …`, section 2 via `colE2_eq` = `col2E …`; answers of `ansE` per column), the
+schema body (record transfer, bases, permutation skip), the location skip from `pos = H`
+(`rst`, skip to `schPos`), the schema loop, `moveAllS qA2 qAns` at the end, costs.
+
 ## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
 
 Program `pre = p0; ite (rv rTriv) skip (p1; ite (rv rE) (p1r; p2; p3) skip)` (`preNT`,

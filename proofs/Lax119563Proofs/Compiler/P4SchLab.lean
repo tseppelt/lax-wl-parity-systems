@@ -7,7 +7,7 @@ import Lax119563Proofs.Compiler.PSch
 Registers of the schema part (besides the parsing registers `rT, rP`, the persistent
 `rE, rL, rL1, rKk, rLB, r4Eps, r4M` and `r4F, r4V` of `cposS`): `rJ` (schema index),
 `r4PL = k (ℓ + 1)`, schema data `r4SB … r4TrkB`, column loop data `r4Dist … r4K`, column
-scratch `rc1 … rc8`. Not written: `rW = 2`, `4`, `37`, `38`, `39`.
+scratch `rc1 … rc8`. Not written: the registers of `p4Keep` (`rTriv, rW, rL, rE, rKk, rKL = 31, rLB, rNt = 4`), `38`, `39`.
 Stacks: `qS2` (schema records, forward), `qA2` (consumed answers), `qOrsF`/`qOrsB` (OR bits
 of the schema forward / backup), `qRk`/`qRkF` (rank codes `2 ρ + 1` per column, terminated
 by `0`).
@@ -46,7 +46,7 @@ def rc2 : Fin CR := 27
 def rc3 : Fin CR := 28
 def rc4 : Fin CR := 29
 def rc5 : Fin CR := 30
-def rc6 : Fin CR := 31
+def rc6 : Fin CR := 37
 def rc7 : Fin CR := 32
 def rc8 : Fin CR := 33
 
