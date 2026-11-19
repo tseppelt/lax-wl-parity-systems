@@ -504,17 +504,35 @@ pass (`p4Bits`, `chkRk`), last track (`p4LT`), junction (`c1Jun`, `jLabs`), link
 `p4Rks` over the codes, entry `p4Ent` = `fLabs`/`uLabs`, codes restored via `qOrsB`), drop
 the codes (`p4Drop`)). Edge lists in numbers: `junL, lnkL, updL, updFL, entE, rksE, col2E,
 col1E`; `EE`/`EM` = `EdgeEff` restricted to `q4E`/`r4M`.
-**Done (no sorry):** `P4SchLib` (`Good.loop_idx(C)`, `lf`/`scost`/`good_lf`), `P4SchLab`/
-`P4SchLab2`/`P4SchHub` (label and hub emitters, `pAns_good`), `P4SchEnt` (`p4Ent_good`),
-`P4SchRk` (`p4Rks_good`), `P4SchQ` (`p4QB_good`), `P4SchC2` (`p4Qs_good`, `p4Drop_good`),
-`P4SchC2b` (**`p4C2_good`**: one column of section 2), `P4SchBits` (**`p4Bits_good`**),
-`P4SchC1` (`p4Hd_good`, `p4Blk_good`), `P4SchC1b` (`p4LT_good`, `c1Jun_good`, `c1Lnk_good`,
-`p4Adv1_good`), `P4SchC1c` (**`p4C1_good`**: one column of section 1).
-**Remaining:** column loops of both sections (invariants over `coordList (dom I e)`), list glue
-(`codesC … = (rkL I e c).map rcode` via `rowsL_eq`, `rank_blk_eq`, `chkRanks_eq`, `dChg_append`;
-`colE1 = col1E …`, section 2 via `colE2_eq` = `col2E …`; answers of `ansE` per column), the
-schema body (record transfer, bases, permutation skip), the location skip from `pos = H`
-(`rst`, skip to `schPos`), the schema loop, `moveAllS qA2 qAns` at the end, costs.
+**Interface target** (coordinator): `p4Sch_spec : SchSpec I (wordOf (H I) (sizeParameter I)) p4Sch
+(K (H + S + 1) · nodeCost w)` for `3 ≤ k`, `1 ≤ ℓ`; `SchPre` starts at `pos = H` (so `p4Sch`
+must `rst` and skip to `schPos` itself), keeps `p4Keep` (`rKL = 31`, `rNt = 4`), stack 15
+untouched. The cost of the schema part is linear (`O(H + locBase)` word operations, no log).
+**Done (no sorry, imported):** `P4SchLib` (`Good.loop_idx(C)`, `lf`/`scost`/`good_lf`),
+`P4SchLab`/`P4SchLab2`/`P4SchHub` (label and hub emitters, `pAns_good`), `P4SchEnt`
+(`p4Ent_good`), `P4SchRk` (`EE`, `p4Rks_good`), `P4SchQ` (`p4QB_good`), `P4SchC2` (`p4Qs_good`,
+`p4Drop_good`), `P4SchC2b` (**`p4C2_good`**: one column of section 2), `P4SchBits`
+(**`p4Bits_good`**), `P4SchC1` (`p4Hd_good`, `p4Blk_good`), `P4SchC1b` (`p4LT_good`,
+`c1Jun_good`, `c1Lnk_good`, `p4Adv1_good`), `P4SchC1c` (`EM`, **`p4C1_good`**: one column of
+section 1), `P4SchGlue` (**`codesC_eq`**, `dist1_eq`, `slot_ans`, `memU/V/End`,
+**`colE1_eq`**), `P4SchGlue2` (**`col2_eq`**), `P4SchAns` (**`ansE_flatten`**: `a1C`, `a2C`),
+`P4SchL1` (`cL`, `entB`, `codesL`, `distR`, column facts), `P4SchL1b` (`p4S1`, invariant
+`L1Inv`, `aOff_le`, `ansRec_ok`, `sec_bounds`).
+**WIP (committed, not imported, do not build yet):** `P4SchL1c` (`p4S1_step`: remaining
+errors are `set cs/c` vs `coordList (dom I e)` mismatches — drop the `set`s), `P4SchL1d`
+(`p4S1_good` via `Good.loop_var`, potential = remaining input + remaining track positions),
+`P4SchL2` (invariant `L2Inv` of the section-2 loop; step via `p4C2_good` + `col2_eq`).
+**Remaining:** finish `P4SchL1c/d`; the section-2 loop (`L2Inv` step and loop); the schema
+body (read arity → `r4Tn`, skip locations, read `|D|` → `r4D`; record transfer `qS2 → qSch`
+with `orsL` forward on `qOrsF` (via `qOrsB`), `r4R2 = 2|rowsR| = 2(blkRows + Σ ors)`,
+`r4BR = blkRows`, `nEnt`, `|coef|`; bases `r4H = schBase`, `r4SP = sumBase`, `r4TP =
+trackBase`, `r4K, r4Dist := 0`; `p4S1`; `moveAllS qRk qRkF`; `moveAllS qOrsF qJunk`; skip the
+`arity·k(ℓ+1)` permutation words; `r4Prev := coefBase` (= `r4TP` after section 1), `r4SP :=
+sumBase`, `r4TP := trackBase`, `r4K := 0` (`r4H` is already `updBase`); `p4S2`; next
+`schBase`); the prefix of `p4Sch` (`rst`, skip `k, ℓ, W`, the location section
+(`skipBlocksS`), `E`; `r4PL = k(ℓ+1)`; `moveAllS qSch qS2`); the schema loop over `rJ < rE`;
+the suffix `moveAllS qA2 qAns`; the edge list via `gEdges_eq_schE`, `schE_eq`,
+`ansE_flatten`; the cost in the form `K (H + S + 1) nodeCost w` (`locBase_le`).
 
 ## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
 
