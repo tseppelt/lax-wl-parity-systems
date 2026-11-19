@@ -288,3 +288,4 @@ import Lax119563Proofs.Compiler.P4SchGlue2
 import Lax119563Proofs.Compiler.P4SchAns
 import Lax119563Proofs.Compiler.P4SchL1
 import Lax119563Proofs.Compiler.P4SchL1b
+import Lax119563Proofs.Compiler.P4SchL1c
