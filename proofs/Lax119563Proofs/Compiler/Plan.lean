@@ -442,6 +442,45 @@ blkRows, |R|, sumBase, trackBase, coefBase, upd hub base, perm-skip count`), col
 only with care; if not, raise `CR` in `PTriv` (all register facts there are `decide` on
 numerals) — not done here.
 
+**Intended statement of `p4_good`** (start states of `pre_good`, merged 3e7afe5): for
+`¬ trivSys I`, `hw`, `hk : 1 ≤ k`, `w = wordOf H S` (`16384 (H+S+2) ≤ 2^w`), and `st` with
+`st.Bdd w`, `st.pos ≤ H`, `ChainLoc I st` and either `ChainNoSch I st` (`E = 0`) or
+`ChainSch I st` (`E > 0`):
+`∃ st', Good x w p4 st st' (K (H + S + 1) · nodeCost w) ∧ st'.out = st.out ++ gDesc I 0 ++ gDesc I 1`.
+Note on the cost form: `P4` emits `|gDesc| = Θ(S)` words, so its cost cannot be bounded by
+`K (H+1)(log₂(H+1)+1) · nodeCost w` alone (when `S ≫ H`); it needs a `cost_conv` variant
+`K (H+S+1) · nodeCost (wordOf H S) ≤ K' (H+S+1)(log₂(H+S+2)+1)^2` (from `nodeCost_le_sq`).
+`ChainSch` does not export `rKm1 = k-1`, `rK1 = k+1`, `rPL = k(ℓ+1)` (they do survive `p3`,
+`wReg r p3 = false`), so `P4` recomputes them (`predS`, `mulS`) or `ChainSch` is extended.
+In the `E = 0` case `rLB` is not set by the chain: `P4` must use `locBase I = 0` there
+(set `rLB := 0` under `ite (rv rE)`), and the location sizes come from its own location scan
+(`qLoc` holds only offsets).
+
+## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
+
+Program `pre = p0; ite (rv rTriv) skip (p1; ite (rv rE) (p1r; p2; p3) skip)` (`preNT`,
+`preSch`). `p1r` needs `k ≤ H` (only for `E > 0`), `p2`/`p3` need a schema, so for a
+nontrivial system with `E = 0` only `p1` runs (then `gDesc` has no hubs and no edges: `P4`
+needs only the location data). **`pre_good`** (`hw : 2 ≤ w`, `hk : 1 ≤ k`,
+`hS : 16 (H + locBase I + 1) ≤ 2^w`): `∃ st', Good x w pre (NSt.zero CR CQ) st'
+(210000 (H+1)(log₂(H+1)+1) · nodeCost w)` (so `pre.Fits` from the zero state is included) with
+`st'.out = []`, `st'.Bdd w`, `st'.pos ≤ H`, and
+* `trivSys I → st'.env rTriv = 1 ∧ ∀ q, st'.stk q = []` (`P4` emits `[0,0,0,0]`, `gDesc_triv`);
+* `¬ trivSys I → ChainLoc I st'`: `rTriv = 0`, `rW = W`, `rL = ℓ`, `rE = E`,
+  `qLoc = (locOffs I).reverse`;
+* `¬ trivSys I → I.schemas = [] → ChainNoSch I st'`: `rOff = locOff I W`, `pos = schPos I`,
+  every stack other than `qLoc` empty;
+* `¬ trivSys I → I.schemas ≠ [] → ChainSch I st'`: `qAns = (ansAll I).flatten`,
+  `qSch = (schRecsUpTo I E).reverse`, every stack except `qLoc, qSch, qAns, qJunk` empty,
+  `rLB = locBase I`, `rL1 = ℓ + 1`, `rKk = k`, `rKL = k ℓ`, `rCnt = |locRecs I|`,
+  `rSB = |reqs I|`, `pos = H`. (`rOff` is overwritten by `p1r`; `qJunk` holds garbage.)
+Helper: `p1_rL1` (`p1` leaves `rL1 = rL + 1`, via `exec_set_succ` and frames).
+Sizes (`PChainSize`): `wordOf H S = 8 (log₂(H+S+2) + 1)` (`a = 8`), `two_pow_word`
+(`2^14 (H+S+2) ≤ 2^wordOf`), `locBase_le` (`locBase ≤ |ordL| ≤ 16 S`, `k ≥ 2`), **`word_hS`**
+(`16 (H + locBase + 1) ≤ 2^(wordOf H S)`); **`cost_conv`**: `K (H+1)(log₂(H+1)+1) ·
+nodeCost (wordOf H S) ≤ 7744 K (H+S+1)(log₂(H+S+2)+1)^3`. Final assembly:
+`prog = pre; p4`, apply `machine_of_program` with `a = 8`, `e = 3` (`bitLength I = H I`).
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)

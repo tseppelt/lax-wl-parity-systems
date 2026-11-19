@@ -257,3 +257,5 @@ import Lax119563Proofs.Compiler.PEmitSch
 import Lax119563Proofs.Compiler.PEmitCol2
 import Lax119563Proofs.Compiler.PEmitSizes
 import Lax119563Proofs.Compiler.P4Edge
+import Lax119563Proofs.Compiler.PChainSize
+import Lax119563Proofs.Compiler.PChain
