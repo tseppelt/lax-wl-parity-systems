@@ -82,8 +82,8 @@ lemma lLab_good {w : ℕ} {x : List Bool} (hw : 2 ≤ w) (a : ℕ) (ha : a ≤ 1
   · rw [fr4 _ (by decide)]; exact hv3
   · intro r hr
     simp only [labW, List.mem_cons, List.not_mem_nil, or_false, not_or] at hr
-    rw [fr4 r hr.2.2.2.2.2.1, fr3 r hr.2.2.2.1 hr.2.2.2.2.1]
-    exact e2 r hr.1 hr.2.2.2.2.2.1
+    rw [fr4 r hr.2.2.2.2.2, fr3 r hr.2.2.2.1 hr.2.2.2.2.1]
+    exact e2 r hr.1 hr.2.2.2.2.2
 
 /-! ## Update labels -/
 

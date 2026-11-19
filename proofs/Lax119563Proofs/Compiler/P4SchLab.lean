@@ -159,7 +159,7 @@ def jLab (a b : ℕ) : CStm CR CQ :=
         (.seq (.set rc6 (.const b)) (.seq (cposS rLB rc4 rc5 rc6) (srt2 (hE (2 * a + b)))))))))
 
 /-- Registers written by the label emitters. -/
-def labW : List (Fin CR) := [rc6, rc7, rc8, r4F, r4V, r4M, r4Dist]
+def labW : List (Fin CR) := [rc6, rc7, rc8, r4F, r4V, r4M]
 
 set_option maxHeartbeats 1000000 in
 lemma jLab_good {w : ℕ} {x : List Bool} (hw : 2 ≤ w) (a b : ℕ) (ha : a ≤ 1) (hb : b ≤ 1)
@@ -265,7 +265,7 @@ lemma jLab_good {w : ℕ} {x : List Bool} (hw : 2 ≤ w) (a b : ℕ) (ha : a ≤
   · rw [fr8 _ (by decide)]; exact hv7
   · intro r hr
     simp only [labW, List.mem_cons, List.not_mem_nil, or_false, not_or] at hr
-    rw [fr8 r hr.2.2.2.2.2.1, fr7 r hr.2.2.2.1 hr.2.2.2.2.1]
-    exact e6 r hr.1 hr.2.1 hr.2.2.1 hr.2.2.2.1 hr.2.2.2.2.1 hr.2.2.2.2.2.1
+    rw [fr8 r hr.2.2.2.2.2, fr7 r hr.2.2.2.1 hr.2.2.2.2.1]
+    exact e6 r hr.1 hr.2.1 hr.2.2.1 hr.2.2.2.1 hr.2.2.2.2.1 hr.2.2.2.2.2
 
 end Lax119563Proofs.Compiler
