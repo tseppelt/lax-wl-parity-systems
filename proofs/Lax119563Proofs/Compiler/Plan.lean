@@ -517,12 +517,45 @@ untouched. The cost of the schema part is linear (`O(H + locBase)` word operatio
 section 1), `P4SchGlue` (**`codesC_eq`**, `dist1_eq`, `slot_ans`, `memU/V/End`,
 **`colE1_eq`**), `P4SchGlue2` (**`col2_eq`**), `P4SchAns` (**`ansE_flatten`**: `a1C`, `a2C`),
 `P4SchL1` (`cL`, `entB`, `codesL`, `distR`, column facts), `P4SchL1b` (`p4S1`, invariant
-`L1Inv`, `aOff_le`, `ansRec_ok`, `sec_bounds`).
-**WIP (removed from the tree; recover with `git show e240b8a:proofs/Lax119563Proofs/Compiler/<file>.lean`):** `P4SchL1c` (`p4S1_step`: remaining
-errors are `set cs/c` vs `coordList (dom I e)` mismatches — drop the `set`s), `P4SchL1d`
-(`p4S1_good` via `Good.loop_var`, potential = remaining input + remaining track positions),
+`L1Inv`, `aOff_le`, `ansRec_ok`, `sec_bounds`), `P4SchL1c` (`L1Fix`, `L1Bnd`, `p4S1_step`),
+`P4SchL1d` (`p4S1_loop` via `Good.loop_var`, `L1Inv_zero`, `entB_all`, **`p4S1_good`**).
+**WIP (removed from the tree; recover with `git show e240b8a:proofs/Lax119563Proofs/Compiler/<file>.lean`):**
 `P4SchL2` (invariant `L2Inv` of the section-2 loop; step via `p4C2_good` + `col2_eq`).
-**Remaining:** finish `P4SchL1c/d`; the section-2 loop (`L2Inv` step and loop); the schema
+
+### P4 schema part / section 1 loop (`P4SchL1d`, done)
+
+```
+lemma p4S1_good {w : ℕ} {x : List Bool} (hw : 2 ≤ w) (hk : 2 ≤ k) (hE : I.schemas ≠ [])
+    (ε : ZMod 2) (e : Fin I.schemas.length) (R : List ℕ) (restx : List Bool) (s0 : NSt CR CQ)
+    (hF : L1Fix I w x ε e restx s0) (hB : L1Bnd I w e s0)
+    (hMe : ((cL I e).zipIdx.flatMap fun q => colE1 I ε e q.1 q.2).length ≤ 3 * (ordL I).length)
+    (eK : s0.env r4K = 0) (eDi : s0.env r4Dist = 0) (eH : s0.env r4H = schBase I e)
+    (eSP : s0.env r4SP = sumBase I e) (eTP : s0.env r4TP = trackBase I e)
+    (hV : s0.env r4V < 2 ^ w) (hbd : s0.Bdd w)
+    (hA : s0.stk qAns = (cL I e).zipIdx.flatMap (a1C I e) ++ R) :
+    ∃ s', Good x w p4S1 s0 s' (2100 * ((encodeNats ((cL I e).flatMap cdesc)).length +
+        nEnt I e + (cL I e).length + 1) * Ex.nodeCost w) ∧
+      EM s0 s' ((cL I e).zipIdx.flatMap fun q => colE1 I ε e q.1 q.2) ∧
+      s'.stk qRk = ((cL I e).flatMap fun c => codesL I e c ++ [0]).reverse ++ s0.stk qRk ∧
+      s'.stk qAns = R ∧
+      s'.stk qA2 = ((cL I e).zipIdx.flatMap (a1C I e)).reverse ++ s0.stk qA2 ∧
+      (∀ q, q ≠ q4E → q ≠ qRk → q ≠ qAns → q ≠ qA2 → s'.stk q = s0.stk q) ∧
+      s'.env r4K = (cL I e).length ∧ s'.env r4Dist = distR I e (cL I e).length ∧
+      s'.env r4H = schBase I e + (cL I e).length * colW I e ∧
+      s'.env r4SP = sumBase I e + 2 * (cL I e).length ∧
+      s'.env r4TP = trackBase I e + 2 * nEnt I e ∧ s'.env r4V < 2 ^ w ∧ s'.Bdd w ∧
+      s'.pos = s0.pos + (encodeNats ((cL I e).flatMap cdesc)).length ∧ s'.out = s0.out ∧
+      ∀ reg, reg ∉ c1W → s'.env reg = s0.env reg
+```
+`L1Fix` (`P4SchL1c`): `x.drop s0.pos = encodeNats ((cL I e).flatMap cdesc) ++ restx`, `rL = ℓ`,
+`rKk = k`, `r4BR = blkRows (cL I e)`, `r4Tn = tnN (isTern (sch I e))`, `rLB = locBase I`,
+`r4Eps = ε.val`, `r4D = |cL I e|`, `qOrsF = orsL (cL I e)`, `qOrsB = []`, `s0.pos ≤ |x|`.
+`L1Bnd`: `16 (H + |ordL| + 1) ≤ 2^w`, `k(ℓ+1) ≤ H`, `|cL I e| ≤ H`,
+`ansBase I e + 3 |cL I e| ≤ 3 H`, `r4M + 3 |ordL| + 16 < 2^w`. `EM s0 s' Es` = `q4E` gets
+`pairsRev Es` pushed and `r4M += |Es|`. Glue for the schema body: the edges are the first part
+of `schE_eq`; the answers the first part of `ansE_flatten`; after the loop `r4H =
+schBase + |cL|·colW` (= the update-hub base of `schE_eq`), `r4TP = coefBase` (`sec_bounds`).
+**Remaining:** the section-2 loop (`L2Inv` step and loop); the schema
 body (read arity → `r4Tn`, skip locations, read `|D|` → `r4D`; record transfer `qS2 → qSch`
 with `orsL` forward on `qOrsF` (via `qOrsB`), `r4R2 = 2|rowsR| = 2(blkRows + Σ ors)`,
 `r4BR = blkRows`, `nEnt`, `|coef|`; bases `r4H = schBase`, `r4SP = sumBase`, `r4TP =
