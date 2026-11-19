@@ -335,6 +335,34 @@ by `seq` (distinct sequence numbers) and their P4-order description.
 Pitfall: `timeout` is not installed on macOS, `timeout … lake env lean` prints nothing — use
 `lake build <module>` to confirm.
 
+## P3 list facts (branch proofs/compiler-p3list, `Compiler/PJoinFacts`; done, no sorry)
+
+Item (3) of the P3 remaining work. With `union I := locRecs I ++ reqs I`:
+* shapes: `locRecs_eq` (`locRecs I` = per location `v`, per `c ∈ coordList (I.domain v)`,
+  `locRecC I v c = v :: cdesc c ++ [0, locOff v + idxOf c · labsN v, labsN v, initNum ι(v)]`),
+  `mem_locRecs`, `mem_reqs`, `key_locRecC`/`key_reqRec` (keys `v :: cdesc c` of `ℓ + 2` words),
+  `isLoc_locRecC`/`isLoc_reqRec`, `length_of_mem_union` (all `ℓ + 6`);
+* **`hG1`** (`gLoc I key` := the location record with that key, `Classical.choose`;
+  `locRec_unique` via `cdesc_injective`), **`hG2`** (`req_loc`, `target_mem`: by
+  `Schema.WellFormed`, `π.apply c ∈ I.domain u` for each argument `(u, π)` of a schema);
+* counts: **`length_reqs`**: `|reqs I| = ansBase I E`; `length_union` (= `|locRecs I| + ansBase I E`);
+  `ansBase_le_H` (`arity · |D| ≤ |schemaDescription|`);
+* word bounds for systems with a schema (`I.schemas ≠ []`) under `4 (H + 1) ≤ 2^w`:
+  `lt_of_mem_union`, `lt_of_mem_ansAll`, `lt_of_mem_jScan` (entries `≤ 2H`, resp. `≤ H`);
+* answers: `ansRec I v c' s = [s, clsStart I (coord v c') - locBase I, labsN I v,
+  (initSeed I v c').val]` (`labsN = 1 + [ι(v) = ⋆]`); **`ansE I e`** (P4 order: ternary
+  `(coordList D).zipIdx.flatMap fun (c, r) => [U, V, W]` with seq `ansBase e + 3r + 0/1/2`; binary
+  all `V` (seq `ansBase e + r`) then all `U` (seq `ansBase e + |D| + r`)), `ansAll I :=
+  (finRange E).flatMap (ansE I)`, **`map_head_ansAll`**: the sequence numbers are `range (ansBase I E)`;
+* **`p3_answers`** (the equation for `P4`): for every `L0 ~ union I` (the record list on `qX`
+  before `sortS`) and every initial scan data `c0`,
+  `(jScan ℓ c0 (L0.mergeSort rle)).reverse.mergeSort rle = ansAll I`.
+  So after `sortS` (on `qX`), `pJScan` (`qAns := (jScan …).reverse.flatten ++ []`) and `sortS`
+  of `qAns` (`A = 4`, records `(jScan …).reverse`), `qAns` holds `(ansAll I).flatten` (first
+  answer on top). Helpers for the sorts: `jScan_perm`, `length_of_mem_jScan` (`4`),
+  `length_jScan` (`ansBase I E`). No ordering problem was found: `seqOff` matches the hub
+  order (`hubNbrs_junc` needs `U, V`, `hubNbrs_link` the end `W`/`V`, `hubNbrs_upd_first` `U`).
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
