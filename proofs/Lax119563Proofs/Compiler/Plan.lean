@@ -588,17 +588,38 @@ as `L1Bnd`). `qRkF` holds the codes forward as `moveAllS qRk qRkF` leaves them (
 pushes `(flatMap (codesL ++ [0])).reverse` on `qRk`); `qAns` starts with the section-2 answers
 `(cL).zipIdx.flatMap a2C` (`ansE_flatten`); `EE` keeps `pos` and `out`.
 `c2W = [rc1..rc8, r4TP, r4H, r4F, r4V, r4M, r4Dist, r4SP, r4K]`.
-**Remaining:** the schema
-body (read arity → `r4Tn`, skip locations, read `|D|` → `r4D`; record transfer `qS2 → qSch`
-with `orsL` forward on `qOrsF` (via `qOrsB`), `r4R2 = 2|rowsR| = 2(blkRows + Σ ors)`,
-`r4BR = blkRows`, `nEnt`, `|coef|`; bases `r4H = schBase`, `r4SP = sumBase`, `r4TP =
-trackBase`, `r4K, r4Dist := 0`; `p4S1`; `moveAllS qRk qRkF`; `moveAllS qOrsF qJunk`; skip the
-`arity·k(ℓ+1)` permutation words; `r4Prev := coefBase` (= `r4TP` after section 1), `r4SP :=
-sumBase`, `r4TP := trackBase`, `r4K := 0` (`r4H` is already `updBase`); `p4S2`; next
-`schBase`); the prefix of `p4Sch` (`rst`, skip `k, ℓ, W`, the location section
-(`skipBlocksS`), `E`; `r4PL = k(ℓ+1)`; `moveAllS qSch qS2`); the schema loop over `rJ < rE`;
-the suffix `moveAllS qA2 qAns`; the edge list via `gEdges_eq_schE`, `schE_eq`,
-`ansE_flatten`; the cost in the form `K (H + S + 1) nodeCost w` (`locBase_le`).
+### P4 schema part / schema body, loop, spec (branch proofs/compiler-p4body)
+
+Note: `EdgeEff` restores *every* stack except `q4E` (also `qJunk`), so the OR bits are not
+moved to `qJunk`: after section 1 they are moved from `qOrsF` back onto `qSch` (`moveN`),
+which also rebuilds the record there.
+Registers of the body (`P4SchB1`): `r4NE = 14` (`nEnt`), `r4NC = 15` (`|coef|`), `r4SuB = 38`,
+`r4TrB = 39` (sum/track base), `r4SB = 5` (schema base), `rJ` (schema index), `r4PL = 34`.
+* `P4SchB1`: `hdrL`, `permsL`, `schD_split/len`, `arity_eq`, **`p4Rd_good`** (`p4Rd`: arity →
+  `r4Tn`, skip locations, `|D|` → `r4D`, all via `rc1, rc2, rP, rT`).
+* `P4SchB2`: **`p4OrS_good`** (OR bits `qS2 → qOrsB`, sum in `r4R2`), **`p4Rec_good`**
+  (`p4Rec`: then `moveAllS qOrsB qOrsF`, pop `blkRows, nEnt, |coef|` into `r4BR, r4NE, r4NC`,
+  `r4R2 := 2 (b + Σ ors)`), **`p4Bas_good`** (`p4Bas`: `r4H := r4SB`, `r4K, r4Dist := 0`, `r4SuB =
+  SB + D (2 + 4T) + 4 NE`, `r4TrB = r4SuB + 2TD`, `r4SP, r4TP` copies; one `ite` on `r4Tn`).
+* `P4SchB3`: **`p4Mid_good`** (`p4Mid`: `moveAllS qRk qRkF`, `moveN qOrsF qSch rL`, push
+  `r4BR, r4NE, r4NC` on `qSch`, skip `(2 + T) k(ℓ+1)` permutation words (`mulS rc2 r4PL rc1`),
+  `r4Prev := r4TP`, `r4SP := r4SuB`, `r4TP := r4TrB`, `r4K := 0`), **`p4End_good`**
+  (`r4SB := r4Prev + 2 r4NC`, `rJ += 1`).
+* `P4SchB4`: `p4Body = p4Rd; p4Rec; p4Bas; p4S1; p4Mid; p4S2; p4End`; `edUp, ansUp, ansFr,
+  sBase` (prefix data) with `_succ`/`_all`; `cL_le_H`, `ansB_le`, `rowsR_len`, `schE_le_gEdges`,
+  `codes_len_le`, `body_arith`; `BFix` (fixed data of `s0`, the state before the loop) and
+  **`BInv`** (state before schema `j`: `rJ = j`, `pos = schAt j`, `r4SB = sBase j`, stacks
+  `qS2 = schRecsFrom j`, `qSch = (schRecsUpTo j).reverse`, `qAns = ansFr j`, `qA2 = (ansUp j)ʳ`,
+  `q4E = pairsRev (edUp j) ++ s0.q4E`, `qRk, qRkF, qOrsF, qOrsB = []`, other stacks and all
+  registers outside `bodyW` as in `s0`, `r4M = |edUp j|`).
+* `P4SchB5`: **`p4Body_good`**: `BInv j → BInv (j + 1)`, cost `5000 N (|schD j| + schSize j + 1)`.
+* `P4SchK`: `p4KLoop` (skip the location section), **`p4KLoop_good`**.
+* `P4SchSpec`: `p4SchPre` (rst, skip `k, ℓ, W`, `p4KLoop`, skip `E`, `r4PL := k(ℓ+1)` by
+  `mulS`, `rJ, r4SB := 0`, `moveAllS qSch qS2`), `p4SLp = loop (rJ < rE) p4Body`,
+  `p4Sch = p4SchPre; p4SLp; moveAllS qA2 qAns`; **`p4SchPre_good`**.
+* `P4SchSpec2`: **`p4SLp_good`** (`Good.loop_var`, potential `(H - pos) + (locBase - r4SB)`),
+  `ansAll_len` (`|ansAll.flatten| ≤ 6H`), **`p4Sch_spec`**: for `3 ≤ k`, `1 ≤ ℓ`,
+  `SchSpec I (wordOf H S) p4Sch (400000 (H + S + 1) · nodeCost (wordOf H S))`.
 
 ## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
 

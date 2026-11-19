@@ -300,3 +300,5 @@ import Lax119563Proofs.Compiler.P4SchB3
 import Lax119563Proofs.Compiler.P4SchB4
 import Lax119563Proofs.Compiler.P4SchB5
 import Lax119563Proofs.Compiler.P4SchK
+import Lax119563Proofs.Compiler.P4SchSpec
+import Lax119563Proofs.Compiler.P4SchSpec2
