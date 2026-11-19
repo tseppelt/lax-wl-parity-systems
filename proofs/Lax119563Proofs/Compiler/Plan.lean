@@ -511,6 +511,34 @@ Sizes (`PChainSize`): `wordOf H S = 8 (log₂(H+S+2) + 1)` (`a = 8`), `two_pow_w
 nodeCost (wordOf H S) ≤ 7744 K (H+S+1)(log₂(H+S+2)+1)^3`. Final assembly:
 `prog = pre; p4`, apply `machine_of_program` with `a = 8`, `e = 3` (`bitLength I = H I`).
 
+## Final assembly (branch proofs/compiler-final, `Compiler/Prog`)
+
+Program `prog SCH = pre; ite (rv rTriv) progTriv (p4 SCH)` with `progTriv` emitting
+`0, 0, 0, 0` (`gDesc_triv`: `gDesc I ε = [0, 0]`). Everything is parametric in the schema
+edge part `SCH`; the only hypothesis is the uniform interface
+```
+hSCH : ∀ k, 3 ≤ k → ∀ ℓ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
+  SchSpec I (wordOf (H I) (sizeParameter I)) SCH
+    (K * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)))
+```
+* **`prog_good hSCH`**: the hypotheses of `machine_of_program` with `a = 8`, `e = 3`,
+  constant `7744 (2K + 910010)` (from `pre_good`, `word_hS`, `cost_conv`, `p4_good_chain`,
+  `cost_conv_lin`, `prog_cost_arith`); the depth bound is `D = (prog SCH).depth` (`le_rfl`).
+* **`machine_clause_of_schSpec hSCH`**: the machine clause (`machine_of_program`).
+* **`matrix_compiler_of_schSpec hSCH`**: the statement of
+  `Lax119563.MatrixCompiler.matrix_compiler` (via `matrix_compiler_of_machine`).
+
+**The missing one-liner.** Once `p4Sch_spec` (branch proofs/compiler-p4s) gives the uniform
+`hSCH` for `SCH := p4Sch` and some constant `K₀`, `Matrix/Main.lean` becomes (import
+`Lax119563Proofs.Compiler.Prog` and the module of `p4Sch_spec`; `matrixGraph_spec` may stay):
+```
+theorem matrix_compiler : <statement of Lax119563.MatrixCompiler.matrix_compiler> :=
+  Lax119563Proofs.Compiler.matrix_compiler_of_schSpec (SCH := p4Sch) (K := K₀)
+    (fun k hk ℓ hℓ I => p4Sch_spec I …)
+```
+(the `fun` adapts `p4Sch_spec`'s hypotheses, e.g. `k ≥ 3 → k ≥ 1`, to `hSCH`; if its cost is
+not literally `K₀ (H + S + 1) · nodeCost w`, weaken it with a `SchSpec` monotonicity in `C`).
+
 ## Remaining work (in order)
 
 3. (done: `sortS_good`; queue helpers only if item 4 needs them.)
