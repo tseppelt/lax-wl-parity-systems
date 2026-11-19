@@ -518,7 +518,7 @@ section 1), `P4SchGlue` (**`codesC_eq`**, `dist1_eq`, `slot_ans`, `memU/V/End`,
 **`colE1_eq`**), `P4SchGlue2` (**`col2_eq`**), `P4SchAns` (**`ansE_flatten`**: `a1C`, `a2C`),
 `P4SchL1` (`cL`, `entB`, `codesL`, `distR`, column facts), `P4SchL1b` (`p4S1`, invariant
 `L1Inv`, `aOff_le`, `ansRec_ok`, `sec_bounds`).
-**WIP (committed as `*.lean.wip`, rename to build):** `P4SchL1c` (`p4S1_step`: remaining
+**WIP (removed from the tree; recover with `git show e240b8a:proofs/Lax119563Proofs/Compiler/<file>.lean`):** `P4SchL1c` (`p4S1_step`: remaining
 errors are `set cs/c` vs `coordList (dom I e)` mismatches — drop the `set`s), `P4SchL1d`
 (`p4S1_good` via `Good.loop_var`, potential = remaining input + remaining track positions),
 `P4SchL2` (invariant `L2Inv` of the section-2 loop; step via `p4C2_good` + `col2_eq`).
