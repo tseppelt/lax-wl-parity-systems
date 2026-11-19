@@ -456,27 +456,35 @@ In the `E = 0` case `rLB` is not set by the chain: `P4` must use `locBase I = 0`
 (set `rLB := 0` under `ite (rv rE)`), and the location sizes come from its own location scan
 (`qLoc` holds only offsets).
 
-## P4 location part / framing (branch proofs/compiler-p4l, in progress)
+## P4 location part / framing (branch proofs/compiler-p4l)
 
-**Round layout** (decided): `p4Round = p4Loc; ite (rv rE) (p4SzS; SCH) skip; p4Emit` with
-`p4Loc`: `rst`, skip `k, ℓ, W`, `rL1 := rL + 1`, `rNt := 0`, `r4M := 0`, per location push
-`labsN v` (`|D_v|` times) on `qSzA` (adding to `rNt`), skip `E`, then `moveAllS qSzA qSzB`
-(`qSzB = locAll`); `p4SzS` (only `E > 0`): scan of the schema descriptions (arity, skip
-locations, `|D|`, skip coordinates and permutations) and of the `qSch` records (moved forward
-onto a scratch stack and pushed back, so `qSch` is restored) pushing `schSizes I e` on `qSzA`,
-then `moveAllS qSzA qSzB` (`qSzB = clsSizes I`, `clsSizes_eq`); `SCH` = the schema edge part
-(other branch); `p4Emit` (`n`, colors, `m`, edges; `moveAllS q4E qSzA` reverses the edges).
-**Registers/stacks claimed** (the schema part must not use them / must keep them):
-`rNt = 4` (total of the sizes, kept by `SCH`), stacks `qSzA = 14` (empty at `SCH`, so kept by
-`EdgeEff`), `qSzB = 15` (holds the sizes during `SCH`, kept by `EdgeEff`). Scratch of this part
-(only outside `SCH`): `0, 1, 3, 5, 6, 11, 12, 13, 14, 15, 20–30, 32, 33, 37–39`; this part never
-writes `2, 7, 8, 9, 16, 17, 18, 19, 31, 34, 35` (`rW, rE, rTriv, rL, rKk, rKm1, rK1, rLB, rKL,
-rPL, r4Eps`) and sets `r4M := 0`, `rL1 := ℓ + 1` before `SCH`.
-**Interface expected from `SCH`** (a hypothesis of `p4Round_good`): from every state with
-`Bdd w`, `pos = H`, `r4Eps = ε ≤ 1`, `r4M = 0`, `rW, rL, rL1, rE, rKk, rKL, rLB` as in
-`ChainSch`, `qAns`, `qSch` as in `ChainSch`, every stack other than `qLoc, qSch, qAns, qJunk,
-qSzB` empty: `∃ st', Good x w SCH st st' C ∧ EdgeEff st st' (gEdges I ε)` and `rTriv, rW, rL,
-rL1, rE, rKk, rKL, rLB, rNt` kept.
+**Round layout:** `p4Round SCH = p4Loc; ite (rv rE) (p4SzS; SCH) skip; p4Emit`, `p4 SCH =
+r4Eps := 0; p4Round SCH; r4Eps := 1; p4Round SCH` (`P4Main`). Modules:
+* `P4Rep`: `repPushS_good` / `rep2PushS_good` (push a value / a pair `n` times, running total).
+* `P4Emit`: registers `rNt = 4` (total of the class sizes), stacks `qSzA = 14`, `qSzB = 15`;
+  `descOf L Es` (= `gDesc` for `clsSizes`, `gEdges`, `gDesc_eq_descOf` is `rfl`);
+  **`p4Emit_good`**: from `qSzB = L`, `q4E = pairsRev Es`, `qSzA = []`, `rNt = ΣL`,
+  `r4M = |Es|`: output `++ descOf L Es`, `qSzB, q4E` emptied (scratch `rT, rP, rJ, rA`).
+* `P4Loc` (`p4LLoop_good`, location loop: `labsN v` pushed `|D_v|` times on `qSzA`, `rNt =
+  locOff`), `P4LocPass` (**`p4Loc_good`**: `rst`, skips, `rL1 := ℓ+1`, `rNt, r4M := 0`, loop,
+  `moveAllS qSzA qSzB`: `qSzB := locAll ++ qSzB`, `pos = schPos`; `locAll_sum`).
+* Schema sizes from a scan (`P4SzPush`, `P4SzRec`, `P4SzRead`, `P4SzLoop`, `P4SzS`):
+  registers `rC..rS = 20–27` (`rTq = 24`), scratch stack `qT = 2`; the records are moved
+  forward from `qSch` to `qT` and pushed back one by one (restoring `qSch`); per schema read
+  arity/`|D|`, skip the rest (`arity·k·(ℓ+1)` permutation words), push `szL` (=`schSizes`,
+  `schSizes_eq_szL`); **`p4SzS_good`**: `qSzB := schAll ++ qSzB`, `rNt += Σ schAll`, `pos = H`.
+* `P4Round`: `P4Inv` (round-start states), `SchPre`, `p4Keep`, **`SchSpec`** (interface of
+  the schema edge part), **`p4Round_good`**; `P4Main`: **`p4_good`**, `p4Inv_of_chain`,
+  `p4Z_le` (`p4Z ≤ 4H + 5|ordL|`), **`cost_conv_lin`**
+  (`K (H+S+1) nodeCost(wordOf H S) ≤ 7744 K (H+S+1)(log₂(H+S+2)+1)^3`).
+**Interface expected from `SCH`** (`SchSpec I w SCH C`): for `ε ≤ 1` and every `st` with
+`SchPre I ε w st` (schemas nonempty, `Bdd w`, `pos = H`, `r4Eps = ε`, `r4M = 0`, `rTriv = 0`,
+`rW = W`, `rL = ℓ`, `rL1 = ℓ+1`, `rE = E`, `rKk = k`, `rKL = kℓ`, `rLB = locBase`, `qAns`,
+`qSch` as in `ChainSch`, all stacks other than `qLoc, qSch, qAns, qJunk, qSzB` empty):
+`∃ st', Good x w SCH st st' C ∧ EdgeEff st st' (gEdges I ε) ∧ ∀ r ∈ p4Keep, st'.env r = st.env r`
+with `p4Keep = [rTriv, rW, rL, rE, rKk, rKL, rLB, rNt]` (`EdgeEff` keeps all stacks but `q4E`,
+in particular `qAns, qSch` restored and `qSzB` untouched). `ε` enters as `(ε : ZMod 2)`.
+The schema part may use every register except `p4Keep` (and must not touch stack 15).
 
 ## Chain P0–P3 (branch proofs/compiler-chain, `Compiler/PChain`, `Compiler/PChainSize`)
 
