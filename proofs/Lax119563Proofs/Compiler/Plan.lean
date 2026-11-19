@@ -663,7 +663,10 @@ hSCH : ∀ k, 3 ≤ k → ∀ ℓ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k 
 * **`matrix_compiler_of_schSpec hSCH`**: the statement of
   `Lax119563.MatrixCompiler.matrix_compiler` (via `matrix_compiler_of_machine`).
 
-**The missing one-liner.** Once `p4Sch_spec` (branch proofs/compiler-p4s) gives the uniform
+**The one-liner (done, branch proofs/compiler-p4body):** `Matrix/Main.lean` is
+`matrix_compiler_of_schSpec (SCH := p4Sch) (K := 400000) (fun _ hk _ hℓ I => p4Sch_spec I hk hℓ)`;
+`lax build` is green, `matrix_compiler` uses only `propext, Classical.choice, Quot.sound`.
+Original note: Once `p4Sch_spec` (branch proofs/compiler-p4s) gives the uniform
 `hSCH` for `SCH := p4Sch` and some constant `K₀`, `Matrix/Main.lean` becomes (import
 `Lax119563Proofs.Compiler.Prog` and the module of `p4Sch_spec`; `matrixGraph_spec` may stay):
 ```
