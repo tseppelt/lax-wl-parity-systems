@@ -321,17 +321,27 @@ needs the column blocks nondecreasing, `curB`), `p3Arg_good` (`PReqArg`: one arg
 `argsReqs (schLocs sc) (schPerms sc) (coordList D) base tern (arity sc)` (reversed) on `qRec`,
 `rSB := base + arity · |D|`, `rJ := j + 1`, stacks empty again, cost
 `10000 (|encodeNats (schemaDescription sc)| + 1) nodeCost`.
-Remaining for P3 (was step (1): only the schema *loop* is left of it): (1) `p3Sch` (one schema: `rdNumS rA`, `rTn := [2 < rA]`, `rStr := 1 + 2 rTn`,
-locations `rdNumsS qLs rA` + `moveAllS qLs qLs2`, `rdNumS rD`, `mulS rNw rD rL1`, coordinates
-`rdNumsS qDom rNw` + `moveAllS qDom qDom2`, `p3Args`, `moveAllS qDom2 qJunk`,
-`rSB += rA · rD` (`mulS`), `rJ += 1`) and its loop over the schemas, with
-`argsReqs (schLocs s) (schPerms s) (coordList D) (ansBase I e) tern (arity s) = reqsE I e`
-(`seqOff_eq`); (2) the P3 assembly (`moveAllS qRec qJunk`, `p1r`, skip `E`, `mulS rKL rKk rL`,
-`rSB := 0`, schema loop, `moveAllS qRec qX`, `sortS` with `A = ℓ + 6`, `N = rCnt + rSB`,
-`pJScan`, `sortS` of `qAns` with `A = 4`); (3) list facts for `scanF_eq` on `locRecs ++ reqs`
-(`hG1`: location keys unique, by `coordNum_injective` / `nodup_coordList`; `hG2`: request
-targets in the domain, `Schema.WellFormed`), lengths `ℓ + 6`, sortedness of the final answers
-by `seq` (distinct sequence numbers) and their P4-order description.
+**P3 program side done (branch proofs/compiler-p3b).** `PReqLoopList` (`argsReqs_eq_reqsE`
+via `seqOff_eq`, `reqsUpTo_succ/_all`, `length_reqsUpTo`, sizes `dom_mul_le`, `ansBase_mul_le`,
+`length_reqs_mul_le` (`|reqs| (ℓ+1) ≤ 3H`), `length_locRecs_mul_le` (`|locRecs| (ℓ+1) ≤ H`),
+`schD_vals_le`); `PReqLoop` (**`p3Loop_good`** = `.loop (rJ < rE) p3Sch`: from `schPos I` with
+`rJ = rSB = 0`, `GenEmpty`, pushes `(reqs I).flatten.reverse` on `qRec`, `rSB = |reqs I|`,
+`pos = H`, cost `30000 (H+1) N`); `P3Aux` (`p3Union = (union I).mergeSort rle`, `p3Scan`,
+`p3Ans_eq` from `p3_answers`, `union_mul_le` (`|union| (ℓ+1) ≤ 4H`)); `P3Gen` (**`p3Gen_good`**:
+`moveAllS qRec qJunk; p1r; rdNumS rE; mulS rKL; rSB, rJ := 0; p3Loop; moveAllS qRec qX`, ends
+with `qX = (union I).flatten`, cost `32000 (H+1) N`); `P3Join` (sort registers `rsA = 38`,
+`rsDone = 39`, others 20–33 (except 28 = `rN`); **`p3Join_good`**: `rN := rCnt + rSB`,
+`rsA := ℓ+6`, `sortS qX`, scan data `:= 0`, `pJScan`, `rN := rSB`, `rsA := 4`, `sortS qAns`;
+cost `150000 (H+1)(log₂(H+1)+1) N`); `P3` (**`p3_good`**, `p3 = p3Gen; p3Join`): under
+`1 ≤ k`, `I.schemas ≠ []`, `16 (H+1) ≤ 2^w`, from a `Bdd` state with `pos ≤ H`, `rW = W`,
+`rL = ℓ`, `rL1 = ℓ+1`, `GenEmpty`, `qAns = []`, `|qRec| ≤ 6 (H+1)`: `qAns = (ansAll I).flatten`,
+`qX = qRec = []`, generation stacks empty, other stacks except `qJunk` kept, `rW, rL, rL1,
+rKk = k, rE = E, rKL = kℓ, rCnt = |locRecs I|, rSB = |reqs I|`, `pos = H`, output kept, frame
+`wReg r p3 = false`; cost `200000 (H+1)(log₂(H+1)+1) · nodeCost w` (no open hypotheses).
+With `nodeCost_le_sq` (`(L+1)²`) this is `O((H+1)(L+1)³)`, fitting `machine_of_program` with
+`e = 3`. Next: `P4` (emission), which reads `qAns` (first answer on top) and must run `p3`
+after `p2` (state then: `pos = H`, `qRec = (locRecs I).flatten.reverse` of length
+`|locRecs| (ℓ+6) ≤ 6H`, `rL = ℓ`, `rL1 = ℓ+1`, `rW = W`).
 Pitfall: `timeout` is not installed on macOS, `timeout … lake env lean` prints nothing — use
 `lake build <module>` to confirm.
 
