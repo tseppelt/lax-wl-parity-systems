@@ -520,9 +520,40 @@ section 1), `P4SchGlue` (**`codesC_eq`**, `dist1_eq`, `slot_ans`, `memU/V/End`,
 `L1Inv`, `aOff_le`, `ansRec_ok`, `sec_bounds`).
 **WIP (removed from the tree; recover with `git show e240b8a:proofs/Lax119563Proofs/Compiler/<file>.lean`):** `P4SchL1c` (`p4S1_step`: remaining
 errors are `set cs/c` vs `coordList (dom I e)` mismatches — drop the `set`s), `P4SchL1d`
-(`p4S1_good` via `Good.loop_var`, potential = remaining input + remaining track positions),
-`P4SchL2` (invariant `L2Inv` of the section-2 loop; step via `p4C2_good` + `col2_eq`).
-**Remaining:** finish `P4SchL1c/d`; the section-2 loop (`L2Inv` step and loop); the schema
+(`p4S1_good` via `Good.loop_var`, potential = remaining input + remaining track positions).
+**Section 2 loop (done, no sorry):** `P4SchL2` (`p4S2 = loop (r4K < r4D) p4C2`, `updBase =
+schBase + |cL|·colW`, `colE2`, `L2Fix`, `L2Bnd`, `L2Inv`, `coef_bound`, `codesL_lt`,
+`ans2_hyp`), `P4SchL2b` (`p4S2_step`), `P4SchL2c` (`schE_eq2`: `schE e = flatMap colE1 ++
+(cL e).flatMap colE2`, and **`p4S2_good`**, via `Good.loop_var` with potential
+`coefBase - r4TP`). Exact statement:
+```
+theorem p4S2_good (hw : 2 ≤ w) (hk : 2 ≤ k) (ε : ZMod 2) (e : Fin I.schemas.length)
+    (R Q : List ℕ) (s0 : NSt CR CQ) (hF : L2Fix I x ε e s0) (hB : L2Bnd I w ε e s0)
+    (h0R : s0.stk qRkF = (cL I e).flatMap (fun c => codesL I e c ++ [0]) ++ Q)
+    (h0B : s0.stk qOrsB = [])
+    (h0A : s0.stk qAns = (cL I e).zipIdx.flatMap (a2C I e) ++ R)
+    (e0K : s0.env r4K = 0) (e0H : s0.env r4H = updBase I e)
+    (e0TP : s0.env r4TP = trackBase I e) (e0SP : s0.env r4SP = sumBase I e) (hbd : s0.Bdd w) :
+    ∃ s', Good x w p4S2 s0 s' (3200 * Ex.nodeCost w * nEnt I e +
+        (cL I e).length * condCost w (.lt (rv r4K) (rv r4D)) +
+        condCost w (.lt (rv r4K) (rv r4D))) ∧
+      EE s0 s' ((cL I e).flatMap (colE2 I ε e)) ∧
+      s'.stk qRkF = Q ∧ s'.stk qOrsB = [] ∧ s'.stk qAns = R ∧
+      s'.stk qA2 = ((cL I e).zipIdx.flatMap (a2C I e)).reverse ++ s0.stk qA2 ∧
+      (∀ q, q ≠ q4E → q ≠ qRkF → q ≠ qOrsB → q ≠ qAns → q ≠ qA2 → s'.stk q = s0.stk q) ∧
+      s'.env r4K = (cL I e).length ∧ s'.env r4H = updBase I e + 4 * nEnt I e ∧
+      s'.env r4TP = coefBase I e ∧ s'.env r4SP = sumBase I e + 2 * (cL I e).length ∧
+      s'.Bdd w ∧ ∀ reg, reg ∉ c2W → s'.env reg = s0.env reg
+```
+where `L2Fix I x ε e s0`: `rKk = k`, `r4Tn = tnN (isTern (sch I e))`, `rLB = locBase`,
+`r4Eps = ε.val`, `r4D = |cL|`, `r4R2 = 2 |rowsR I e|`, `r4Prev = coefBase`, `pos ≤ |x|`;
+`L2Bnd I w ε e s0`: `16 (H + |ordL| + 1) ≤ 2^w`, `k(ℓ+1) ≤ H`, `|cL| ≤ H`,
+`ansBase e + 3|cL| ≤ 3H`, `r4M + |(cL).flatMap colE2| + 12 nEnt + 12 < 2^w` (same first four
+as `L1Bnd`). `qRkF` holds the codes forward as `moveAllS qRk qRkF` leaves them (section 1
+pushes `(flatMap (codesL ++ [0])).reverse` on `qRk`); `qAns` starts with the section-2 answers
+`(cL).zipIdx.flatMap a2C` (`ansE_flatten`); `EE` keeps `pos` and `out`.
+`c2W = [rc1..rc8, r4TP, r4H, r4F, r4V, r4M, r4Dist, r4SP, r4K]`.
+**Remaining:** finish `P4SchL1c/d`; the schema
 body (read arity → `r4Tn`, skip locations, read `|D|` → `r4D`; record transfer `qS2 → qSch`
 with `orsL` forward on `qOrsF` (via `qOrsB`), `r4R2 = 2|rowsR| = 2(blkRows + Σ ors)`,
 `r4BR = blkRows`, `nEnt`, `|coef|`; bases `r4H = schBase`, `r4SP = sumBase`, `r4TP =
