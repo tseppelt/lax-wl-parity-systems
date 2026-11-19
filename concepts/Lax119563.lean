@@ -6,6 +6,7 @@ import Lax119563.DeterministicTime
 import Lax119563.GameCharacterization
 import Lax119563.HomomorphismCharacterization
 import Lax119563.ImplicitParitySystems
+import Lax119563.ImplicitSystemEncodings
 import Lax119563.IterationNumber
 import Lax119563.MatrixCompiler
 import Lax119563.ParitySystems

@@ -1,23 +1,23 @@
-import Lax119563Proofs.Reduction.CostEdgePass
 import Lax119563Proofs.Reduction.CostWF
+import Lax119563Proofs.Reduction.CostPassBase
 import Lax119563Proofs.Reduction.CostGlob
 
 /-!
 # The prelude: computing the globals
 
-`prelude M s C₀ g` pushes the 18 globals `globs M x s ℓ H` (for `ℓ = timeWidth C₀ |x|`,
+`prelude M s C₀ g` pushes the 14 globals `globs M x s ℓ H` (for `ℓ = timeWidth C₀ |x|`,
 `H = timeHorizon s C₀ |x|`) and runs `g` on them (**`out_prelude`**, for `s ≥ 2`):
 `|x|` (`len`), `log₂ |x|` (`log`), `ℓ`, `H`, `R`, `N = 16 R^5` by expressions, the command
 count `r` and the schema count `Ec` by counting runs of the command enumerator, the codes of
 `query` (`2`) and `accept` (`0`), the number `E` of schemas by a counting run of the schema
-enumerator, `NS, W, E·NS, famCount, nOut, det` by expressions and `2^ℓ` as
+enumerator, `W, det` by expressions and `2^ℓ` as
 `min (2^ℓ) (2^(C₀+4) (|x| + 1))` (so that it is of class `P 1 0`).
 -/
 
 namespace Lax119563Proofs.Reduction
 
 open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime Xp
-open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs Lax119563Proofs.Matrix
+open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 
 namespace Gn
 
@@ -36,11 +36,7 @@ def prelude (M : Machine) (s C₀ : ℕ) (g : Gn) : Gn :=
   bind (const 2) <|
   bind (const 0) <|
   count (schEnum M s 11 gH gR gN gr gp0 gEc (emit (const 0))) <|
-  bind (mulC (s + 2) (add (const s) (var 2))) <|
   bind (add (add (var 5) (mulC 8 (var 6))) (const 4)) <|
-  bind (mul (var 10) (var 11)) <|
-  bind (add (add (mulC 3 (var 13)) (mulC 3 (var 10))) (var 12)) <|
-  bind (mulC 4 (shl (mulC (s + 1) (var 14)) (var 2))) <|
   bind (add (add (var 5) (mulC 8 (var 6))) (const 3)) <|
   bind (minR (pow2 (var 2)) (mulC (2 ^ (C₀ + 4)) (add (var 0) (const 1)))) g
 
@@ -126,7 +122,7 @@ theorem out_prelude {C₀ : ℕ} (hs : 2 ≤ s) (g : Gn) :
   set ℓ := timeWidth C₀ x.length with hℓ
   set H := timeHorizon s C₀ x.length with hH
   set G := globs M x s ℓ H with hG
-  have hGl : G.length = 18 := length_globs
+  have hGl : G.length = 14 := length_globs
   have eG : ∀ i, G.getD i 0 = (globs M x s ℓ H).getD i 0 := fun _ => rfl
   -- levels 0, 1
   have h1 : (Gn.prelude M s C₀ g).out x [] = (Gn.prelude M s C₀ g).out x (G.take 0) := rfl
@@ -212,41 +208,21 @@ theorem out_prelude {C₀ : ℕ} (hs : 2 ≤ s) (g : Gn) :
     rw [hG]
     simp only [globs, List.getD_cons_succ, List.getD_cons_zero]
     exact (congrArg List.length (Iv_schemas (M := M) (x := x) (s := s) (ℓ := ℓ) (H := H))).symm)]
-  -- level 11: NS
+  -- level 11: W
   rw [out_bind_step (by omega) (by
-    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 2 < 11 by omega)]
-    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, numSteps]
-    rw [Nat.add_sub_cancel])]
-  -- level 12: W
+    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 5 < 11 by omega),
+      getD_take_lt (show 6 < 11 by omega)]
+    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero]
+    rw [Iv_numLocations]; ring)]
+  -- level 12: det
   rw [out_bind_step (by omega) (by
     simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 5 < 12 by omega),
       getD_take_lt (show 6 < 12 by omega)]
-    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero]
-    rw [Iv_numLocations]; ring)]
-  -- level 13: E·NS
-  rw [out_bind_step (by omega) (by
-    simp only [eval_mul, eval_var, getD_take_lt (show 10 < 13 by omega),
-      getD_take_lt (show 11 < 13 by omega)]
     simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero])]
-  -- level 14: famCount
-  rw [out_bind_step (by omega) (by
-    simp only [eval_add, eval_var, eval_mulC, getD_take_lt (show 13 < 14 by omega),
-      getD_take_lt (show 10 < 14 by omega), getD_take_lt (show 12 < 14 by omega)]
-    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, famCount])]
-  -- level 15: nOut
-  rw [out_bind_step (by omega) (by
-    simp only [eval_shl, eval_var, eval_mulC, getD_take_lt (show 14 < 15 by omega),
-      getD_take_lt (show 2 < 15 by omega)]
-    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero, nOut]; ring)]
-  -- level 16: det
-  rw [out_bind_step (by omega) (by
-    simp only [eval_add, eval_var, eval_const, eval_mulC, getD_take_lt (show 5 < 16 by omega),
-      getD_take_lt (show 6 < 16 by omega)]
-    simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero])]
-  -- level 17: 2^ℓ
+  -- level 13: 2^ℓ
   rw [out_bind_step (by omega) (by
     simp only [eval_minR, eval_pow2, eval_add, eval_var, eval_const, eval_mulC,
-      getD_take_lt (show 2 < 17 by omega), getD_take_lt (show 0 < 17 by omega)]
+      getD_take_lt (show 2 < 13 by omega), getD_take_lt (show 0 < 13 by omega)]
     simp only [hG, globs, List.getD_cons_succ, List.getD_cons_zero]
     exact min_eq_left (two_pow_timeWidth_le C₀ x.length))]
   rw [List.take_of_length_le (by omega)]
@@ -303,19 +279,10 @@ theorem Gn.hasCost_prelude (M : Machine) (s C₀ : ℕ) {D : ℕ} (hD : 12 ≤ D
       by show _ < List.length _; decide⟩ ⟨hasTy_var' rfl, by show _ < List.length _; decide⟩
     (hasCost_emit (hasTy_const 0) : HasCost _ (emit (const 0)) 0 0)
   refine hasCost_count (hc10.mono (by omega) (by omega)) (hc10.len.le (show Ty.Le (P 0 (0 + 12 + 1)) (P 0 20) from ⟨le_rfl, by norm_num⟩)) ?_
-  -- NS, W, E·NS, famCount, nOut, det, 2^ℓ
-  refine hasCost_bind (τ := P 0 1) ?_ ?_
-  · exact hasTy_mulC (hasTy_add (lin _) (hasTy_var' rfl)) _
+  -- W, det, 2^ℓ
   refine hasCost_bind (τ := P 0 20) ?_ ?_
   · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl (by norm_num)) _))
       ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
-  refine hasCost_bind (τ := P 0 21) ?_ ?_
-  · exact hasTy_mul (e := 0) (d := 20) (d' := 1) (L rfl le_rfl) (hasTy_var' rfl) (hasTy_var' rfl)
-  refine hasCost_bind (τ := P 0 21) ?_ ?_
-  · exact hasTy_add (hasTy_add (hasTy_mulC (L rfl le_rfl) _) (hasTy_mulC (L rfl (by norm_num)) _))
-      (L rfl (by norm_num))
-  refine hasCost_bind (τ := .big) ?_ ?_
-  · exact hasTy_mulCBig (hasTy_shl (hasTy_mulCBig (hasTy_var' rfl) _) (hasTy_var' rfl)) _
   refine hasCost_bind (τ := P 0 7) ?_ ?_
   · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl le_rfl) _))
       ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
@@ -335,7 +302,6 @@ theorem Gn.wfx_prelude (M : Machine) (s C₀ : ℕ) {g : Gn} (hg : WFX g) :
   refine cl_wfx.count (cl_wfx.cmdEnum _ _ _ _ _ trivial) ?_
   refine cl_wfx.count (cl_wfx.cmdEnum _ _ _ _ _ (cl_wfx.ite _ (cl_wfx.emitN 9) (cl_wfx.emitN 4))) ?_
   refine cl_wfx.bind _ (cl_wfx.bind _ (cl_wfx.count (cl_wfx.schEnum _ _ _ _ _ _ _ _ _ trivial) ?_))
-  exact cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <|
-    cl_wfx.bind _ <| cl_wfx.bind _ hg
+  exact cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ hg
 
 end Lax119563Proofs.Reduction

@@ -1,14 +1,19 @@
 import Lax119563Proofs.Matrix.Edges
+import Lax119563Proofs.Compiler.Prog
+import Lax119563Proofs.Compiler.P4SchSpec2
 
 /-!
 # The matrix compiler
 
-The explicit pair `matrixGraph I 0, matrixGraph I 1` satisfies all claims of the matrix
-compiler; the concept statement follows.
+The explicit pair `matrixGraph I 0, matrixGraph I 1` satisfies the combinatorial claims of the
+matrix compiler (`matrixGraph_spec`); the concept statement, including the construction time,
+follows from the compiler program `prog p4Sch` (`Compiler/Prog`, `Compiler/P4SchSpec2`).
 -/
 
-open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs
-open Lax119563.PebbleGame
+open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler
+open Lax119563.ColoredGraphs Lax119563.PebbleGame Lax119563.DeterministicTime
+open Lax119563.BinaryEncodings
+open Lax489179.TuringMachine (Machine Deterministic)
 
 namespace Lax119563Proofs.Matrix
 
@@ -34,29 +39,34 @@ theorem matrixGraph_spec {k ℓ : ℕ} (hk : 3 ≤ k) (I : ImplicitParitySystem 
 ---
 conclusion: Lax119563.MatrixCompiler.matrix_compiler
 ---
-The explicit graphs `matrixGraph I 0` and `matrixGraph I 1` (vertices listed by
-`vertexList I`, colors the position of the first vertex of a class) witness the matrix
-compiler with the absolute constant `32` and `Cₖ = 2k + (4k + 1)(k + 1) + 8k`. Spoiler follows
-a derivation of the conflict backwards through the strips with row sweeps (`spoilerWins`);
-Duplicator maintains seed descriptions with coefficient bits repaired in an untouched
-repetition (`duplicatorSurvives`); the size bound counts the vertex list and the edge bound
-uses that every edge contains a hub of degree at most three.
+The construction is the pair of explicit graphs `matrixGraph I 0`, `matrixGraph I 1` (vertices
+listed by `vertexList I`, colors the position of the first vertex of a class): Spoiler follows a
+derivation of the conflict backwards through the strips with row sweeps, Duplicator maintains
+seed descriptions with coefficient bits repaired in an untouched repetition, the size bound
+counts the vertex list and the edge bound uses that every edge contains a hub of degree at most
+three (`matrixGraph_spec`). The construction time is witnessed by the counter-machine program
+`prog p4Sch` (`Compiler/Prog`): the passes `P0`–`P3` compute the location and schema data
+and the answers of the join, `P4` emits both graph descriptions, its schema edge part
+`p4Sch` meeting the interface `SchSpec` with linear cost (`p4Sch_spec`); the program is
+compiled to a Turing machine running in time `O((H + S) log³ (H + S + 2))`.
 -/
-theorem matrix_compiler : ∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, ∀ ℓ : ℕ, 1 ≤ ℓ →
-    ∀ I : ImplicitParitySystem k ℓ, ∃ G₀ G₁ : ColoredGraph,
-      (∀ τ : ℕ, I.conflictRound = τ →
-        SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) G₀ G₁) ∧
-      (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound → DuplicatorSurvives (k + 1) r G₀ G₁) ∧
-      G₀.n + G₁.n ≤ C * sizeParameter I ∧
-      G₀.numEdges + G₁.numEdges ≤ 3 * (G₀.n + G₁.n) := by
-  refine ⟨32, fun k hk => ⟨2 * k + stepConst k, fun ℓ _ I => ?_⟩⟩
-  obtain ⟨h1, h2, h3, h4, h5⟩ := matrixGraph_spec hk I
-  refine ⟨matrixGraph I 0, matrixGraph I 1, h1, h2, ?_, ?_⟩
-  · show nV I + nV I ≤ 32 * sizeParameter I
-    omega
-  · have := h5 0
-    have := h5 1
-    show _ ≤ 3 * (nV I + nV I)
-    omega
+theorem matrix_compiler :
+    ∃ compile : ∀ {k ℓ : ℕ}, ImplicitParitySystem k ℓ → ColoredGraph × ColoredGraph,
+      (∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, ∀ ℓ : ℕ, 1 ≤ ℓ →
+        ∀ I : ImplicitParitySystem k ℓ,
+          (∀ τ : ℕ, I.conflictRound = τ →
+            SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
+          (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
+            DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
+          (compile I).1.n + (compile I).2.n ≤ C * sizeParameter I ∧
+          (compile I).1.numEdges + (compile I).2.numEdges ≤
+            3 * ((compile I).1.n + (compile I).2.n)) ∧
+      (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
+        ∀ I : ImplicitParitySystem k ℓ,
+          ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
+            (C * (bitLength I + sizeParameter I) *
+              Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c)) :=
+  Lax119563Proofs.Compiler.matrix_compiler_of_schSpec (SCH := Lax119563Proofs.Compiler.p4Sch)
+    (K := 400000) (fun _ hk _ hℓ I => Lax119563Proofs.Compiler.p4Sch_spec I hk hℓ)
 
 end Lax119563Proofs.Matrix

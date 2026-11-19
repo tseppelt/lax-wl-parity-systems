@@ -1,4 +1,4 @@
-import Lax119563Proofs.Reduction.Assembly
+import Lax119563Proofs.Circuits.TimeSimulation
 
 /-!
 # The time program with commands in code order
@@ -8,14 +8,12 @@ enumerates the locations in the order of their numbers (`Loc.code`):
 `progCmds ℓ (locsByCode M H) moves` with `locsByCode = (range numLoc).filterMap decodeLoc`.
 Then the index of a command is a count of the commands at smaller location numbers, which
 a generator can compute. Acceptance (`timeProgram'_accepts_iff`) and the size bounds carry
-over, and so does the assembly (`timeProgram'_graphs`).
+over.
 -/
 
 namespace Lax119563Proofs.Reduction
 
 open Circuits Lax489179.TuringMachine Lax119563.DeterministicTime Programs
-open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.MatrixCompiler
-open Lax119563Proofs.Matrix
 
 variable {M : Machine} {H : ℕ}
 
@@ -116,27 +114,6 @@ theorem time_simulation' (M : Machine) (s : ℕ) (hs : 2 ≤ s) (C₀ : ℕ)
       _ ≤ (C + K * (movBound M s + 1)) * Nat.log 2 x.length ^ 5 :=
         Nat.mul_le_mul_right _ (le_trans (Nat.mul_le_mul_left K (Nat.le_succ _))
           (Nat.le_add_left _ _))
-
-open Lax119563.ImplicitParitySystems in
-/-- **Assembly for the code-ordered time program.** -/
-theorem timeProgram'_graphs {s : ℕ} (hs : 2 ≤ s) (C₀ : ℕ)
-    (hC₀ : ∀ x : List Bool, (runOn M x (C₀ * x.length ^ s + C₀)).answer.isSome) :
-    ∃ C : ℕ, ∀ x : List Bool, 2 ≤ x.length →
-      let I := (timeProgram' M s C₀ x).compile (timeQuery' M s C₀ x) (fun _ _ => 0)
-      (Accepts M x ↔ Distinguishes (s + 1) (matrixGraph I 0) (matrixGraph I 1)) ∧
-      (matrixGraph I 0).n + (matrixGraph I 1).n ≤ C * x.length * Nat.log 2 x.length ^ 6 := by
-  obtain ⟨C, hC⟩ := time_simulation' M s hs C₀ hC₀
-  refine ⟨12800 * (s + 1) ^ 2 * (C + C₀ + 5 + 1) ^ 3, fun x hx => ?_⟩
-  obtain ⟨hℓ, hacc, -, h2, hw, hr⟩ := hC x hx
-  have hL : 1 ≤ Nat.log 2 x.length := (Circuits.log_facts hx).1
-  refine ⟨(hacc.symm.trans (distinguishes_matrixGraph_iff hs _ _ _).symm), ?_⟩
-  refine (matrixGraph_n_le (by omega) hℓ _ _ _).trans ?_
-  have hℓ' : Circuits.timeWidth C₀ x.length ≤ (C + C₀ + 5) * Nat.log 2 x.length := by
-    unfold Circuits.timeWidth; nlinarith
-  exact size_poly (s := s) (A := C + C₀ + 5) hL
-    (hw.trans (Nat.mul_le_mul_right _ (by omega)))
-    (hr.trans (Nat.mul_le_mul_right _ (by omega)))
-    (h2.trans (Nat.mul_le_mul_right _ (by omega))) hℓ'
 
 /-- The commands in code order: for each number `c`, the moves of the decoded location. -/
 lemma verifierCmds'_eq (x : List Bool) (s ℓ : ℕ) :
