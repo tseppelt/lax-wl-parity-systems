@@ -329,3 +329,8 @@ import Lax119563Proofs.Stabilization.TwoDim
 import Lax119563Proofs.Stabilization.Colorings
 import Lax119563Proofs.Stabilization.HigherDim
 import Lax119563Proofs.Stabilization.Main
+import Lax119563Proofs.Hardness.SuffixMachine
+import Lax119563Proofs.Hardness.PrefixProgram
+import Lax119563Proofs.Hardness.ParMachine
+import Lax119563Proofs.Hardness.ExpAsymptotics
+import Lax119563Proofs.Hardness.ExpLower
