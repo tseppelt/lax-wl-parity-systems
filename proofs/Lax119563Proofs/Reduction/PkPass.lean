@@ -40,6 +40,7 @@ abbrev qP : Xp := var 18
 /-- The globals read by the body of the packed generator. -/
 structure GlobP (M : Machine) (x : List Bool) (s ℓ H : ℕ) (ρ : List ℕ) : Prop where
   len : 19 ≤ ρ.length
+  en : ρ.getD 1 0 = x.length
   eS : ρ.getD 3 0 = s
   eΛ : (s + 1) * ℓ ≤ ρ.getD 4 0
   eℓ : ρ.getD 7 0 = ℓ
@@ -61,8 +62,8 @@ namespace GlobP
 
 lemma of_prefix {ρ ρ' : List ℕ} (h : GlobP M x s ℓ H ρ) (hl : ρ.length ≤ ρ'.length)
     (hg : ∀ i < 19, ρ'.getD i 0 = ρ.getD i 0) : GlobP M x s ℓ H ρ' := by
-  obtain ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14⟩ := h
-  exact ⟨by omega, by rw [hg 3 (by omega)]; exact h1, by rw [hg 4 (by omega)]; exact h2,
+  obtain ⟨h0, hn, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14⟩ := h
+  exact ⟨by omega, by rw [hg 1 (by omega)]; exact hn, by rw [hg 3 (by omega)]; exact h1, by rw [hg 4 (by omega)]; exact h2,
     by rw [hg 7 (by omega)]; exact h3, by rw [hg 8 (by omega)]; exact h4,
     by rw [hg 9 (by omega)]; exact h5, by rw [hg 10 (by omega)]; exact h6,
     by rw [hg 11 (by omega)]; exact h7, by rw [hg 12 (by omega)]; exact h8,

@@ -71,8 +71,8 @@ def domBodyP' (D : ℕ) : Gn :=
 /-- The domain violations of the schema of a schema stack (record at `b + 28 …`) at the
 coordinate of the domain loops entered at depth `D`. -/
 def violAtP (b D : ℕ) : Gn :=
-  violGenP (D + 7) qS (var (D + 1)) (posX (var (D + 1))) (var (D + 5)) (var (D + 4))
-    (var (b + 33)) (var (b + 34)) (var (b + 35)) (var (b + 36)) qℓ qH
+  violGenP (D + 7) qS (var (D + 1)) (posX (var (D + 1))) (var (D + 5))
+    (mul (var (D + 4)) (lt (var (D + 5)) (var 1))) (var (b + 33)) (var (b + 34)) (var (b + 35)) (var (b + 36)) qℓ qH
 
 /-- The description of the domain of the schema of a schema stack, run at depth `D`. -/
 def domGenP (b D : ℕ) : Gn :=
@@ -239,7 +239,7 @@ lemma violAtP_nil_iff {ρ τ τ' : List ℕ} {b D e : ℕ}
     {sc : Schema (s + 1) ℓ (Iv M x s ℓ H).numLocations}
     (hG : GlobP M x s ℓ H ρ) (hρ : ρ.length = b) (hctx : SchCtx M x s ℓ H b ρ τ e sc)
     (hτ' : τ'.take (b + 37) = τ) (hD : τ'.length = D) (hbD : b + 37 ≤ D) (hℓ : 0 < ℓ)
-    (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v)
+    (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v)
     {i v : ℕ} (hi : i < s + 1) (hv : v < 2 ^ ℓ) :
     (Gn.violAtP b D).out y (dstk τ' s ℓ i v y 0) = [] ↔
       ((⟨i, hi⟩, toBlk ℓ v) : Coord (s + 1) ℓ) ∈ sc.domain := by
@@ -251,19 +251,29 @@ lemma violAtP_nil_iff {ρ τ τ' : List ℕ} {b D e : ℕ}
   have hl : (dstk τ' s ℓ i v y 0).length = D + 7 := by simp [hD]
   refine violGenP_nil_iff_mem (τ := τ) hctx.1 hctx.2.2.2 hl ?_ (by omega) ?_ _ hGσ.vS
     (by rw [eval_var, e1]) ?_ (by rw [eval_var, e5]; simp [regVal_toBlk hv])
-    (by rw [eval_var, e4, hy v hv]; simp [regVal_toBlk hv]) hGσ.vℓ hGσ.vH hℓ
+    ?_ hGσ.vℓ hGσ.vH hℓ
   · rw [dstk, List.take_append_of_le_length (by omega), hτ']
   · simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
     refine ⟨show _ < _ by omega, bnd_minQ ⟨show 7 < D + 7 by omega, show D + 1 < D + 7 by omega,
       show D + 1 < D + 7 by omega⟩ (show 4 < D + 7 by omega), show _ < _ by omega,
-      show _ < _ by omega, show 7 < D + 7 by omega, show 8 < D + 7 by omega⟩
+      ⟨show D + 4 < D + 7 by omega, ⟨show D + 5 < D + 7 by omega, show 1 < D + 7 by omega⟩,
+        ⟨show D + 5 < D + 7 by omega, show 1 < D + 7 by omega⟩⟩,
+      show 7 < D + 7 by omega, show 8 < D + 7 by omega⟩
   · rw [eval_posX hGσ (by rw [eval_var, e1]; omega), eval_var, e1]
+  · rw [regVal_toBlk hv, eval_mul, eval_lt_eq, eval_var, eval_var, eval_var, e4, e5,
+      show (dstk τ' s ℓ i v y 0).getD 1 0 = x.length from hGσ.en]
+    by_cases hvx : v < x.length
+    · rw [if_pos hvx, Nat.mul_one, hy v hvx]
+    · rw [if_neg hvx, Nat.mul_zero]
+      unfold inBit
+      rw [List.drop_eq_nil_of_le (by omega)]
+      rfl
 
 lemma out_domPassP {ρ τ τ' : List ℕ} {b D e : ℕ}
     {sc : Schema (s + 1) ℓ (Iv M x s ℓ H).numLocations}
     (hG : GlobP M x s ℓ H ρ) (hρ : ρ.length = b) (hctx : SchCtx M x s ℓ H b ρ τ e sc)
     (hτ' : τ'.take (b + 37) = τ) (hD : τ'.length = D) (hbD : b + 37 ≤ D) (hℓ : 0 < ℓ)
-    (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v) :
+    (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v) :
     (Gn.domLoopsP D (Gn.violAtP b D) (Gn.domBodyP D)).out y τ' = domL (s + 1) ℓ (memBP sc) := by
   have hGτ : GlobP M x s ℓ H τ := hG.of_take hρ hctx.2.1
   have hGτ' : GlobP M x s ℓ H τ' := hGτ.of_take hctx.1 hτ'
@@ -285,7 +295,7 @@ lemma out_domPassP' {ρ τ τ' : List ℕ} {b D e : ℕ}
     {sc : Schema (s + 1) ℓ (Iv M x s ℓ H).numLocations}
     (hG : GlobP M x s ℓ H ρ) (hρ : ρ.length = b) (hctx : SchCtx M x s ℓ H b ρ τ e sc)
     (hτ' : τ'.take (b + 37) = τ) (hD : τ'.length = D) (hbD : b + 37 ≤ D) (hℓ : 0 < ℓ)
-    (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v) :
+    (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v) :
     (Gn.domLoopsP D (Gn.violAtP b D) (Gn.domBodyP' D)).out y τ' = cdL (s + 1) ℓ (memBP sc) := by
   have hGτ : GlobP M x s ℓ H τ := hG.of_take hρ hctx.2.1
   have hGτ' : GlobP M x s ℓ H τ' := hGτ.of_take hctx.1 hτ'
@@ -307,7 +317,7 @@ lemma out_domGenP {ρ τ τ' : List ℕ} {b D e : ℕ}
     {sc : Schema (s + 1) ℓ (Iv M x s ℓ H).numLocations}
     (hG : GlobP M x s ℓ H ρ) (hρ : ρ.length = b) (hctx : SchCtx M x s ℓ H b ρ τ e sc)
     (hτ' : τ'.take (b + 37) = τ) (hD : τ'.length = D) (hbD : b + 37 ≤ D) (hℓ : 0 < ℓ)
-    (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v) :
+    (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v) :
     (Gn.domGenP b D).out y τ' =
       (domL (s + 1) ℓ (memBP sc)).length :: cdL (s + 1) ℓ (memBP sc) := by
   have ht : ∀ c, (τ' ++ [c]).take (b + 37) = τ := fun c => by
@@ -399,7 +409,7 @@ lemma out_permGenP {σ : List ℕ} {D : ℕ} (hσ : σ.length = D) (hG : GlobP M
 theorem out_schBodyP {ρ τ : List ℕ} {b e : ℕ}
     {sc : Schema (s + 1) ℓ (Iv M x s ℓ H).numLocations}
     (hG : GlobP M x s ℓ H ρ) (hρ : ρ.length = b) (hctx : SchCtx M x s ℓ H b ρ τ e sc)
-    (hℓ : 0 < ℓ) (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v) :
+    (hℓ : 0 < ℓ) (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v) :
     (Gn.schBodyP b).out y τ = schemaDescription sc := by
   have hb := hρ ▸ hG.len
   have hGτ : GlobP M x s ℓ H τ := hG.of_take hρ hctx.2.1
@@ -493,7 +503,7 @@ lemma flatMap_eq_range_getP {α β : Type} (l : List α) (f : α → List β) :
 
 /-- **The packed generator emits the description of the system.** -/
 theorem out_sysGenP {ρ : List ℕ} (hρ : ρ.length = 19) (hG : GlobP M x s ℓ H ρ) (hs : 1 ≤ s)
-    (hℓ : 0 < ℓ) (hy : ∀ v < 2 ^ ℓ, inBit y (1 + 16 * v) = inBit x v) :
+    (hℓ : 0 < ℓ) (hy : ∀ v < x.length, inBit y (1 + 16 * v) = inBit x v) :
     (Gn.sysGenP M).out y ρ = systemDescription (Iv M x s ℓ H) := by
   obtain ⟨T, hT, hctx⟩ := schEnum_ctxP hρ hG hs
   have hS : (Iv M x s ℓ H).schemas.flatMap schemaDescription =
