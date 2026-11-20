@@ -208,8 +208,8 @@ variable (R) in
 /-- The symbol at position `i` of the layout of `y` as an input. -/
 def cellSym (y : List Bool) (i : ℕ) : Sym R := ((y[i]?).map (bitSym R)).getD 0
 
-lemma val_one' : ((1 : Sym R) : ℕ) = 1 := Nat.mod_eq_of_lt (by omega)
-lemma val_two' : ((2 : Sym R) : ℕ) = 2 := Nat.mod_eq_of_lt (by omega)
+lemma val_one' : ((1 : Sym R) : ℕ) = 1 := by simp
+lemma val_two' : ((2 : Sym R) : ℕ) = 2 := by simp
 
 lemma bitSym_val (b : Bool) : (bitSym R b).val = if b then 2 else 1 := by
   cases b
@@ -277,12 +277,12 @@ lemma feed_run (y : List Bool) : ∀ (v : Var R A τi τo) (outR : List A) (Ls R
       rw [stepF_some]
       have hc : cellBit v = b := by simp [cellBit, h0]
       simp [prog, TM2.stepAux, h0, hc, hv₁]
-      trace_state
-      sorry
+      cases (τo.δ v.qo b).2 <;> rfl
     have := reaches_succ hs hr
     have e : (τo.run v.qo (b :: y)).reverse ++ outR =
         (τo.run (τo.δ v.qo b).1 y).reverse ++ ((τo.δ v.qo b).2.toList ++ outR) := by
-      cases (τo.δ v.qo b).2 <;> simp [OutTransducer.run]
+      simp only [OutTransducer.run, List.reverse_append, List.append_assoc]
+      cases (τo.δ v.qo b).2 <;> rfl
     rw [e]
     simpa [Nat.add_comm, hv₁, Function.update_idem] using this
 
@@ -307,19 +307,19 @@ lemma outRev_run (l : List A) : ∀ (v : Var R A τi τo) (io : List A) (Ls Rs),
     have := reaches_succ hs hr
     simpa [Nat.add_comm] using this
 
+/-- Whether some tape stack is nonempty. -/
+def anyNe (Ls Rs : Fin (R.tapes + 1) → List (G R)) : Bool :=
+  (List.finRange (R.tapes + 1)).any (fun j => !(Ls j).isEmpty || !(Rs j).isEmpty)
+
 lemma step_clear (v : Var R A τi τo) (io : List A) (Ls Rs) :
     stepF R A τi τo ⟨some .clear, v, mkStk io [] [] Ls Rs⟩ =
-      some ⟨some (if (List.finRange (R.tapes + 1)).any
-          (fun j => !(Ls j).isEmpty || !(Rs j).isEmpty) then .clear else .done),
-        { v with flag := (List.finRange (R.tapes + 1)).any
-          (fun j => !(Ls j).isEmpty || !(Rs j).isEmpty) },
+      some ⟨some (if anyNe Ls Rs then .clear else .done), { v with flag := anyNe Ls Rs },
         mkStk io [] [] (fun i => (Ls i).tail) (fun i => (Rs i).tail)⟩ := by
   rw [stepF_some]
   simp only [prog, TM2.stepAux]
   rw [stepAux_popAll _ (List.nodup_finRange _)]
   simp only [List.mem_finRange, if_true, Bool.false_or]
-  cases h : (List.finRange (R.tapes + 1)).any (fun j => !(Ls j).isEmpty || !(Rs j).isEmpty) <;>
-    simp [TM2.stepAux, h]
+  cases h : anyNe Ls Rs <;> simp only [anyNe] at h <;> simp [TM2.stepAux, h]
 
 lemma clear_run (io : List A) (m : ℕ) : ∀ (v : Var R A τi τo) (Ls Rs),
     (∀ j, (Ls j).length ≤ m ∧ (Rs j).length ≤ m) →
@@ -331,32 +331,31 @@ lemma clear_run (io : List A) (m : ℕ) : ∀ (v : Var R A τi τo) (Ls Rs),
     intro v Ls Rs hm
     have hL : ∀ j, Ls j = [] := fun j => List.eq_nil_of_length_eq_zero (by have := (hm j).1; omega)
     have hR : ∀ j, Rs j = [] := fun j => List.eq_nil_of_length_eq_zero (by have := (hm j).2; omega)
-    refine ⟨1, le_rfl, _, reaches_one ?_⟩
-    rw [step_clear]
+    have ha : anyNe Ls Rs = false := by simp [anyNe, hL, hR]
+    refine ⟨1, le_rfl, { v with flag := false }, reaches_one ?_⟩
+    rw [step_clear, ha]
     simp [hL, hR]
-    rfl
   | succ m ih =>
     intro v Ls Rs hm
-    by_cases hany : (List.finRange (R.tapes + 1)).any
-        (fun j => !(Ls j).isEmpty || !(Rs j).isEmpty) = true
-    · obtain ⟨n, hn, v', hr⟩ := ih { v with flag := true } (fun i => (Ls i).tail)
+    cases hany : anyNe Ls Rs with
+    | true =>
+      obtain ⟨n, hn, v', hr⟩ := ih { v with flag := true } (fun i => (Ls i).tail)
         (fun i => (Rs i).tail) (fun j => by
           simp only [List.length_tail]; have := hm j; omega)
       refine ⟨n + 1, by omega, v', reaches_succ ?_ hr⟩
       rw [step_clear, hany]
       rfl
-    · have hall : ∀ j, Ls j = [] ∧ Rs j = [] := by
+    | false =>
+      have hall : ∀ j, Ls j = [] ∧ Rs j = [] := by
         intro j
-        simp only [List.any_eq_true, List.mem_finRange, true_and, not_exists, Bool.or_eq_true,
+        have := hany
+        simp only [anyNe, List.any_eq_false, List.mem_finRange, true_implies, Bool.or_eq_true,
           Bool.not_eq_eq_eq_not, Bool.not_true, List.isEmpty_eq_false_iff, not_or,
-          ne_eq, not_not] at hany
-        simpa using hany j
-      refine ⟨1, by omega, _, reaches_one ?_⟩
-      rw [step_clear]
-      simp only [Bool.not_eq_true] at hany
-      rw [hany]
-      simp only [hall, List.tail_nil]
-      rfl
+          ne_eq, not_not] at this
+        simpa using this j
+      refine ⟨1, by omega, { v with flag := false }, reaches_one ?_⟩
+      rw [step_clear, hany]
+      simp [hall]
 
 lemma step_done (v : Var R A τi τo) (S : ∀ k, List (Γ' R A k)) :
     stepF R A τi τo ⟨some .done, v, S⟩ = some ⟨none, Var.init R A τi τo, S⟩ := by
