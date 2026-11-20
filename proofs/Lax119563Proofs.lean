@@ -316,3 +316,5 @@ import Lax119563Proofs.Hardness.LeadMachine
 import Lax119563Proofs.Hardness.SizeBound
 import Lax119563Proofs.Hardness.Decoding
 import Lax119563Proofs.Hardness.Pipeline
+import Lax119563Proofs.Hardness.ExpMachine
+import Lax119563Proofs.Hardness.Exptime
