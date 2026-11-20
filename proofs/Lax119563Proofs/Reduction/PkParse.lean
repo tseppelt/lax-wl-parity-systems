@@ -1,4 +1,4 @@
-import Lax119563Proofs.Reduction.PkFmt
+import Lax119563Proofs.Reduction.PkMachine
 import Lax119563Proofs.Compiler.CParse
 import Lax119563Proofs.Compiler.CMachine
 
@@ -384,6 +384,61 @@ theorem pkPre_good {x : List Bool} {h s : ℕ} (hx : 2 ≤ x.length) (hh : 2 ≤
   rw [e1', e2', e3]
   omega
 
+
+lemma length_encodeNat_le (v : ℕ) : (encodeNat v).length ≤ 2 * v + 1 := by
+  rw [CStm.length_encodeNat, Nat.size_eq_bits_len]
+  have : Nat.size v ≤ v := by
+    rcases Nat.eq_zero_or_pos v with h | h
+    · subst h; simp
+    · exact Nat.size_le.mpr Nat.lt_two_pow_self
+  omega
+
+lemma nodeCost_le (h : ℕ) : Ex.nodeCost (h + 6) ≤ 5184 * (h + 1) ^ 2 := by
+  simp only [Ex.nodeCost, unitCost]; nlinarith
+
 end PkParse
+
+open PkParse in
+/-- **The machine of the preprocessor.** -/
+theorem pkPre_computesWithin : ∃ C : ℕ, ∀ (x : List Bool) (h s : ℕ), 2 ≤ x.length → 2 ≤ h →
+    x.length ≤ 2 ^ h → 2 ≤ s → s ≤ h + 2 →
+    ComputesWithin (pkPre.machine pkPre.depth) (encodeNats [h, s] ++ x) (pkInput x h s)
+      (C * (2 ^ pkWidth x.length h s + h + 2) * (h + 1) ^ 2) := by
+  refine ⟨20000 * 5184 + 1000, fun x h s hx hh hxh hs hsh => ?_⟩
+  obtain ⟨hPar, hH⟩ := pk_params hx hh hxh hs
+  have G := pkPre_good hx hh hxh hs hsh
+  have H := CStm.computesWithin (D := pkPre.depth) (x := inp x h s) (w := h + 6) (by omega)
+    le_rfl G.1
+  rw [G.2.1] at H
+  have hout : encodeNats (S2 x h s (pkLen x.length h s)).out = pkInput x h s := rfl
+  rw [hout] at H
+  refine ComputesWithin.mono H ?_
+  have hc := G.2.2
+  have hm := pkLen_le hPar.hx hsh
+  have hlen : (pkInput x h s).length ≤ 16 * (2 ^ pkWidth x.length h s + h + 2) := by
+    rw [length_pkInput]; omega
+  have hinp : (inp x h s).length ≤ 2 * h + 2 * s + 2 + x.length := by
+    have := PkParse.length_encodeNat_le h
+    have := PkParse.length_encodeNat_le s
+    simp [inp, encodeNats]; omega
+  have hn : x.length ≤ 2 ^ pkWidth x.length h s := hPar.hx.le
+  have heh := PkParse.length_encodeNat_le h
+  have hes := PkParse.length_encodeNat_le s
+  have hn1 : n1 h s ≤ h + 1 := by unfold n1; have := q_le (h := h) (by omega) hs; omega
+  have hnc := nodeCost_le h
+  set A := 2 ^ pkWidth x.length h s + h + 2 with hA
+  set B := (h + 1) ^ 2 with hB
+  have hB1 : 1 ≤ B := Nat.one_le_pow _ _ (by omega)
+  have hsum : (encodeNat h).length + (encodeNat s).length + n1 h s + pkLen x.length h s + 10 ≤
+      20 * A := by omega
+  have hcost : 1000 * Ex.nodeCost (h + 6) * ((encodeNat h).length + (encodeNat s).length +
+      n1 h s + pkLen x.length h s + 10) ≤ 20000 * 5184 * A * B := by
+    calc _ ≤ 1000 * (5184 * B) * (20 * A) := Nat.mul_le_mul (Nat.mul_le_mul_left _ hnc) hsum
+      _ = _ := by ring
+  have hrest : 20 * ((inp x h s).length + (pkInput x h s).length) + 10 ≤ 1000 * A * B := by
+    have : 1000 * A ≤ 1000 * A * B := Nat.le_mul_of_pos_right _ (by omega)
+    omega
+  calc _ ≤ 20000 * 5184 * A * B + 1000 * A * B := by omega
+    _ = _ := by ring
 
 end Lax119563Proofs.Reduction
