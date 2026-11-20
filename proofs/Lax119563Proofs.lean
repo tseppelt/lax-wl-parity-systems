@@ -17,7 +17,6 @@ import Lax119563Proofs.Main.ComposeMain
 import Lax119563Proofs.Main.RuntimeLowerBound
 import Lax119563Proofs.Machines.Basic
 import Lax119563Proofs.Machines.Compile
-import Lax119563Proofs.Machines.Plan
 import Lax119563Proofs.Machines.Words
 import Lax119563Proofs.Machines.Routines
 import Lax119563Proofs.Machines.WordRoutines
@@ -25,7 +24,6 @@ import Lax119563Proofs.Machines.Numbers
 import Lax119563Proofs.Machines.Output
 import Lax119563Proofs.Machines.Extras
 import Lax119563Proofs.Machines.ComposeComputes
-import Lax119563Proofs.Hierarchy.Plan
 import Lax119563Proofs.Hierarchy.Run
 import Lax119563Proofs.Hierarchy.Mach
 import Lax119563Proofs.Hierarchy.Lax
@@ -49,7 +47,6 @@ import Lax119563Proofs.Hierarchy.Coarse
 import Lax119563Proofs.Hierarchy.Main
 import Lax119563Proofs.Hierarchy.ExpDiag
 import Lax119563Proofs.Hierarchy.ExpMain
-import Lax119563Proofs.Circuits.Plan
 import Lax119563Proofs.Circuits.Bits
 import Lax119563Proofs.Circuits.AddrProgram
 import Lax119563Proofs.Circuits.MachineRun
@@ -62,7 +59,6 @@ import Lax119563Proofs.Circuits.VerifierSound
 import Lax119563Proofs.Circuits.VerifierComplete
 import Lax119563Proofs.Circuits.LocCode
 import Lax119563Proofs.Circuits.TimeSimulation
-import Lax119563Proofs.Matrix.Plan
 import Lax119563Proofs.Matrix.Codes
 import Lax119563Proofs.Matrix.Seeds
 import Lax119563Proofs.Matrix.ListGraph
@@ -130,7 +126,6 @@ import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.UpperBound.Rounds
 import Lax119563Proofs.UpperBound.WitnessUpperBound
 import Lax119563Proofs.UpperBound.UncoloredWitnessUpperBound
-import Lax119563Proofs.HomTensors.Plan
 import Lax119563Proofs.HomTensors.BagTree
 import Lax119563Proofs.HomTensors.PolyClosure
 import Lax119563Proofs.HomTensors.LGraph
@@ -138,7 +133,6 @@ import Lax119563Proofs.HomTensors.Spaces
 import Lax119563Proofs.HomTensors.Rounds
 import Lax119563Proofs.HomTensors.Unlabel
 import Lax119563Proofs.HomTensors.WitnessFromRounds
-import Lax119563Proofs.Witness.Plan
 import Lax119563Proofs.Witness.Stabilize
 import Lax119563Proofs.Witness.Derivation
 import Lax119563Proofs.Witness.Relay
@@ -148,7 +142,6 @@ import Lax119563Proofs.Witness.RelayTree
 import Lax119563Proofs.Witness.RelayConflict
 import Lax119563Proofs.Witness.RelaySize
 import Lax119563Proofs.Witness.Main
-import Lax119563Proofs.Counter.Plan
 import Lax119563Proofs.Counter.Bits
 import Lax119563Proofs.Counter.System
 import Lax119563Proofs.Counter.Construction
@@ -173,8 +166,6 @@ import Lax119563Proofs.RowSpace.Main
 import Lax119563Proofs.RowSpace.SpoilerBasics
 import Lax119563Proofs.RowSpace.SpoilerStage
 import Lax119563Proofs.RowSpace.SpoilerInfer
-import Lax119563Proofs.RowSpace.Plan
-import Lax119563Proofs.HomChar.Plan
 import Lax119563Proofs.HomChar.Det
 import Lax119563Proofs.HomChar.Forest
 import Lax119563Proofs.HomChar.Tensor
@@ -198,7 +189,6 @@ import Lax119563Proofs.Reduction.PkCostSys
 import Lax119563Proofs.Reduction.PkMachine
 import Lax119563Proofs.Reduction.PkParse
 import Lax119563Proofs.Reduction.PackedMain
-import Lax119563Proofs.Compiler.Plan
 import Lax119563Proofs.Compiler.Transfer
 import Lax119563Proofs.Compiler.Clauses
 import Lax119563Proofs.Compiler.NumStack
