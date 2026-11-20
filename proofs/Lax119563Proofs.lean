@@ -318,3 +318,14 @@ import Lax119563Proofs.Hardness.Decoding
 import Lax119563Proofs.Hardness.Pipeline
 import Lax119563Proofs.Hardness.ExpMachine
 import Lax119563Proofs.Hardness.Exptime
+import Lax119563Proofs.Stabilization.Defs
+import Lax119563Proofs.Stabilization.Structure
+import Lax119563Proofs.Stabilization.Interface
+import Lax119563Proofs.Stabilization.Chains
+import Lax119563Proofs.Stabilization.Products
+import Lax119563Proofs.Stabilization.Corner
+import Lax119563Proofs.Stabilization.Recursion
+import Lax119563Proofs.Stabilization.TwoDim
+import Lax119563Proofs.Stabilization.Colorings
+import Lax119563Proofs.Stabilization.HigherDim
+import Lax119563Proofs.Stabilization.Main

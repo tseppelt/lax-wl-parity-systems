@@ -24,6 +24,9 @@ homomorphism indistinguishability.
 The submission states the main theorems together with the pebble game characterization of
 $k$-WL, the row-space and matrix compilers for implicit parity systems, a quasi-linear reduction from
 deterministic time $O(n^{k-1})$ to $k$-WL Distinguishing, and a bound on the size of
-homomorphism witnesses in terms of the number of rounds. The time hierarchy theorem, the
-homomorphism characterization of $k$-WL due to Dvořák and to Dell, Grohe and Rattan, and the
-stabilization bound of Döring and Neuen are stated as cited results.
+homomorphism witnesses in terms of the number of rounds. The time hierarchy theorem and the
+homomorphism characterization of $k$-WL due to Dvořák and to Dell, Grohe and Rattan are stated
+as cited results. The stabilization bound of Döring and Neuen, by which $k$-WL stabilizes after
+$O_k(n^{k-1})$ rounds on graphs with $n$ vertices, is proved, following their reduction to
+sequences of subspaces of the matrix algebra $\mathbb C^{n \times n}$ that are closed under
+conjugate transposition and grow by products.
