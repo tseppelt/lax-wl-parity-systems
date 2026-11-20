@@ -241,4 +241,179 @@ theorem hasCost_sysGenP (M : Machine) : HasCost globTysP (Gn.sysGenP M) 1 15 := 
       ((show TyB globTysP qp0 (P 0 0) by tvbP).le ⟨le_rfl, by omega⟩) (by tvbP)
       hasCost_schBodyP).mono le_rfl (by omega)
 
+/-! ## The prelude -/
+
+/-- The classes of `|y|, n, h, s, Λ`. -/
+abbrev Γ5 : List Ty := [P 1 0, P 1 0, P 0 1, P 0 1, P 0 1]
+
+/-- **Fits and cost of the prelude after `|y|, n, h, s, Λ`.** -/
+theorem hasCost_midP (M : Machine) {D : ℕ} (hD : 12 ≤ D) {g : Gn}
+    (hg : HasCost globTysP g 1 D) : HasCost Γ5 (Gn.midP M g) 1 D := by
+  have lin : ∀ {Γ : List Ty} (c : ℕ), HasTy Γ (const c) (P 0 1) := fun c => hasTy_lin_const c
+  have L : ∀ {Γ : List Ty} {i d d' : ℕ}, Γ.getD i (P 0 0) = P 0 d → d ≤ d' →
+      HasTy Γ (var i) (P 0 d') := fun h hd => (hasTy_var' h).le ⟨le_rfl, hd⟩
+  unfold Gn.midP
+  -- level 5: log₂(n + 1)
+  refine (hasCost_log (e₀ := 1) (d₀ := 0) (e := 1) (d := D)
+    (hasTy_add (hasTy_var' rfl) ((hasTy_const 1).le ⟨by norm_num, le_rfl⟩)) ?_).mono
+    (by simp) (by simp)
+  -- level 6: q
+  have hq : HasCost (Γ5 ++ [P 0 1] ++ [P 0 0]) (Gn.loop (add (var 2) (const 2))
+      (Gn.when (Xp.le (mul (var 3) (add (var 8) (const 1))) (add (add (var 2) (const 1)) (var 3)))
+        (Gn.emit (const 0)))) 0 1 := by
+    refine (hasCost_loop (hasTy_add (hasTy_var' rfl) (lin 2)) (hasCost_when (τ := P 0 0) ?_
+      (hasCost_emit (hasTy_const 0)))).mono (by simp) (by simp)
+    exact hasTy_le (hasTy_mul (hasTy_var' rfl) (hasTy_add (hasTy_var' rfl) (lin 1))
+      (hasTy_add (hasTy_var' rfl) (lin 1)))
+      (hasTy_add (hasTy_add (hasTy_var' rfl) (lin 1)) (hasTy_var' rfl))
+  have hql : HasLen (Γ5 ++ [P 0 1] ++ [P 0 0]) (Gn.loop (add (var 2) (const 2))
+      (Gn.when (Xp.le (mul (var 3) (add (var 8) (const 1))) (add (add (var 2) (const 1)) (var 3)))
+        (Gn.emit (const 0)))) (P 0 1) := by
+    have := hasLen_loop (hasTy_add (hasTy_var' (τs := Γ5 ++ [P 0 1] ++ [P 0 0]) (i := 2) rfl)
+      (lin 2)) (hasLen_when (Xp.le (mul (var 3) (add (var 8) (const 1)))
+        (add (add (var 2) (const 1)) (var 3))) (hasLen_emit (τs := Γ5 ++ [P 0 1] ++ [P 0 0] ++ [P 0 1, P 0 1])
+        (const 0)))
+    simpa using this
+  refine hasCost_count (τ := P 0 1) (hq.mono (by omega) (by omega)) hql ?_
+  -- levels 7, 8, 9, 10: ℓ, H, R, N
+  refine hasCost_bind (τ := P 0 1) (Xp.hasTy_maxQ (hasTy_add (hasTy_var' rfl) (lin 1))
+    (hasTy_var' rfl)) ?_
+  refine hasCost_bind (τ := P 0 1) (Xp.hasTy_maxQ (hasTy_var' rfl) (hasTy_var' rfl)) ?_
+  refine hasCost_bind (τ := P 0 1) (hasTy_add (hasTy_var' rfl) (lin _)) ?_
+  refine hasCost_bind (τ := P 0 2) ?_ ?_
+  · have hR : HasTy (Γ5 ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1]) (var 9)
+        (P 0 1) := hasTy_var' rfl
+    exact hasTy_mulC (hasTy_mul hR hR hR) _
+  -- level 11: r
+  have hc11 := hasCost_cmdEnumP (M := M)
+    (τs := Γ5 ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 2] ++ [P 0 0])
+    (b := 12) rfl (SX := qS) (HX := var 8) (RX := var 9) (by tvbP) (by tvbP) (by tvbP)
+    (hasCost_emit (hasTy_const 0) : HasCost _ (emit (const 0)) 0 0)
+  refine hasCost_count (hc11.mono (by omega) (by omega)) hc11.len ?_
+  -- level 12: Ec
+  have hc12 := hasCost_cmdEnumP (M := M)
+    (τs := Γ5 ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 2] ++
+      [P 0 (0 + 6 + 1)] ++ [P 0 0])
+    (b := 13) rfl (SX := qS) (HX := var 8) (RX := var 9) (by tvbP) (by tvbP) (by tvbP)
+    (hasCost_ite (hasTy_var _) (hasCost_emitN 9) (hasCost_emitN 4) : HasCost _ (szBodyP 13) 0 0)
+  refine hasCost_count (hc12.mono (by omega) (by omega)) hc12.len ?_
+  -- levels 13, 14: codes
+  refine hasCost_bind (τ := P 0 0) (hasTy_const 2) ?_
+  refine hasCost_bind (τ := P 0 0) (hasTy_const 0) ?_
+  -- level 15: E
+  have hc15 := hasCost_schEnumP (M := M)
+    (τs := Γ5 ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 2] ++
+      [P 0 (0 + 6 + 1)] ++ [P 0 (0 + 6 + 1)] ++ [P 0 0] ++ [P 0 0] ++ [P 0 0])
+    (b := 16) rfl (SX := qS) (HX := qH) (RX := qR) (NX := qN) (rX := qr) (p0X := qp0)
+    (EcX := qEc) (by tvbP) (by tvbP) (by tvbP)
+    ((show TyB _ qN (P 0 2) by tvbP).le ⟨le_rfl, by norm_num⟩) (by tvbP)
+    ((show TyB _ qp0 (P 0 0) by tvbP).le ⟨le_rfl, by norm_num⟩) (by tvbP)
+    (hasCost_emit (hasTy_const 0) : HasCost _ (emit (const 0)) 0 0)
+  refine hasCost_count (hc15.mono (by omega) (by omega))
+    (hc15.len.le (show Ty.Le (P 0 (0 + 12 + 1)) (P 0 20) from ⟨le_rfl, by norm_num⟩)) ?_
+  -- levels 16, 17, 18: W, det, 2^ℓ
+  refine hasCost_bind (τ := P 0 7) ?_ ?_
+  · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl le_rfl) _))
+      ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
+  refine hasCost_bind (τ := P 0 7) ?_ ?_
+  · exact hasTy_add (hasTy_add (L rfl (by norm_num)) (hasTy_mulC (L rfl le_rfl) _))
+      ((hasTy_const _).le ⟨le_rfl, by norm_num⟩)
+  refine hasCost_bind (τ := P 1 0) (Xp.hasTy_minQ (hasTy_pow2 (hasTy_var' rfl))
+    (hasTy_var' rfl)) ?_
+  exact hg
+
+/-! ## Well-formedness -/
+
+namespace Gn
+
+lemma noX_violGenP (d : ℕ) (sX iX iℓX vX xbX gkX g1X g2X g3X ℓX HX : Xp) :
+    NoX (violGenP d sX iX iℓX vX xbX gkX g1X g2X g3X ℓX HX) := by
+  unfold violGenP
+  have e : NoX (.emit (const 0)) := trivial
+  exact cl_noX.when _ (cl_noX.ite _ (cl_noX.loop _ (cl_noX.when _ e))
+    (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.when _ e))))
+
+lemma wfx_domLoopsP (D : ℕ) {V body : Gn} (hV : NoX V) (hb : NoX body) :
+    WFX (domLoopsP D V body) :=
+  ⟨cl_noX.when _ (cl_noX.bind _ ⟨hV, hb⟩), wfx_of_noX (g := .when _ (.bind _ (.count V body)))
+    (cl_noX.when _ (cl_noX.bind _ ⟨hV, hb⟩))⟩
+
+lemma Cl.cmdEnumP {P : Gn → Prop} (hP : Cl P) (M : Machine) (b : ℕ) (SX HX RX : Xp) {body : Gn}
+    (hb : P body) : P (cmdEnumP M b SX HX RX body) := by
+  unfold Lax119563Proofs.Reduction.cmdEnumP
+  refine hP.loop _ (hP.loop _ (hP.loop _ (hP.loop _ ?_)))
+  refine hP.bindSub _ _ _ (hP.bindSub _ _ _ (hP.bindSub _ _ _ (hP.bindSub _ _ _ ?_)))
+  refine hP.bind _ (hP.seqL fun g hg => ?_)
+  obtain ⟨t, -, rfl⟩ := List.mem_map.mp hg
+  refine hP.firstL _ (fun K => hP.loop _ (hP.bind _ (hP.seq (hP.when _ (hP.brGen _ _ hb _)) ?_))) _
+  unfold missGen
+  split_ifs
+  · exact hP.when _ (hP.bindL hb _)
+  · exact hP.skip
+
+lemma Cl.schEnumP {P : Gn → Prop} (hP : Cl P) (M : Machine) (b : ℕ)
+    (SX HX RX NX rX p0X EcX : Xp) {body : Gn} (hb : P body) :
+    P (schEnumP M b SX HX RX NX rX p0X EcX body) := by
+  unfold Lax119563Proofs.Reduction.schEnumP cmdBodyP detGen
+  refine hP.seq (hP.cmdEnumP _ _ _ _ _ (hP.count (hP.cmdEnumP _ _ _ _ _ (hP.when _ (hP.emit _)))
+    (hP.count (hP.cmdEnumP _ _ _ _ _ (hP.when _ (hP.ite _ (hP.emitN 9) (hP.emitN 4))))
+      (hP.ite _ (hP.blkGen _ _ hb _) (hP.blkGen _ _ hb _))))) ?_
+  exact hP.bindL (hP.blkGen _ _ hb _) _
+
+lemma wfx_schBodyP (b : ℕ) : WFX (schBodyP b) := by
+  have hv : NoX (violAtP b (b + 37 + 1)) := noX_violGenP ..
+  have hd : WFX (domGenP b (b + 37)) :=
+    cl_wfx.count (wfx_domLoopsP _ hv (cl_noX.when _ (cl_noX.emit _)))
+      (cl_wfx.seq trivial (wfx_domLoopsP _ hv (cl_noX.when _ (cl_noX.seq (cl_noX.emit _)
+        (cl_noX.loop _ (cl_noX.emit _))))))
+  have hp : ∀ mX, WFX (permGenP mX (b + 37)) := fun _ =>
+    cl_wfx.seq (cl_wfx.loop _ (cl_wfx.emit _)) (cl_wfx.loop _ (cl_wfx.loop _ (cl_wfx.ite _
+      (cl_wfx.emit _) (cl_wfx.count (cl_wfx.loop _ (cl_wfx.when _ (cl_wfx.emit _)))
+        (cl_wfx.emit _)))))
+  unfold schBodyP
+  refine cl_wfx.ite _ (cl_wfx.seqL fun g hg => ?_) (cl_wfx.seqL fun g hg => ?_)
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
+    rcases hg with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      first | exact hd | exact hp _ | trivial
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
+    rcases hg with rfl | rfl | rfl | rfl | rfl | rfl <;> first | exact hd | exact hp _ | trivial
+
+lemma wfx_sysGenP (M : Machine) : WFX (sysGenP M) := by
+  unfold sysGenP
+  refine cl_wfx.seqL fun g hg => ?_
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
+  rcases hg with rfl | rfl | rfl | rfl | rfl | rfl
+  · trivial
+  · trivial
+  · trivial
+  · exact cl_wfx.loop _ (cl_wfx.seqL fun g hg => by
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hg
+      rcases hg with rfl | rfl | rfl
+      · trivial
+      · trivial
+      · exact cl_wfx.loop _ (cl_wfx.loop _ ⟨trivial, cl_wfx.loop _ trivial⟩))
+  · trivial
+  · exact cl_wfx.schEnumP _ _ _ _ _ _ _ _ _ (wfx_schBodyP 19)
+
+lemma wfx_midP (M : Machine) {g : Gn} (hg : WFX g) : WFX (midP M g) := by
+  unfold midP
+  refine cl_wfx.log _ (cl_wfx.count (cl_wfx.loop _ (cl_wfx.when _ (cl_wfx.emit _))) ?_)
+  refine cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ ?_
+  refine cl_wfx.count (cl_wfx.cmdEnumP _ _ _ _ _ (cl_wfx.emit _)) ?_
+  refine cl_wfx.count (cl_wfx.cmdEnumP _ _ _ _ _ (cl_wfx.ite _ (cl_wfx.emitN 9)
+    (cl_wfx.emitN 4))) ?_
+  refine cl_wfx.bind _ (cl_wfx.bind _ (cl_wfx.count (cl_wfx.schEnumP _ _ _ _ _ _ _ _ _
+    (cl_wfx.emit _)) ?_))
+  exact cl_wfx.bind _ <| cl_wfx.bind _ <| cl_wfx.bind _ hg
+
+/-- **The packed generator is well formed.** -/
+theorem wfx_redGenP (M : Machine) : WFX (redGenP M) := by
+  unfold redGenP preludeP flagCount
+  have hf : ∀ t d, WFX (Gn.loopX (var 0) (flagGen t d)) := fun t d =>
+    ⟨cl_noX.when _ (cl_noX.emit _), cl_wfx.when _ (cl_wfx.emit _)⟩
+  exact wfx_len (cl_wfx.count (hf _ _) (cl_wfx.count (hf _ _) (cl_wfx.count (hf _ _)
+    (cl_wfx.bind _ (wfx_midP M (wfx_sysGenP M))))))
+
+end Gn
+
 end Lax119563Proofs.Reduction
