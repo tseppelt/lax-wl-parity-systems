@@ -26,12 +26,6 @@ rev = "1e200ffac8b69e63b802f0aaf1dfee79561ca39a"
 subDir = "twin-width-treewidth-separation-v433/concepts"
 
 [[require]]
-name = "Lax871432"
-git = "https://github.com/tseppelt/lax-preservation-closure"
-rev = "1ec649072b019e5780d65f0868fc99b769865a84"
-subDir = "concepts"
-
-[[require]]
 name = "Lax434930"
 git = "https://github.com/EdouardBonnet/classical-complexity"
 rev = "0c0840319318215fd7b36a9a822b81ce55cf6941"
