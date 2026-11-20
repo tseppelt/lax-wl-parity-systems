@@ -67,7 +67,7 @@ lemma exp_time_arith {tP tR KP CR c s ℓ h m : ℕ} (htP : tP ≤ KP * m ^ 3)
   omega
 
 /-- The final estimate of the running time of the composed decider. -/
-lemma exp_final_arith (t₁ t₂ A d CW E Q m : ℕ) (X Y Z : ℝ) (hX : 0 ≤ X) (hZ0 : 0 ≤ Z)
+lemma exp_final_arith (t₁ t₂ A d CW E Q m : ℕ) (X Y Z : ℝ) (hX : 0 ≤ X) (_hZ0 : 0 ≤ Z)
     (ht₁ : t₁ ≤ A * m ^ d) (ht₂ : (t₂ : ℝ) ≤ CW * Y + CW) (hY : Y ≤ Z)
     (hmZ : (m : ℝ) ^ d ≤ Q * Z) (hZ : Z ≤ E * X) :
     ((2 * t₁ + t₂ + 3 : ℕ) : ℝ) ≤
