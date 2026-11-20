@@ -18,10 +18,9 @@ the values of the extra registers (`stV`).
 
 open Lax119563.BinaryEncodings Lax119563.DeterministicTime Lax119563Proofs.Reduction
 open Lax489179.TuringMachine (Machine Deterministic)
+open Lax119563Proofs.Computability Lax119563Proofs.Compiler Lax119563Proofs.Compiler.CStm
 
 namespace Lax119563Proofs.Hardness
-
-open Compiler Compiler.CStm Computability
 
 variable {C : ℕ}
 
@@ -295,5 +294,183 @@ lemma tail_good (hw2 : 2 ≤ w) (hw : 4 * ((F + 1) * (x.length + 4)) < 2 ^ w) :
   omega
 
 end Tail
+
+/-! ## The whole statement -/
+
+lemma length_encodeNat_le' (m : ℕ) : (encodeNat m).length ≤ 2 * m + 1 := by
+  have h1 : (Nat.bits m).length ≤ m := by
+    rw [Nat.size_eq_bits_len, Nat.size_le]; exact Nat.lt_two_pow_self
+  simp [encodeNat]; omega
+
+/-- The arithmetic of the time bound. -/
+lemma xp_arith {Kκ Kf N X P g a sκ kk sf m n L A B : ℕ} (hX : 1 ≤ X) (hP : 1 ≤ P)
+    (hg : 1 ≤ g) (hN1 : 1 ≤ N) (hN : N ≤ 64 * g ^ 2 * P ^ 2)
+    (h1 : a + sκ + 1 ≤ 3 * g * P * X) (h2 : kk + sf + 1 ≤ 2 * g) (h3 : m ≤ 4 * (g * X))
+    (h4 : n + L ≤ 11 * (g * X))
+    (hA : A ≤ Kκ * (a + sκ + 1) * N) (hB : B ≤ Kf * (kk + sf + 1) * N) :
+    A + B + 9 * N + 30 * m * N + (20 * (n + L) + 10) ≤
+      64 * (3 * Kκ + 2 * Kf + 360) * g ^ 3 * (P ^ 3 * X) := by
+  have hPX : 1 ≤ P * X := Nat.one_le_iff_ne_zero.mpr (by positivity)
+  have hgX : 1 ≤ g * X := Nat.one_le_iff_ne_zero.mpr (by positivity)
+  set Z := g * P * X * N with hZ
+  have eA : A ≤ 3 * Kκ * Z := by
+    calc A ≤ Kκ * (a + sκ + 1) * N := hA
+      _ ≤ Kκ * (3 * g * P * X) * N := Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ h1)
+      _ = 3 * Kκ * Z := by rw [hZ]; ring
+  have eB : B ≤ 2 * Kf * Z := by
+    calc B ≤ Kf * (kk + sf + 1) * N := hB
+      _ ≤ Kf * (2 * g) * N := Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ h2)
+      _ ≤ Kf * (2 * g * (P * X)) * N :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right _ hPX))
+      _ = 2 * Kf * Z := by rw [hZ]; ring
+  have eG : g * X * N ≤ Z := by
+    rw [hZ]
+    calc g * X * N = g * 1 * X * N := by ring
+      _ ≤ g * P * X * N :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hP))
+  have eN : N ≤ g * X * N := Nat.le_mul_of_pos_left _ hgX
+  have eM : 30 * m * N ≤ 120 * (g * X * N) := by
+    calc 30 * m * N ≤ 30 * (4 * (g * X)) * N :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ h3)
+      _ = 120 * (g * X * N) := by ring
+  have eL : g * X ≤ g * X * N := Nat.le_mul_of_pos_right _ hN1
+  have hZ' : Z ≤ g * P * X * (64 * g ^ 2 * P ^ 2) := by
+    rw [hZ]; exact Nat.mul_le_mul_left _ hN
+  have e : (3 * Kκ + 2 * Kf + 360) * Z = 3 * Kκ * Z + 2 * Kf * Z + 360 * Z := by ring
+  calc _ ≤ (3 * Kκ + 2 * Kf + 360) * Z := by omega
+    _ ≤ (3 * Kκ + 2 * Kf + 360) * (g * P * X * (64 * g ^ 2 * P ^ 2)) :=
+        Nat.mul_le_mul_left _ hZ'
+    _ = 64 * (3 * Kκ + 2 * Kf + 360) * g ^ 3 * (P ^ 3 * X) := by ring
+
+/-- The computable function of the parameter in the time bound. -/
+noncomputable def xpG (Mκ Mf : Machine) (F : ℕ → ℕ) (Cκ k : ℕ) : ℕ :=
+  5 + simB Mκ + simB Mf + k + F k + haltTime Mf (encodeNat k) + 2 * Cκ + 16 * (F k + 1)
+
+/-- The constant of the time bound. -/
+noncomputable def xpK (Mκ Mf : Machine) : ℕ := 64 * (3 * simK Mκ + 2 * simK Mf + 360)
+
+/-- **The machine of the statement.** If `Mκ` computes `k` from `y` within `Cκ (|y| + 1)^d`
+steps, the machine of `xpS Mκ Mf` computes `encodeNats [F k · parA |y|, F k + 1]` from `y`. -/
+theorem xp_prog (Mκ Mf : Machine) {F : ℕ → ℕ}
+    (hMf : ∀ k, ComputesWithin Mf (encodeNat k) (encodeNat (F k)) (haltTime Mf (encodeNat k)))
+    {Cκ d : ℕ} {y : List Bool} {k : ℕ}
+    (hκ : ComputesWithin Mκ y (encodeNat k) (Cκ * (y.length + 1) ^ d)) :
+    ComputesWithin ((xpS Mκ Mf).machine (xpS Mκ Mf).depth) y
+      (encodeNats [F k * parA y.length, F k + 1])
+      (xpK Mκ Mf * xpG Mκ Mf F Cκ k ^ 3 * (y.length + 1) ^ (3 * (d + 1) + 1)) := by
+  set n := y.length with hn
+  set X := n + 1 with hX
+  set Pw := X ^ (d + 1) with hPw
+  have hPw1 : 1 ≤ Pw := Nat.one_le_pow _ _ (by omega)
+  have hXPw : X ≤ Pw := by
+    calc X = X ^ 1 := (pow_one X).symm
+      _ ≤ Pw := Nat.pow_le_pow_right (by omega) (by omega)
+  have hXd : X ^ d ≤ Pw := Nat.pow_le_pow_right (by omega) (by omega)
+  obtain ⟨ht, hht⟩ : ∃ ht, haltTime Mf (encodeNat k) = ht := ⟨_, rfl⟩
+  obtain ⟨g, hg⟩ : ∃ g, xpG Mκ Mf F Cκ k = g := ⟨_, rfl⟩
+  have hgk : g = 5 + simB Mκ + simB Mf + k + F k + ht + 2 * Cκ + 16 * (F k + 1) := by
+    rw [← hg, ← hht]; rfl
+  rw [hg]
+  obtain ⟨w, hwdef⟩ : ∃ w, w = 2 + simB Mκ + simB Mf + k + F k + ht + Cκ + Cκ * Pw +
+    4 * ((F k + 1) * (n + 4)) := ⟨_, rfl⟩
+  have hw : 2 ≤ w := by omega
+  have hsκ : haltTime Mκ y ≤ Cκ * Pw := by
+    refine (haltTime_le_of_computesWithin hκ).trans ?_
+    exact Nat.mul_le_mul_left _ hXd
+  have hlt : ∀ v, v ≤ w → v < 2 ^ w := fun v hv => lt_two_pow_of_le hv
+  obtain ⟨st5, g5, e5k, e5v, e5t, e5x, -, -, e5p, e5o⟩ := paramS_good (x := y) (w := w)
+    (C := need Mκ + need Mf) (E := 9) (by omega) (by omega) (by omega) hw
+    (hlt _ (by omega)).le (hlt _ (by omega)).le (NSt.zero _ _) (bdd_zero _ _ _)
+    (by simp [NSt.zero]) (fun q => by simp [NSt.zero]) hκ (hMf k) (hlt _ (by omega))
+    (by have := bits_length_le k; omega) (hlt _ (by omega)) (hlt _ (by omega))
+    (by have := bits_length_le (F k); omega) (hlt _ (by omega))
+  have hv : ∀ i : Fin 9, st5.env (ex _ 9 i) = ![k, F k, ht, 0, 0, 0, 0, 0, 0] i := by
+    intro i
+    fin_cases i
+    · exact e5k
+    · exact e5v
+    · exact e5t.trans hht
+    all_goals (rw [e5x _ (by simp)]; rfl)
+  have hst : st5 = stV st5 ![k, F k, ht, 0, 0, 0, 0, 0, 0] n [] := by
+    refine NSt.ext (funext fun r => ?_) rfl e5p (by rw [e5o]; rfl)
+    simp only [stV]
+    split_ifs with h
+    · rw [← hv]; congr 1; ext; simp [ex]; omega
+    · rfl
+  have hW : 4 * ((F k + 1) * (y.length + 4)) ≤ w := by rw [← hn]; omega
+  have gt := tail_good (x := y) (w := w) st5 k (F k) ht hw (hlt _ hW)
+  rw [← hst] at gt
+  have gg : Good y w (xpS Mκ Mf) _ _ _ := g5.seq gt
+  have hc := CStm.computesWithin (D := (xpS Mκ Mf).depth) hw le_rfl gg.1
+  rw [gg.2.1] at hc
+  simp only [stV_outF] at hc
+  refine Lax119563Proofs.Reduction.ComputesWithin.mono hc ?_
+  have hcost := gg.2.2
+  rw [hht] at hcost
+  -- the arithmetic
+  have hN := Ex.unitCost_le_nodeCost w
+  have hN1 : 1 ≤ Ex.nodeCost w := by have := unitCost_ge w; omega
+  have hNw : Ex.nodeCost w ≤ 64 * g ^ 2 * Pw ^ 2 := by
+    have hw3 : w + 3 ≤ g * Pw := by
+      have h0 : (5 + simB Mκ + simB Mf + k + F k + ht + Cκ) ≤
+          (5 + simB Mκ + simB Mf + k + F k + ht + Cκ) * Pw := Nat.le_mul_of_pos_right _ hPw1
+      have h4 : 4 * ((F k + 1) * (n + 4)) ≤ 16 * (F k + 1) * Pw := by
+        have : n + 4 ≤ 4 * Pw := by omega
+        calc 4 * ((F k + 1) * (n + 4)) ≤ 4 * ((F k + 1) * (4 * Pw)) :=
+              Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ this)
+          _ = 16 * (F k + 1) * Pw := by ring
+      have h1 : g * Pw = (5 + simB Mκ + simB Mf + k + F k + ht + Cκ) * Pw + Cκ * Pw +
+          16 * (F k + 1) * Pw := by rw [hgk]; ring
+      omega
+    have : Ex.nodeCost w ≤ 64 * (w + 3) ^ 2 := by
+      have e : 64 * (w + 3) ^ 2 = (w + 3) * (64 * (w + 3)) := by ring
+      rw [e]; simp only [Ex.nodeCost, unitCost]
+      exact Nat.mul_le_mul_left _ (by omega)
+    calc Ex.nodeCost w ≤ 64 * (w + 3) ^ 2 := this
+      _ ≤ 64 * (g * Pw) ^ 2 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hw3 2)
+      _ = 64 * g ^ 2 * Pw ^ 2 := by ring
+  have hg1 : 1 ≤ g := by rw [hgk]; omega
+  have h1 : n + haltTime Mκ y + 1 ≤ 3 * g * Pw * X := by
+    rw [show 3 * g * Pw * X = 3 * (g * Pw * X) by ring]
+    have a1 : X ≤ g * Pw * X := by
+      calc X = 1 * 1 * X := by ring
+        _ ≤ g * Pw * X := Nat.mul_le_mul_right _ (Nat.mul_le_mul hg1 hPw1)
+    have a2 : Cκ * Pw ≤ g * Pw * X := by
+      calc Cκ * Pw = Cκ * Pw * 1 := by ring
+        _ ≤ g * Pw * X := Nat.mul_le_mul (Nat.mul_le_mul_right _ (by rw [hgk]; omega))
+            (by omega)
+    omega
+  have h2 : (encodeNat k).length + ht + 1 ≤ 2 * g := by
+    have := bits_length_le k
+    rw [length_encodeNat, hgk]; omega
+  have ha := parA_le n
+  have hFX : F k + 1 ≤ g * X := by
+    calc F k + 1 ≤ g := by rw [hgk]; omega
+      _ ≤ g * X := Nat.le_mul_of_pos_right _ (by omega)
+  have hnX : n + 1 ≤ g * X := by
+    calc n + 1 = 1 * X := by omega
+      _ ≤ g * X := Nat.mul_le_mul_right _ hg1
+  have h3 : n + parA n + F k + 1 ≤ 4 * (g * X) := by omega
+  have h4 : n + (encodeNats [F k * parA n, F k + 1]).length ≤ 11 * (g * X) := by
+    have l1 := length_encodeNat_le' (F k * parA n)
+    have l2 := length_encodeNat_le' (F k + 1)
+    have hFa : F k * parA n ≤ (F k + 1) * (2 * X) := Nat.mul_le_mul (by omega) (by omega)
+    have hFa' : (F k + 1) * (2 * X) ≤ 2 * (g * X) := by
+      calc (F k + 1) * (2 * X) ≤ g * (2 * X) := Nat.mul_le_mul_right _ (by rw [hgk]; omega)
+        _ = 2 * (g * X) := by ring
+    simp only [encodeNats, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+      List.length_append]
+    omega
+  have key := xp_arith (Kκ := simK Mκ) (Kf := simK Mf) (X := X) (P := Pw)
+    (a := n) (sκ := haltTime Mκ y) (kk := (encodeNat k).length) (sf := ht)
+    (L := (encodeNats [F k * parA n, F k + 1]).length) (by omega) hPw1 hg1 hN1 hNw h1 h2 h3 h4
+    (simInCost_le Mκ w _ _) (simNatCost_le Mf w _ _)
+  have hpow : Pw ^ 3 * X = X ^ (3 * (d + 1) + 1) := by
+    rw [hPw, ← pow_mul, pow_succ, mul_comm (d + 1) 3]
+  rw [hpow] at key
+  show _ ≤ xpK Mκ Mf * g ^ 3 * X ^ (3 * (d + 1) + 1)
+  unfold xpK
+  rw [← hn] at hcost ⊢
+  omega
 
 end Lax119563Proofs.Hardness
