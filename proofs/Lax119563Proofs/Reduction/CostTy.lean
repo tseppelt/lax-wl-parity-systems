@@ -37,9 +37,6 @@ instance : CoeOut Sc ℕ := ⟨Sc.L⟩
 /-- The scale `(ℓ, ℓ)`. -/
 def Sc.diag (ℓ : ℕ) : Sc := ⟨ℓ, ℓ, le_rfl⟩
 
-@[simp] lemma Sc.diag_l (ℓ : ℕ) : (Sc.diag ℓ).l = ℓ := rfl
-@[simp] lemma Sc.diag_L (ℓ : ℕ) : (Sc.diag ℓ).L = ℓ := rfl
-
 /-- Growth classes. -/
 inductive Ty
   /-- At most `K · 2^(e ℓ) · ((ℓ : ℕ) + 1)^d`. -/

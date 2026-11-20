@@ -43,11 +43,6 @@ lemma Cl.seqL : ∀ {gs : List Gn}, (∀ g ∈ gs, P g) → P (seqL gs)
 
 lemma Cl.when (c : Xp) {g : Gn} (hg : P g) : P (when c g) := hP.ite c hg hP.skip
 
-lemma Cl.dispatch (v : Xp) (n : ℕ) {f : ℕ → Gn} (hf : ∀ i, P (f i)) : P (dispatch v n f) :=
-  hP.seqL fun g hg => by
-    obtain ⟨i, -, rfl⟩ := List.mem_map.mp hg
-    exact hP.when _ (hf i)
-
 lemma Cl.bindL {g : Gn} (hg : P g) : ∀ es : List Xp, P (bindL es g)
   | [] => hg
   | e :: es => hP.bind e (Cl.bindL hg es)
@@ -76,15 +71,6 @@ lemma Cl.blkGen (e0 : Xp) (gd : List Xp) {body : Gn} (hb : P body) (blk : List (
   hP.seqL fun g hg => by
     obtain ⟨p, -, rfl⟩ := List.mem_map.mp hg
     exact hP.bindL hb _
-
-lemma Cl.cmdEnum (M : Machine) (s b : ℕ) (HX RX : Xp) {body : Gn} (hb : P body) :
-    P (cmdEnum M s b HX RX body) := by
-  unfold Lax119563Proofs.Reduction.cmdEnum
-  refine hP.loop _ (hP.loop _ (hP.loop _ (hP.loop _ (hP.loop _ ?_))))
-  refine hP.bindSub _ _ _ (hP.bindSub _ _ _ (hP.bindSub _ _ _ (hP.bindSub _ _ _ ?_)))
-  refine hP.bind _ (hP.seqL fun g hg => ?_)
-  obtain ⟨t, -, rfl⟩ := List.mem_map.mp hg
-  exact hP.firstL _ (fun K => hP.bind _ (hP.brGen _ _ hb _)) _
 
 end Gn
 

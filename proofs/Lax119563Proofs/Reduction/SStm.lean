@@ -272,22 +272,6 @@ lemma code_wr_ur : ∀ (c : Stm R) (r : Fin R), wr c r = false →
     simp only [wr, decide_eq_false_iff_not] at h
     simp [code, HProg.inc, HProg.wr, ur_inj, ur_ne_sc, h]
 
-lemma code_mv : ∀ c : Stm R, noX c = true → (code R D c).mv = false
-  | skip, _ => rfl
-  | set _ e, _ => by simp [code, HProg.mv, Ex.code_mv]
-  | emit e, _ => by simp [code, HProg.mv, Ex.code_mv]
-  | seq p q, h => by
-    simp only [noX, Bool.and_eq_true] at h
-    simp [code, HProg.mv, code_mv p h.1, code_mv q h.2]
-  | ite c p q, h => by
-    simp only [noX, Bool.and_eq_true] at h
-    simp [code, HProg.mv, Ex.code_mv, code_mv p h.1, code_mv q h.2]
-  | loop i lim body, h => by
-    simp only [noX] at h
-    simp [code, HProg.forUp, HProg.inc, HProg.mv, code_mv body h]
-  | loopX .., h => by simp [noX] at h
-  | len _, h => by simp [noX] at h
-
 end Stm
 
 lemma uenv_set_sc (st : HSt (R + D + 1)) (k v : ℕ) :

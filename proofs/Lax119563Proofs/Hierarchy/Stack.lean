@@ -252,38 +252,6 @@ theorem compile_ends {p : Prog K m} {s s' : Stacks K m} {t : ℕ} (hp : p.Runs s
 
 /-! ## Determinism -/
 
-theorem Runs.det {p : Prog K m} {s s₁ s₂ : Stacks K m} {t₁ t₂ : ℕ} (h₁ : p.Runs s s₁ t₁)
-    (h₂ : p.Runs s s₂ t₂) : s₁ = s₂ ∧ t₁ = t₂ := by
-  induction h₁ generalizing s₂ t₂ with
-  | skip => cases h₂; simp
-  | push => cases h₂; simp
-  | pop => cases h₂; simp
-  | seq _ _ ih₁ ih₂ =>
-    cases h₂ with
-    | seq h h' =>
-      obtain ⟨rfl, rfl⟩ := ih₁ h
-      obtain ⟨rfl, rfl⟩ := ih₂ h'
-      simp
-  | iteT hc _ ih =>
-    cases h₂ with
-    | iteT _ h => obtain ⟨rfl, rfl⟩ := ih h; simp
-    | iteF hc' _ => simp_all
-  | iteF hc _ ih =>
-    cases h₂ with
-    | iteT hc' _ => simp_all
-    | iteF _ h => obtain ⟨rfl, rfl⟩ := ih h; simp
-  | loopF hc =>
-    cases h₂ with
-    | loopF _ => simp
-    | loopT hc' _ _ => simp_all
-  | loopT hc _ _ ih₁ ih₂ =>
-    cases h₂ with
-    | loopF hc' => simp_all
-    | loopT _ h h' =>
-      obtain ⟨rfl, rfl⟩ := ih₁ h
-      obtain ⟨rfl, rfl⟩ := ih₂ h'
-      simp
-
 end Prog
 
 /-! ## Inputs -/

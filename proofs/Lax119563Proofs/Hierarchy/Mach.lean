@@ -201,22 +201,6 @@ lemma loop_true {c : (Fin k → Γ) → Bool} {M : Mach k Γ Λ} {s : Λ} {T T�
 
 /-! ## Determinism -/
 
-lemma Ends.det {M : Mach k Γ Λ} {q : Λ} {T T₁ T₂ : Tapes k Γ} {o₁ o₂ : Option Bool}
-    {t₁ t₂ : ℕ} (h₁ : M.Ends q T o₁ T₁ t₁) (h₂ : M.Ends q T o₂ T₂ t₂) :
-    o₁ = o₂ ∧ T₁ = T₂ ∧ t₁ = t₂ := by
-  induction h₁ generalizing o₂ T₂ t₂ with
-  | halt h => cases h₂ <;> simp_all
-  | exit h => cases h₂ <;> simp_all
-  | next h _ ih =>
-    cases h₂ with
-    | halt h' => simp_all
-    | exit h' => simp_all
-    | next h' h₂ =>
-      rw [h] at h'
-      cases h'
-      obtain ⟨rfl, rfl, rfl⟩ := ih h₂
-      simp
-
 end Mach
 
 end Lax119563Proofs.Hierarchy

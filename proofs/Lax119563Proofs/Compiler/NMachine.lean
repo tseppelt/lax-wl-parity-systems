@@ -75,47 +75,4 @@ lemma encN_init (x : List Bool) :
   · have : i.val ≠ 0 := fun e => h0 (Fin.ext e)
     simp [h0, this, encodeNats]
 
-/-- **Machines of register programs.** -/
-theorem NProg.computesWithin {p : NProg R Q} {x : List Bool} {w t : ℕ} {st' : NSt R Q}
-    (h : NRuns x w p ⟨fun _ => 0, fun _ => [], 0, []⟩ st' t) (hpos : st'.pos = 0)
-    (hlen : x.length ≤ (encodeNats st'.out).length) :
-    ComputesWithin p.machine x (encodeNats st'.out)
-      (t + 20 * (encodeNats st'.out).length + 4) := by
-  set y := encodeNats st'.out
-  obtain ⟨hd₁, e₁, r₁⟩ := compileN_runs h (by simp) (fun _ => 0) (by simp)
-  rw [hpos] at e₁
-  -- the output phase
-  have hoi : (nOut : Fin (R + Q + 7)) ≠ nIo := by ndist
-  have h0i : (nT0 : Fin (R + Q + 7)) ≠ nIo := by ndist
-  have h1i : (nT1 : Fin (R + Q + 7)) ≠ nIo := by ndist
-  have ho0 : (nOut : Fin (R + Q + 7)) ≠ nT0 := by ndist
-  have ho1 : (nOut : Fin (R + Q + 7)) ≠ nT1 := by ndist
-  have h01 : (nT0 : Fin (R + Q + 7)) ≠ nT1 := by ndist
-  have a₁ := moveAll_runs ho0 (m := 0) ((bs y).reverse) (encN x st') (encN_out x st')
-  obtain ⟨hd₂, e₂, r₂⟩ := RunsLe.toH a₁ (avoids_moveAll hoi h0i) hd₁
-  set S₂ := update (update (encN x st') nOut []) nT0 ((bs y).reverse.reverse ++ encN x st' nT0)
-  obtain ⟨hd₃, e₃, r₃⟩ := countLoopN_runsH (bs y) S₂ hd₂ (by simp [S₂])
-  set S₃ := update (update (update S₂ nT0 []) nT1 ((bs y).reverse ++ S₂ nT1)) nIo
-    ((S₂ nIo).drop (bs y).length)
-  have r₄ := moveAll_runsH h1i (m := 0) ((bs y).reverse) S₃ hd₃
-    (by simp [S₃, S₂, update_of_ne h1i, update_of_ne h01.symm, update_of_ne ho1.symm])
-  have hrun := ((r₁.seq (r₂.seq (r₃.seq r₄))))
-  obtain ⟨t₀, ht₀, hrunH⟩ := hrun
-  rw [encN_init] at hrunH
-  have hc := Prog.computesWithin (K := R + Q + 6) (ans := fun _ => false) (y := y) hrunH ?_ ?_
-  · refine ComputesWithin.mono hc ?_
-    simp only [length_bs, List.length_reverse] at ht₀
-    omega
-  · -- the input tape holds the output
-    have hio : S₃ nIo = [] := by
-      simp only [S₃, update_self, S₂, update_of_ne hoi.symm, update_of_ne h0i.symm,
-        encN_io, hpos, List.drop_zero, length_bs]
-      exact List.drop_eq_nil_of_le (by simpa using hlen)
-    show update (update S₃ nT1 []) nIo ((bs y).reverse.reverse ++ S₃ nIo) nIo = _
-    rw [update_self, hio, List.reverse_reverse, List.append_nil]
-    rfl
-  · show update (update hd₃ nT1 (hd₃ nT1 + _)) nIo (hd₃ nIo - _) nIo = 0
-    rw [update_self, e₃, e₂, e₁]
-    simp
-
 end Lax119563Proofs.Compiler
