@@ -8,6 +8,24 @@ authors:
     github: tseppelt
 bibEntries:
   - |
+    @techreport{Shalunov,
+      author      = {Yakov Shalunov},
+      title       = {Improved Bounds on the Space Complexity of Circuit Evaluation},
+      institution = {Electronic Colloquium on Computational Complexity},
+      number      = {TR25-078},
+      year        = {2025},
+      url         = {https://eccc.weizmann.ac.il/report/2025/078/download/},
+    }
+  - |
+    @book{FG06,
+      author    = {Flum, J{\"o}rg and Grohe, Martin},
+      title     = {Parameterized Complexity Theory},
+      series    = {Texts in Theoretical Computer Science. An EATCS Series},
+      publisher = {Springer},
+      year      = {2006},
+      doi       = {10.1007/3-540-29953-X},
+    }
+  - |
     @misc{zenodo,
       author       = {Curticapean, Radu and
                       Liu, Mingjun and
