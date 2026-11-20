@@ -8,6 +8,35 @@ authors:
     github: tseppelt
 bibEntries:
   - |
+    @techreport{Shalunov,
+      author      = {Yakov Shalunov},
+      title       = {Improved Bounds on the Space Complexity of Circuit Evaluation},
+      institution = {Electronic Colloquium on Computational Complexity},
+      number      = {TR25-078},
+      year        = {2025},
+      url         = {https://eccc.weizmann.ac.il/report/2025/078/download/},
+    }
+  - |
+    @book{FG06,
+      author    = {Flum, J{\"o}rg and Grohe, Martin},
+      title     = {Parameterized Complexity Theory},
+      series    = {Texts in Theoretical Computer Science. An EATCS Series},
+      publisher = {Springer},
+      year      = {2006},
+      doi       = {10.1007/3-540-29953-X},
+    }
+  - |
+    @article{CookReckhow1973,
+      author  = {Cook, Stephen A. and Reckhow, Robert A.},
+      title   = {Time Bounded Random Access Machines},
+      journal = {Journal of Computer and System Sciences},
+      volume  = {7},
+      number  = {4},
+      pages   = {354--375},
+      year    = {1973},
+      doi     = {10.1016/S0022-0000(73)80029-7},
+    }
+  - |
     @misc{zenodo,
       author       = {Curticapean, Radu and
                       Liu, Mingjun and
