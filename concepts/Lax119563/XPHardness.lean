@@ -6,7 +6,7 @@ import Lax119563.WLProblems
 title: WL Distinguishing is XP-hard
 type: theorem
 ---
-**Theorem.** $\textsc{WL Distinguishing}$, parameterized by the dimension $k$, is
+**Theorem.** WL Distinguishing, parameterized by the dimension $k$, is
 $\mathsf{XP}$-hard under fpt-reductions: every problem in $\mathsf{XP}$ fpt-reduces to it,
 with a dimension bounded by a computable function of the parameter.
 

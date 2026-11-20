@@ -8,11 +8,11 @@ import Lax119563.WeisfeilerLeman
 title: An unconditional time lower bound for k-WL Distinguishing
 type: theorem
 ---
-The problem $k$-$\textsc{WL Distinguishing}$ asks, given two colored graphs $G$ and $H$,
+The problem $k$-WL Distinguishing asks, given two colored graphs $G$ and $H$,
 whether $k$-WL distinguishes $G$ and $H$.
 
 **Theorem.** For every fixed $k \geq 3$ and $\varepsilon > 0$, no deterministic multitape
-Turing machine solves $k$-$\textsc{WL Distinguishing}$ in time $O(n^{k - 1 - \varepsilon})$.
+Turing machine solves $k$-WL Distinguishing in time $O(n^{k - 1 - \varepsilon})$.
 
 This almost matches the classical upper bound of $O(n^{k+1} \log n)$.
 

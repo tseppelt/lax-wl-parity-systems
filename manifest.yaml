@@ -5,8 +5,11 @@ mathlibVersion: "db584cd6d46c92f209a44c0f1c829460d327499d"
 title: "Lower Bounds for the Weisfeiler–Leman Algorithm via Implicit Parity Systems"
 authors:
   - name: Radu Curticapean
+    github: radomite
   - name: Mingjun Liu
+    github: hld67890
   - name: Daniel Neuen
+    github: DanielN64
   - name: Tim Seppelt
     github: tseppelt
 bibEntries:

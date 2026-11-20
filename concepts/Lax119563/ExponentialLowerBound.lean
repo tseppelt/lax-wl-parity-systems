@@ -8,7 +8,7 @@ title: An exponential time lower bound for WL Distinguishing
 type: theorem
 ---
 **Corollary.** There is a constant $\varepsilon > 0$ such that no deterministic multitape
-Turing machine decides $\textsc{WL Distinguishing}$ in time $O(2^{\varepsilon N^{1/5}})$,
+Turing machine decides WL Distinguishing in time $O(2^{\varepsilon N^{1/5}})$,
 where $N$ is the total order of the input graphs.
 
 The proof applies the reduction from exponential time to a language in

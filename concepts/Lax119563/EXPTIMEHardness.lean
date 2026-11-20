@@ -6,9 +6,9 @@ import Lax119563.WLProblems
 title: WL Distinguishing is EXPTIME-hard
 type: theorem
 ---
-**Theorem.** $\textsc{WL Distinguishing}$ is $\mathsf{EXPTIME}$-hard under polynomial-time
+**Theorem.** WL Distinguishing is $\mathsf{EXPTIME}$-hard under polynomial-time
 many-one reductions: every language decided by a deterministic machine in time $2^{p(n)}$
-reduces in polynomial time to $\textsc{WL Distinguishing}$.
+reduces in polynomial time to WL Distinguishing.
 
 The reduction builds the packed implicit parity system of a run of the machine and applies
 the matrix compiler; the dimension grows with the input.

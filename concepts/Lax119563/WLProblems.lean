@@ -8,7 +8,7 @@ import Lax119563.WeisfeilerLeman
 title: WL Distinguishing as a language and as a parameterized problem
 type: definition
 ---
-The problem $\textsc{WL Distinguishing}$ asks, given an integer $k$ and two colored graphs
+The problem WL Distinguishing asks, given an integer $k$ and two colored graphs
 $G$ and $H$, whether $k$-WL distinguishes $G$ and $H$. Here $k$ is part of the input.
 
 * As a **language** of bit strings, an instance $(k, G, H)$ is the binary code of the list of
