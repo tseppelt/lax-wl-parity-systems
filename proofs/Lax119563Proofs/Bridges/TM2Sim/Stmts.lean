@@ -70,7 +70,6 @@ end mkStk
 
 /-! ## Simple facts about the variables -/
 
-@[simp] lemma instr_cell (v : Var R A τi τo) (o) : instr { v with cell := o } = instr v := rfl
 @[simp] lemma wr_cell (v : Var R A τi τo) (o) (j) : wr { v with cell := o } j = wr v j := rfl
 @[simp] lemma mv_cell (v : Var R A τi τo) (o) (j) : mv { v with cell := o } j = mv v j := rfl
 
