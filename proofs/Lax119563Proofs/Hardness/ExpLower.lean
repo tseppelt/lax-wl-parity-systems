@@ -7,12 +7,12 @@ import Lax119563Proofs.Hardness.ExpAsymptotics
 # The exponential time lower bound for WL Distinguishing
 
 By the exponential time hierarchy theorem there is a language `L` decidable in time `O(2^n)`
-but not in time `O(2^{n/2})`. For an input `x` of length `n ≥ 2` choose the horizon
+but not in time `O(2^{n/4})`. For an input `x` of length `n ≥ 2` choose the horizon
 `h = n + c₀` (so that the decider of `L` halts within `2^h` steps), `a = ⌈log₂ (n + 2)⌉` and
 the least `s` with `s a ≥ h + 2`. Then the packed width is `a`, and the pipeline produces
 graphs with `N = O((h + 3)^5)` vertices in polynomial time. A decider for WL Distinguishing
 running in time `O(2^{ε N^{1/5}})` with `ε` small would then decide `L` in time
-`O(2^{n/2})`.
+`O(2^{n/4})`.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings
@@ -113,14 +113,14 @@ lemma floor_two_pow_le (C₀ n : ℕ) :
 ---
 conclusion: Lax119563.ExponentialLowerBound.exponential_lower_bound
 ---
-Let `L ∈ DTIME(2^n) \ DTIME(2^{n/2})` be decided by `M` within `C₀ 2^n + C₀` steps, and
+Let `L ∈ DTIME(2^n) \ DTIME(2^{n/4})` be decided by `M` within `C₀ 2^n + C₀` steps, and
 put `c₀ = 2 C₀ + 2`. For `|x| = n ≥ 2`, `h = n + c₀`, `a = ⌈log₂(n + 2)⌉` and `s` the least
 number with `s a ≥ h + 2`, a machine computes `encodeNats [h, s] ++ x` in time `O(m^3)`
 (`m = n + c₀ + 4`), and the pipeline turns it in time `m^{O(1)}` into an instance
 `(s + 1, G₀, G₁)` with `N = |V(G₀)| + |V(G₁)| ≤ B m^5`, which `(s+1)`-WL distinguishes iff
 `x ∈ L`. With `ε = 1 / (4 (B + 1)^{1/5})`, a decider for WL Distinguishing within
 `C 2^{ε N^{1/5}} + C` steps runs within `C 2^{m/4} + C` steps on these instances; together
-with the polynomial reduction this decides `L` in time `O(2^{n/2})`, a contradiction.
+with the polynomial reduction this decides `L` in time `O(2^{n/4})`, a contradiction.
 -/
 theorem exponential_lower_bound :
     ∃ ε : ℝ, 0 < ε ∧ ¬ ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ,
@@ -137,13 +137,13 @@ theorem exponential_lower_bound :
   apply hnot
   set A := 2 * KP + CR * 2 ^ c + 3 with hA
   set d := 3 * c + 3 with hd
-  set Q := (2 * d + 2) ^ d with hQ
+  set Q := (4 * d + 4) ^ d with hQ
   set E := 2 ^ (2 * C₀ + 2 + 4) with hE
   set K := 2 * A * Q * E + CW * E + CW + 3 with hK
   refine ⟨(Main.Compose.comp (Main.Compose.comp P R false fun _ => false).toMachine W
     (decide ([] ∈ L)) (fun b => decide ([b] ∈ L))).toMachine,
     Main.AMachine.toMachine_deterministic _, K, fun x => ?_⟩
-  have hX : (0 : ℝ) ≤ (2 : ℝ) ^ ((x.length : ℝ) / 2) := by positivity
+  have hX : (0 : ℝ) ≤ (2 : ℝ) ^ ((x.length : ℝ) / 4) := by positivity
   by_cases hx : 2 ≤ x.length
   · have hc₀ : 1 ≤ 2 * C₀ + 2 := by omega
     have ha1 := one_le_parA x.length
@@ -189,14 +189,14 @@ theorem exponential_lower_bound :
       (tR := CR * (s * 2 ^ a * (h + 1)) ^ c) (KP := KP) (CR := CR) (c := c) (s := s) (ℓ := a)
       (h := h) (m := m) le_rfl le_rfl (by omega) (h2a.trans (by omega)) (by omega) (by omega)
     have hY : (2 : ℝ) ^ (1 / (4 * (((12 * CR : ℕ) : ℝ) + 1) ^ ((1 : ℝ) / 5)) *
-          ((G₀.n + G₁.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) ≤ (2 : ℝ) ^ ((m : ℝ) / 2) := by
+          ((G₀.n + G₁.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) ≤ (2 : ℝ) ^ ((m : ℝ) / 4) := by
       apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
       have : (0 : ℝ) ≤ m := Nat.cast_nonneg _
       linarith
-    have hmZ : (m : ℝ) ^ d ≤ (Q : ℝ) * (2 : ℝ) ^ ((m : ℝ) / 2) := by
-      rw [hQ]; push_cast; exact_mod_cast pow_le_two_rpow_half m d
-    have hZ : (2 : ℝ) ^ ((m : ℝ) / 2) ≤ (E : ℝ) * (2 : ℝ) ^ ((n : ℝ) / 2) := by
-      have := two_rpow_half_add_le n (2 * C₀ + 2 + 4)
+    have hmZ : (m : ℝ) ^ d ≤ (Q : ℝ) * (2 : ℝ) ^ ((m : ℝ) / 4) := by
+      rw [hQ]; push_cast; exact_mod_cast pow_le_two_rpow_quarter m d
+    have hZ : (2 : ℝ) ^ ((m : ℝ) / 4) ≤ (E : ℝ) * (2 : ℝ) ^ ((n : ℝ) / 4) := by
+      have := two_rpow_quarter_add_le n (2 * C₀ + 2 + 4)
       rw [hE]
       convert this using 3
       rw [← hm, ← hh]; push_cast; ring

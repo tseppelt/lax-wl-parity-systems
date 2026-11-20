@@ -47,6 +47,10 @@ Complete and sorry-free: `Main.time_hierarchy` (annotated proof of
 `Lax119563.TimeHierarchy.time_hierarchy`) from `Reduction.time_hierarchy_of_coarse` and
 `Coarse.coarseHierarchy`.  The universal simulator is in the `Univ*` files
 (`UnivMain.simMachine_answer`).
+`ExpMain.exp_time_hierarchy` (annotated proof of
+`Lax119563.ExponentialTimeHierarchy.exp_time_hierarchy`, `DTIME(2^n) ⊄ DTIME(2^{n/4})`) is a
+direct diagonalisation (`ExpDiag`) with the same simulator under a clock of `2^n` units,
+computed by repeated doubling; the cubic overhead gives `O(n^2 2^{3n/4}) ≤ 2^n`.
 
 ## Design of the universal simulator (`Universal`)
 

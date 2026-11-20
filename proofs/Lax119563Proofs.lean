@@ -52,6 +52,8 @@ import Lax119563Proofs.Hierarchy.UnivInit
 import Lax119563Proofs.Hierarchy.UnivMain
 import Lax119563Proofs.Hierarchy.Coarse
 import Lax119563Proofs.Hierarchy.Main
+import Lax119563Proofs.Hierarchy.ExpDiag
+import Lax119563Proofs.Hierarchy.ExpMain
 import Lax119563Proofs.Circuits.Plan
 import Lax119563Proofs.Circuits.Bits
 import Lax119563Proofs.Circuits.AddrProgram
