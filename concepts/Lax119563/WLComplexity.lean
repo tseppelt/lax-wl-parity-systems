@@ -1,6 +1,5 @@
 import Lax429075.Reductions
 import Lax119563.WLProblems
-import Lax119563.XPClass
 
 /-!
 ---
@@ -25,15 +24,15 @@ fpt-reductions.
 * $\mathsf{EXPTIME}$ is the archive's `Lax434930.ExponentialTime.EXPTIME` (single-tape
   machines), and polynomial-time many-one reductions are `Lax429075.Reductions.ManyOne`
   (multi-stack machines in polynomial time).
-* $\mathsf{XP}$ is `Lax119563.XPClass.XP` (word RAM), and fpt-reductions, hardness and completeness
-  are those of the archive's W-hierarchy, `Lax496464.WH_A2_FptReductions`.
+* $\mathsf{XP}$, fpt-reductions, hardness and completeness are those of
+  `Lax119563.ParameterizedComplexity`, with deterministic multitape machines.
 * The language and the parameterized problem are those of `Lax119563.WLProblems`.
 * Membership and hardness are stated separately: membership is cited, hardness is proved, and
   completeness is their conjunction.
 -/
 
-open Lax434930.ExponentialTime Lax429075.Reductions Lax496464.WH_A2_FptReductions
-open Lax119563.WLProblems Lax119563.XPClass
+open Lax434930.ExponentialTime Lax429075.Reductions
+open Lax119563.WLProblems Lax119563.ParameterizedComplexity
 
 namespace Lax119563.WLComplexity
 

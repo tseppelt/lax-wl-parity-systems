@@ -26,17 +26,6 @@ bibEntries:
       doi       = {10.1007/3-540-29953-X},
     }
   - |
-    @article{CookReckhow1973,
-      author  = {Cook, Stephen A. and Reckhow, Robert A.},
-      title   = {Time Bounded Random Access Machines},
-      journal = {Journal of Computer and System Sciences},
-      volume  = {7},
-      number  = {4},
-      pages   = {354--375},
-      year    = {1973},
-      doi     = {10.1016/S0022-0000(73)80029-7},
-    }
-  - |
     @misc{zenodo,
       author       = {Curticapean, Radu and
                       Liu, Mingjun and

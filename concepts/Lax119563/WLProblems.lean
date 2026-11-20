@@ -1,6 +1,6 @@
 import Lax434930.ExponentialTime
-import Lax888481.ParameterizedComplexity
 import Lax119563.BinaryEncodings
+import Lax119563.ParameterizedComplexity
 import Lax119563.WeisfeilerLeman
 
 /-!
@@ -16,19 +16,19 @@ $G$ and $H$, whether $k$-WL distinguishes $G$ and $H$. Here $k$ is part of the i
   $$k,\ \text{description of } G,\ \text{description of } H,$$
   i.e. the code of $k$ followed by the binary encoding of the pair $(G, H)$, with the
   number and graph encodings of the binary encodings of graph pairs.
-* As a **parameterized problem** in the sense of parameterized complexity, the instance is
-  that list of natural numbers itself, and the parameter is its first entry $k$.
+* As a **parameterized problem**, it is this language with the parameter $k$: the number
+  whose code begins the input string.
 
 # Implementation notes
-The language is a `Lax434930.PolynomialTime.Language` (a set of `List Bool`), as used by the
-archive's classes `EXPTIME` and many-one reductions. The parameterized problem is a
-`Lax888481.ParameterizedComplexity.Problem` on words `List ℕ`, as used by the archive's
-fpt-reductions (`Lax496464`), which run on word RAMs; its admissible words are exactly the
-lists `k :: (description of G ++ description of H)`. Both encodings carry the same list: the
-language is the image of the admissible words under the bit code `encodeNats`.
+* The language is a `Lax434930.PolynomialTime.Language` (a set of `List Bool`), as used by the
+  archive's class `EXPTIME` and its many-one reductions.
+* The parameterization must be defined on all bit strings. It reads the leading number code:
+  pairs of bits `1 d` give the binary digits `d`, least significant first, until the first
+  pair that does not begin with `1`. On encoded instances, this is `k`.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings
+open Lax119563.ParameterizedComplexity
 
 namespace Lax119563.WLProblems
 
@@ -46,10 +46,14 @@ noncomputable def encodeWLInstance (k : ℕ) (G H : ColoredGraph) : List Bool :=
 def WLDistinguishing : Lax434930.PolynomialTime.Language :=
   {w | ∃ (k : ℕ) (G H : ColoredGraph), w = encodeWLInstance k G H ∧ Distinguishes k G H}
 
+/-- The number whose code `encodeNat` begins a bit string. -/
+def leadingNat : List Bool → ℕ
+  | true :: d :: rest => (if d then 1 else 0) + 2 * leadingNat rest
+  | _ => 0
+
 /-- **WL Distinguishing** as a parameterized problem, with parameter `k`. -/
-def wlProblem : Lax888481.ParameterizedComplexity.Problem where
-  Domain := {x | ∃ (k : ℕ) (G H : ColoredGraph), x = wlWord k G H}
-  Yes x := ∃ (k : ℕ) (G H : ColoredGraph), x = wlWord k G H ∧ Distinguishes k G H
-  param x := x.headD 0
+def wlProblem : ParameterizedProblem where
+  L := WLDistinguishing
+  κ := leadingNat
 
 end Lax119563.WLProblems

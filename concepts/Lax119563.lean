@@ -11,6 +11,7 @@ import Lax119563.ImplicitParitySystems
 import Lax119563.ImplicitSystemEncodings
 import Lax119563.IterationNumber
 import Lax119563.MachineTranslations
+import Lax119563.ParameterizedComplexity
 import Lax119563.MatrixCompiler
 import Lax119563.PackedRepresentation
 import Lax119563.ParitySystems
@@ -28,4 +29,3 @@ import Lax119563.WeisfeilerLeman
 import Lax119563.WitnessFromRounds
 import Lax119563.WitnessLowerBound
 import Lax119563.WitnessUpperBound
-import Lax119563.XPClass
