@@ -24,7 +24,7 @@ Goal: `Lax119563.IterationNumber.iteration_number_lower_bound`, assuming the con
 * `Rounds.lean`: `counter K ℓ`, `counter_conflictRound`: `τ` finite and `≥ 2^{ℓK}`.
   Lower bound by the potential `3 val(a) + {1,2,3}`; finiteness by induction on the value
   (decrement at the first one bit).
-* `Size.lean`: `sizeParameter_le`: `sizeParameter (counter K ℓ) ≤ C_K 2^ℓ` via fixed rows
+* `Size.lean`: `sizeParameter_le`: `rowSpaceSize (counter K ℓ) ≤ C_K 2^ℓ` via fixed rows
   (`FixedRows`), the card bound `(K+1) 2^{ℓ-r}` and the rank bound `K + 1 + (ℓ - r)` (columns
   in the span of `K+1` block vectors and `ℓ - r` unit vectors), and
   `∑_j 2^{ℓ - ⌊j/K⌋} ≤ K 2^{ℓ+1}`.

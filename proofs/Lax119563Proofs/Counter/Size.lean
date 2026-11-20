@@ -8,7 +8,7 @@ For the increment at position `j`, all coordinates of `𝔠'_j` have fixed bits 
 `t < ⌊j / K⌋`. Hence `|𝔠'_j| ≤ (K+1) 2^{ℓ - ⌊j/K⌋}`, and the columns of the check matrix
 indexed by `𝔠'_j` lie in the span of `K + 1` block vectors and `ℓ - ⌊j/K⌋` unit vectors,
 so `rank B_e ≤ K + 1 + ℓ - ⌊j/K⌋`. Summing the geometric series over the rows gives
-`sizeParameter = O_K(2^ℓ)`.
+`rowSpaceSize = O_K(2^ℓ)`.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.RowSpaceCompiler
@@ -248,9 +248,9 @@ theorem schema_bound (x : SchIdx K ℓ) :
     rw [add_mul]
     omega
 
-/-- **Size of the counter.** `sizeParameter(𝓘_ctr) ≤ C_K 2^ℓ`. -/
+/-- **Size of the counter.** `rowSpaceSize(𝓘_ctr) ≤ C_K 2^ℓ`. -/
 theorem sizeParameter_le (hK : 0 < K) : ∃ C : ℕ, ∀ ℓ : ℕ,
-    sizeParameter (counter K ℓ) ≤ C * 2 ^ ℓ := by
+    rowSpaceSize (counter K ℓ) ≤ C * 2 ^ ℓ := by
   refine ⟨(K + 1) + 2 * (K + 1) + 2 * (K + 1) * (2 * K) +
     (K + 2) * (2 * (K + 1) + 2 * 2 ^ (K + 1) + 3 * (K + 1 + 2 ^ (K + 1)) * (2 * K)), fun ℓ => ?_⟩
   set A := 2 ^ ℓ with hA
@@ -302,7 +302,7 @@ theorem sizeParameter_le (hK : 0 < K) : ∃ C : ℕ, ∀ ℓ : ℕ,
             (Nat.mul_le_mul_left 2 (Nat.add_le_add_right (Nat.le_mul_of_pos_right _ hA1) _))
             (Nat.mul_le_mul_left 3 (Nat.mul_le_mul_left _ hGle))
       _ = _ := by ring
-  calc sizeParameter (counter K ℓ)
+  calc rowSpaceSize (counter K ℓ)
       = ∑ v : Fin (numLoc K ℓ), (domN K ℓ v).card + (K + 1 + 1) *
           ((counter K ℓ).schemas.map fun e => e.domain.card + 2 ^ rowRank e).sum := rfl
     _ ≤ ((K + 1) + 2 * (K + 1) + 2 * (K + 1) * (2 * K)) * A + (K + 1 + 1) *

@@ -151,7 +151,7 @@ theorem pipeline_fine : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
   obtain ⟨hcorr, hloc, hsch⟩ := hsys x h s hx hh hxh hs hsh
   obtain ⟨Ck, hCk⟩ := hgame (s + 1) (by omega)
   obtain ⟨hsp, hdu, -, -⟩ := hCk _ hℓ1 (sys x h s)
-  have hSz : sizeParameter (sys x h s) ≤ 5 * (Cs * (h + 1) ^ 2) * (s + 1) ^ 2 *
+  have hSz : matrixSize (sys x h s) ≤ 5 * (Cs * (h + 1) ^ 2) * (s + 1) ^ 2 *
       2 ^ packedWidth x.length h s * (packedWidth x.length h s + 1) :=
     (sizeParameter_le _).trans (size_arith hloc hsch)
   refine ⟨(compile (sys x h s)).1, (compile (sys x h s)).2, fun hhalt => ?_, ?_⟩

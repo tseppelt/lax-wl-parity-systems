@@ -63,9 +63,9 @@ lemma nnz_le (e : Schema k ℓ w) : nnz e ≤ (2 + ℓ) * (k * 2 ^ ℓ) := by
 
 /-- **The size parameter.** -/
 theorem sizeParameter_le (I : ImplicitParitySystem k ℓ) :
-    sizeParameter I ≤ I.numLocations * (k * 2 ^ ℓ) +
+    matrixSize I ≤ I.numLocations * (k * 2 ^ ℓ) +
       (k + 1) * (I.schemas.length * ((2 + ℓ) * (k * 2 ^ ℓ))) := by
-  unfold sizeParameter
+  unfold matrixSize
   have h1 : ∑ v, (I.domain v).card ≤ I.numLocations * (k * 2 ^ ℓ) := by
     have := Finset.sum_le_card_nsmul (Finset.univ : Finset (Fin I.numLocations))
       (fun v => (I.domain v).card) (k * 2 ^ ℓ) (fun v _ => card_domain_le _)

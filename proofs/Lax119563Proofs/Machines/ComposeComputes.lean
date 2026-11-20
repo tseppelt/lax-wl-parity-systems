@@ -24,7 +24,7 @@ variable {R D : Machine} {a₀ : Bool} {a₁ : Bool → Bool}
 lemma computesWithin_mono' {M : Machine} {x y : List Bool} {t t' : ℕ}
     (h : ComputesWithin M x y t) (ht : t ≤ t') : ComputesWithin M x y t' := by
   have e : runOn M x t' = runOn M x t := runOn_eq_of_le M x ht h.1
-  unfold ComputesWithin
+  unfold ComputesWithin HaltsWithin at *
   rw [e]; exact h
 
 /-- **Composition of computations.** -/
@@ -72,7 +72,8 @@ theorem compose_computesWithin (R D : Machine) (a₀ : Bool) (a₁ : Bool → Bo
         ((comp R D a₀ a₁).run (2 + t' + 1) (AMachine.init x)))) := by
     rw [hT, AMachine.run_add, AMachine.run_succ, AMachine.run_add]
   refine computesWithin_mono' (t := T) ⟨?_, ?_⟩ (by omega)
-  · rw [AMachine.runOn_toMachine, hrun]
+  · unfold HaltsWithin
+    rw [AMachine.runOn_toMachine, hrun]
     have hans := hsimD.2.1
     change _ = (runOn D y t₂).answer at hans
     show ((comp R D a₀ a₁).run t₂ _).answer.isSome

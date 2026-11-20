@@ -202,12 +202,12 @@ theorem pipeline : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
   obtain ⟨hcorr, hloc, hsch⟩ := hsys x h s hx hh hxh hs hsh
   obtain ⟨Ck, hCk⟩ := hgame (s + 1) (by omega)
   obtain ⟨hsp, hdu, hsize, -⟩ := hCk _ hℓ1 (sys x h s)
-  have hSz : sizeParameter (sys x h s) ≤ 5 * (Cs * (h + 1) ^ 2) * (s + 1) ^ 2 *
+  have hSz : matrixSize (sys x h s) ≤ 5 * (Cs * (h + 1) ^ 2) * (s + 1) ^ 2 *
       2 ^ packedWidth x.length h s * (packedWidth x.length h s + 1) :=
     (sizeParameter_le _).trans (size_arith hloc hsch)
   refine ⟨(compile (sys x h s)).1, (compile (sys x h s)).2, fun hhalt => ?_, ?_, ?_⟩
   · exact (hcorr hhalt).symm.trans (distinguishes_iff_conflict (by omega) _ hsp hdu).symm
-  · calc _ ≤ Cn * sizeParameter (sys x h s) := hsize
+  · calc _ ≤ Cn * matrixSize (sys x h s) := hsize
       _ ≤ Cn * (5 * (Cs * (h + 1) ^ 2) * (s + 1) ^ 2 * 2 ^ packedWidth x.length h s *
             (packedWidth x.length h s + 1)) := Nat.mul_le_mul_left _ hSz
       _ = 5 * Cn * Cs * (s + 1) ^ 2 * 2 ^ packedWidth x.length h s *

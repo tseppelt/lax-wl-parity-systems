@@ -193,7 +193,7 @@ theorem runOn_toMachine (A : AMachine σ ι S) (x : List Bool) (t : ℕ) :
 
 theorem decidesWithin_toMachine (A : AMachine σ ι S) (x : List Bool) (P : Prop) (t : ℕ)
     (b : Bool) (hb : (A.run t (AMachine.init x)).answer = some b) (hP : b = true ↔ P) :
-    DecidesWithin A.toMachine x P t :=
+    DecidesExactlyWithin A.toMachine x P t :=
   ⟨b, by rw [runOn_toMachine]; exact hb, hP⟩
 
 end AMachine

@@ -13,7 +13,7 @@ to a machine of the archive model by enumerating states (initial state first) an
 `t + 1` steps. The compiled machine is deterministic by construction.
 
 Main results: `TM.computesWithin` and `TM.decidesWithin`, which turn a `RunsWithin`
-specification on the input tapes `inputTapes k x` into `ComputesWithin` and `DecidesWithin`
+specification on the input tapes `inputTapes k x` into `ComputesWithin` and `DecidesExactlyWithin`
 for the compiled machine.
 -/
 
@@ -258,7 +258,7 @@ theorem computesWithin {x y : List Bool} {t : ℕ} {T' : Tapes (k + 1) Γ}
     (h : M.RunsWithin (inputTapes k x) t T') (hy : (T' 0).cells = listCells (y.map bit)) :
     ComputesWithin (M.compileWith ans) x y (t + 1) := by
   obtain ⟨q', -, hrun⟩ := M.runOn_compileWith ans h
-  refine ⟨by simp [hrun], ?_⟩
+  refine ⟨by simp [HaltsWithin, hrun], ?_⟩
   rw [hrun, init_eq_toConfig]
   funext z
   show symEquiv Γ ((T' 0).cells z) = symEquiv Γ ((inputTapes k y 0).cells z)
@@ -270,7 +270,7 @@ assigned to every halting situation is correct, the compiled machine decides `P`
 theorem decidesWithin {x : List Bool} {t : ℕ} {T' : Tapes (k + 1) Γ} {P : Prop}
     (h : M.RunsWithin (inputTapes k x) t T')
     (hans : ∀ q, M.δ q (readAll T') = none → (ans q (readAll T') = true ↔ P)) :
-    Lax119563.DeterministicTime.DecidesWithin (M.compileWith ans) x P (t + 1) := by
+    Lax119563.DeterministicTime.DecidesExactlyWithin (M.compileWith ans) x P (t + 1) := by
   obtain ⟨q', hq', hrun⟩ := M.runOn_compileWith ans h
   exact ⟨_, by rw [hrun], hans q' hq'⟩
 

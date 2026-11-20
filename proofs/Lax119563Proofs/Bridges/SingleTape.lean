@@ -189,7 +189,7 @@ theorem singleTape_simulation_succ (M₀ : SingleTape) :
         StateTransition.EvalsToInTime (TM0.step M₀.transition)
           (TM0.init (w.map M₀.input)) (some c) T →
         TM0.step M₀.transition c = none →
-        DecidesWithin M w (M₀.accept c.q = true) (T + 1) := by
+        DecidesExactlyWithin M w (M₀.accept c.q = true) (T + 1) := by
   classical
   refine ⟨simMachine M₀, TM.deterministic_compileWith _ _, ?_⟩
   intro w c T hev hc
@@ -205,7 +205,7 @@ theorem singleTape_simulation_succ (M₀ : SingleTape) :
 by a deterministic machine of the archive model within `2 ^ p(|w|) + 1` steps. -/
 theorem exptime_decidesWithin {L : Set (List Bool)} (hL : L ∈ Lax434930.ExponentialTime.EXPTIME) :
     ∃ M : Machine, Deterministic M ∧ ∃ p : Polynomial ℕ, ∀ w : List Bool,
-      DecidesWithin M w (w ∈ L) (2 ^ p.eval w.length + 1) := by
+      DecidesExactlyWithin M w (w ∈ L) (2 ^ p.eval w.length + 1) := by
   obtain ⟨M₀, p, hM₀⟩ := hL
   obtain ⟨M, hM, h⟩ := singleTape_simulation_succ M₀
   refine ⟨M, hM, p, fun w => ?_⟩
@@ -231,7 +231,7 @@ theorem singleTape_simulation (M₀ : SingleTape) :
       Nonempty (StateTransition.EvalsToInTime (TM0.step M₀.transition)
         (TM0.init (w.map M₀.input)) (some c) T) →
       TM0.step M₀.transition c = none →
-      DecidesWithin M w (M₀.accept c.q = true) (C * (T + w.length + 1)) := by
+      DecidesExactlyWithin M w (M₀.accept c.q = true) (C * (T + w.length + 1)) := by
   obtain ⟨M, hM, h⟩ := singleTape_simulation_succ M₀
   refine ⟨M, hM, 1, fun w T c ⟨hev⟩ hc => ?_⟩
   exact Lax119563Proofs.Main.decidesWithin_mono (h w c T hev hc) (by omega)

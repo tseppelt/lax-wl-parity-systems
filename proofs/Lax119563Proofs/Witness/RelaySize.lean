@@ -180,7 +180,7 @@ def sizeConst (k : ℕ) : ℕ :=
 /-- **Size of the relay counter.** For `k ≥ 2`, the size parameter of the relay counter is at
 most `sizeConst k · 2^ℓ`. -/
 theorem relay_size (hk : 2 ≤ k) :
-    Lax119563.RowSpaceCompiler.sizeParameter (relay k ℓ) ≤ sizeConst k * 2 ^ ℓ := by
+    Lax119563.RowSpaceCompiler.rowSpaceSize (relay k ℓ) ≤ sizeConst k * 2 ^ ℓ := by
   set X := 2 ^ ℓ with hX
   have hX1 : 1 ≤ X := Nat.one_le_two_pow
   set A := ∑ j : Fin (nbits k ℓ), 2 ^ (ℓ - (j : ℕ) / (k - 1)) with hA
@@ -221,7 +221,7 @@ theorem relay_size (hk : 2 ≤ k) :
     have := endpoints_cost (k := k) (ℓ := ℓ)
     rw [← hX] at this
     omega
-  unfold Lax119563.RowSpaceCompiler.sizeParameter
+  unfold Lax119563.RowSpaceCompiler.rowSpaceSize
   calc ∑ x, ((relay k ℓ).domain x).card +
         (k + 1) * ((relay k ℓ).schemas.map fun e => e.domain.card + 2 ^ rowRank e).sum
       ≤ (k * X + k + k + 3 * (k * A)) +

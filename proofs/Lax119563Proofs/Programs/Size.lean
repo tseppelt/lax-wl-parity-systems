@@ -143,7 +143,7 @@ theorem compile_schemas_length :
 /-- **Size of the compiled system.** For `ℓ ≥ 1`, the size parameter of the matrix compiler is
 `O((s+1)·2^ℓ·w + (s+1)²·2^ℓ·ℓ·(r+1))` with an absolute constant. -/
 theorem sizeParameter_compile_le (hℓ : 1 ≤ ℓ) :
-    sizeParameter (R.compile p₀ a₀) ≤
+    matrixSize (R.compile p₀ a₀) ≤
       100 * ((s + 1) * 2 ^ ℓ * R.numLocations +
         (s + 1) ^ 2 * 2 ^ ℓ * ℓ * (R.commands.length + 1)) := by
   have hdom : ∑ v, ((R.compile p₀ a₀).domain v).card =
@@ -159,7 +159,7 @@ theorem sizeParameter_compile_le (hℓ : 1 ≤ ℓ) :
         exact nnz_le_of_one_le hℓ e)
     rw [List.length_map, smul_eq_mul] at hle
     exact hle.trans (Nat.mul_le_mul_right _ (R.compile_schemas_length p₀ a₀))
-  unfold sizeParameter
+  unfold matrixSize
   rw [hdom]
   exact size_arith hℓ hnnz
 

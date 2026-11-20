@@ -504,7 +504,7 @@ pass (`p4Bits`, `chkRk`), last track (`p4LT`), junction (`c1Jun`, `jLabs`), link
 `p4Rks` over the codes, entry `p4Ent` = `fLabs`/`uLabs`, codes restored via `qOrsB`), drop
 the codes (`p4Drop`)). Edge lists in numbers: `junL, lnkL, updL, updFL, entE, rksE, col2E,
 col1E`; `EE`/`EM` = `EdgeEff` restricted to `q4E`/`r4M`.
-**Interface target** (coordinator): `p4Sch_spec : SchSpec I (wordOf (H I) (sizeParameter I)) p4Sch
+**Interface target** (coordinator): `p4Sch_spec : SchSpec I (wordOf (H I) (matrixSize I)) p4Sch
 (K (H + S + 1) · nodeCost w)` for `3 ≤ k`, `1 ≤ ℓ`; `SchPre` starts at `pos = H` (so `p4Sch`
 must `rst` and skip to `schPos` itself), keeps `p4Keep` (`rKL = 31`, `rNt = 4`), stack 15
 untouched. The cost of the schema part is linear (`O(H + locBase)` word operations, no log).
@@ -653,8 +653,8 @@ Program `prog SCH = pre; ite (rv rTriv) progTriv (p4 SCH)` with `progTriv` emitt
 edge part `SCH`; the only hypothesis is the uniform interface
 ```
 hSCH : ∀ k, 3 ≤ k → ∀ ℓ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-  SchSpec I (wordOf (H I) (sizeParameter I)) SCH
-    (K * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)))
+  SchSpec I (wordOf (H I) (matrixSize I)) SCH
+    (K * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)))
 ```
 * **`prog_good hSCH`**: the hypotheses of `machine_of_program` with `a = 8`, `e = 3`,
   constant `7744 (2K + 910010)` (from `pre_good`, `word_hS`, `cost_conv`, `p4_good_chain`,

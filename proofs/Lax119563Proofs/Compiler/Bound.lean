@@ -46,7 +46,7 @@ lemma out_width {H S n : ℕ} (hn : n ≤ 16 * S) :
 /-- The output length in terms of `S` and `L`. -/
 theorem length_out_le_log {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ) (hk : 2 ≤ k) (H : ℕ) :
     (encodeNats (gDesc I 0 ++ gDesc I 1)).length ≤
-      2 * (2 + 7 * (16 * sizeParameter I)) * (2 * (Nat.log 2 (H + sizeParameter I + 2) + 7) + 1) := by
+      2 * (2 + 7 * (16 * matrixSize I)) * (2 * (Nat.log 2 (H + matrixSize I + 2) + 7) + 1) := by
   have hn := length_ordL_le I hk
   refine (length_out_le I (out_width (H := H) hn)).trans ?_
   exact Nat.mul_le_mul_right _ (by omega)
@@ -92,42 +92,42 @@ lemma one_le_bitLength {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ) : 1 ≤ bi
 theorem machine_of_program {R Q D : ℕ} (c : CStm R Q) (hd : c.depth ≤ D) (a K e : ℕ)
     (ha : 2 ≤ a) (he : 1 ≤ e)
     (hc : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      let w := a * (Nat.log 2 (bitLength I + sizeParameter I + 2) + 1)
+      let w := a * (Nat.log 2 (bitLength I + matrixSize I + 2) + 1)
       c.Fits (encodeSystem I) w (NSt.zero R Q) ∧
       (c.exec (encodeSystem I) (NSt.zero R Q)).out = gDesc I 0 ++ gDesc I 1 ∧
       c.cost (encodeSystem I) w (NSt.zero R Q) ≤
-        K * (bitLength I + sizeParameter I + 1) *
-          (Nat.log 2 (bitLength I + sizeParameter I + 2) + 1) ^ e) :
+        K * (bitLength I + matrixSize I + 1) *
+          (Nat.log 2 (bitLength I + matrixSize I + 2) + 1) ^ e) :
     ∃ M : Lax489179.TuringMachine.Machine, Lax489179.TuringMachine.Deterministic M ∧
       ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
       ∀ I : ImplicitParitySystem k ℓ,
         Lax119563.DeterministicTime.ComputesWithin M (encodeSystem I)
           (encodeNats (gDesc I 0 ++ gDesc I 1))
-          (C * (bitLength I + sizeParameter I) *
-            Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c) := by
+          (C * (bitLength I + matrixSize I) *
+            Nat.log 2 (bitLength I + matrixSize I + 2) ^ c) := by
   refine ⟨c.machine D, CStm.machine_deterministic D c, (2 ^ (e + 1) + 80) * (K + 3400) + 30, e,
     fun k hk ℓ hℓ I => ?_⟩
   obtain ⟨hf, ho, hco⟩ := hc k hk ℓ hℓ I
-  set L := Nat.log 2 (bitLength I + sizeParameter I + 2)
+  set L := Nat.log 2 (bitLength I + matrixSize I + 2)
   have hw : 2 ≤ a * (L + 1) := by nlinarith
   have h := CStm.computesWithin (D := D) hw hd hf
   rw [ho] at h
   refine Lax119563Proofs.Reduction.ComputesWithin.mono h ?_
   have hY := length_out_le_log I (by omega) (bitLength I)
-  have hL := one_le_log (bitLength I) (sizeParameter I)
+  have hL := one_le_log (bitLength I) (matrixSize I)
   have hH := one_le_bitLength I
   have hY' : (encodeNats (gDesc I 0 ++ gDesc I 1)).length ≤
-      (K + 3400) * (sizeParameter I + 1) * (L + 1) := by
+      (K + 3400) * (matrixSize I + 1) * (L + 1) := by
     refine hY.trans ?_
     have : 2 * (L + 7) + 1 ≤ 15 * (L + 1) := by omega
-    calc 2 * (2 + 7 * (16 * sizeParameter I)) * (2 * (L + 7) + 1)
-        ≤ 2 * (2 + 7 * (16 * sizeParameter I)) * (15 * (L + 1)) := Nat.mul_le_mul_left _ this
-      _ ≤ (K + 3400) * (sizeParameter I + 1) * (L + 1) := by
-          have hS : 2 * (2 + 7 * (16 * sizeParameter I)) * 15 ≤ (K + 3400) * (sizeParameter I + 1) := by nlinarith
-          calc _ = 2 * (2 + 7 * (16 * sizeParameter I)) * 15 * (L + 1) := by ring
+    calc 2 * (2 + 7 * (16 * matrixSize I)) * (2 * (L + 7) + 1)
+        ≤ 2 * (2 + 7 * (16 * matrixSize I)) * (15 * (L + 1)) := Nat.mul_le_mul_left _ this
+      _ ≤ (K + 3400) * (matrixSize I + 1) * (L + 1) := by
+          have hS : 2 * (2 + 7 * (16 * matrixSize I)) * 15 ≤ (K + 3400) * (matrixSize I + 1) := by nlinarith
+          calc _ = 2 * (2 + 7 * (16 * matrixSize I)) * 15 * (L + 1) := by ring
             _ ≤ _ := Nat.mul_le_mul_right _ hS
   have hco' : c.cost (encodeSystem I) (a * (L + 1)) (NSt.zero R Q) ≤
-      (K + 3400) * (bitLength I + sizeParameter I + 1) * (L + 1) ^ e :=
+      (K + 3400) * (bitLength I + matrixSize I + 1) * (L + 1) ^ e :=
     hco.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega)))
   exact final_bound (K := K + 3400) hH hL he (by unfold bitLength at *; omega) hY'
 

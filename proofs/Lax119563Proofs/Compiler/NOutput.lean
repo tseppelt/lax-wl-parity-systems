@@ -223,7 +223,7 @@ theorem NProg.computesWithinO {p : NProg R Q} {x : List Bool} {w t : ℕ} {st' :
   have hE := Mach.toMachine_ends_tapes (n := R + Q + 6) (m := 0) (M := machOMach p)
     (s := .inl (.inl (.inl (outP₁ p).start))) E
   have hc : ComputesWithin p.machineO x y (t₁ + (3 * x.length + 1) + t₂ + 1) := by
-    unfold ComputesWithin
+    unfold ComputesWithin HaltsWithin
     rw [runOn_eq_drun, NProg.machineO, Mach.init_toMachine, hE.1, hE.2, Mach.init_toMachine]
     refine ⟨rfl, ?_⟩
     funext z

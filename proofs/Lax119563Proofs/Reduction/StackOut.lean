@@ -174,7 +174,7 @@ theorem Prog.computesWithin {p : Hierarchy.Prog (K + 1) m}
   have hE' := Mach.seq_left_exit (M₂ := Mach.haltWith (fun r => ans (fun i => decSym (r i))))
     hE (Mach.haltWith_ends _ T')
   have := Mach.toMachine_ends_tapes (s := .inl p.start) hE'
-  unfold ComputesWithin
+  unfold ComputesWithin HaltsWithin
   rw [runOn_eq_drun, Hierarchy.Prog.toMachine, Mach.init_toMachine, this.1, this.2,
     Mach.init_toMachine]
   refine ⟨rfl, ?_⟩

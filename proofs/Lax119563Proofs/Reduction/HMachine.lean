@@ -79,7 +79,7 @@ lemma ComputesWithin.mono {M : Machine} {x y : List Bool} {t t' : ℕ}
     (h : ComputesWithin M x y t) (ht : t ≤ t') : ComputesWithin M x y t' := by
   have e := Circuits.runOn_halted (M := M) x h.1 (t' - t)
   rw [Nat.add_sub_cancel' ht] at e
-  unfold ComputesWithin
+  unfold ComputesWithin HaltsWithin at *
   rw [e]; exact h
 
 /-- **Machines of register programs.** -/

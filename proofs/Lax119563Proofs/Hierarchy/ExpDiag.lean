@@ -173,7 +173,7 @@ theorem diagExp_dt : DecidableInTime diagExpLang (fun n => (2 : ℝ) ^ (n : ℝ)
   refine ⟨diagExpMachine, thenClocked_deterministic _ _ _, K, fun y => ?_⟩
   obtain ⟨s', ⟨t, ht, hr⟩, hH, hK⟩ := expPrep_runs y
   have hans := thenClocked_answer hr hH hK
-  have hdec : Lax119563.DeterministicTime.DecidesWithin diagExpMachine y (y ∈ diagExpLang) (t + 2 ^ y.length + 1) := by
+  have hdec : Lax119563.DeterministicTime.DecidesExactlyWithin diagExpMachine y (y ∈ diagExpLang) (t + 2 ^ y.length + 1) := by
     refine ⟨_, hans, ?_⟩
     simp only [diagExpLang, Set.mem_ofPred_eq]
     rcases (runOn simMachine y (2 ^ y.length)).answer with _ | _ | _ <;> simp

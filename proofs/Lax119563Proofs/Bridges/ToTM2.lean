@@ -58,29 +58,29 @@ def evalsToInTime_mono {σ : Type} {f : σ → Option σ} {a : σ} {b : Option �
 conclusion: Lax119563.MachineTranslations.tm2_of_polyTime
 ---
 The stack machine `tm R idIn idOut` simulates `R` (`TM2Sim.simulate`) within
-`30 (|x| + T) + 30` steps for `T = C |x|^d + C`, a polynomial in `|x|`.
+`30 (|x| + T) + 30` steps for `T = C (|x| + 1)^d`, a polynomial in `|x|`.
 -/
 theorem tm2_of_polyTime {f : List Bool → List Bool} (R : Machine) (_hR : Deterministic R)
-    (C d : ℕ) (hf : ∀ x, ComputesWithin R x (f x) (C * x.length ^ d + C)) :
+    (C d : ℕ) (hf : ∀ x, ComputesWithin R x (f x) (C * (x.length + 1) ^ d)) :
     Nonempty (TM2ComputableInPolyTime id id f) := by
   refine ⟨{
     tm := tm R idIn idOut
     inputAlphabet := Equiv.refl Bool
     outputAlphabet := Equiv.refl Bool
-    time := 30 * (Polynomial.X + Polynomial.C C * Polynomial.X ^ d + Polynomial.C C) + 30
+    time := 30 * (Polynomial.X + Polynomial.C C * (Polynomial.X + 1) ^ d) + 30
     outputsFun := fun x => ?_ }⟩
-  have hx : ComputesWithin R (idIn.run idIn.start x) (f x) (C * x.length ^ d + C) := by
+  have hx : ComputesWithin R (idIn.run idIn.start x) (f x) (C * (x.length + 1) ^ d) := by
     rw [show idIn.start = () from rfl, idIn_run]; exact hf x
   have h := Classical.choice (simulate (τo := idOut) x (f x) _ hx)
   rw [show idOut.start = () from rfl, idOut_run] at h
-  have hle : 30 * (x.length + (C * x.length ^ d + C)) + 30 ≤ Polynomial.eval x.length
-      (30 * (Polynomial.X + Polynomial.C C * Polynomial.X ^ d + Polynomial.C C) + 30) := by
-    simp; omega
+  have hle : 30 * (x.length + (C * (x.length + 1) ^ d)) + 30 ≤ Polynomial.eval x.length
+      (30 * (Polynomial.X + Polynomial.C C * (Polynomial.X + 1) ^ d) + 30) := by
+    simp
   have h' := evalsToInTime_mono h hle
   have e : ∀ l : List Bool, List.map (Equiv.refl Bool).invFun l = l := fun l => List.map_id l
   have key : ∀ a b : List Bool, a = x → b = f x →
       TM2OutputsInTime (tm R idIn idOut) a (some b) (Polynomial.eval x.length
-        (30 * (Polynomial.X + Polynomial.C C * Polynomial.X ^ d + Polynomial.C C) + 30)) := by
+        (30 * (Polynomial.X + Polynomial.C C * (Polynomial.X + 1) ^ d) + 30)) := by
     rintro a b rfl rfl; exact h'
   exact key _ _ (e x) (e (f x))
 

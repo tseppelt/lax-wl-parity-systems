@@ -167,14 +167,14 @@ lemma p4_cost_arith {N h s Z0 Z1 C : ℕ} (h0 : Z0 ≤ 4 * h + 80 * s) (h1 : Z1 
 `P0`–`P3` of a nontrivial system, `p4 SCH` appends `gDesc I 0 ++ gDesc I 1`, at cost
 `700000 (H + S + 1) · nodeCost w + 2 C`. -/
 theorem p4_good_chain (hk : 2 ≤ k) (ht : ¬ trivSys I) {SCH : CStm CR CQ} {C : ℕ}
-    (hSpec : SchSpec I (wordOf (H I) (sizeParameter I)) SCH C) (st : NSt CR CQ)
-    (hb : st.Bdd (wordOf (H I) (sizeParameter I))) (hp : st.pos ≤ H I) (hL : ChainLoc I st)
+    (hSpec : SchSpec I (wordOf (H I) (matrixSize I)) SCH C) (st : NSt CR CQ)
+    (hb : st.Bdd (wordOf (H I) (matrixSize I))) (hp : st.pos ≤ H I) (hL : ChainLoc I st)
     (hC : (I.schemas = [] ∧ ChainNoSch I st) ∨ (I.schemas ≠ [] ∧ ChainSch I st)) :
-    ∃ st', Good (encodeSystem I) (wordOf (H I) (sizeParameter I)) (p4 SCH) st st'
-        (700000 * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)) +
+    ∃ st', Good (encodeSystem I) (wordOf (H I) (matrixSize I)) (p4 SCH) st st'
+        (700000 * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)) +
           2 * C) ∧
       st'.out = st.out ++ gDesc I 0 ++ gDesc I 1 := by
-  have hw := two_pow_word (H I) (sizeParameter I)
+  have hw := two_pow_word (H I) (matrixSize I)
   have hO := length_ordL_le I hk
   have hcl : (clsSizes I).sum = (ordL I).length := (length_ordL I).symm
   obtain ⟨st', r, ho, -⟩ := p4_good I (two_le_wordOf _ _) (by omega) (ell_le_H I (by omega) ht)

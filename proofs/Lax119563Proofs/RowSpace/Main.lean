@@ -26,7 +26,7 @@ theorem rsGraph_spec {k ℓ : ℕ} (hk : 3 ≤ k) (I : ImplicitParitySystem k �
     (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
       DuplicatorSurvives (k + 1) r (rsGraph I 0) (rsGraph I 1)) ∧
     (∀ ε, (rsGraph I ε).n = (names I).card) ∧
-    (names I).card ≤ 10 * Lax119563.RowSpaceCompiler.sizeParameter I ∧
+    (names I).card ≤ 10 * Lax119563.RowSpaceCompiler.rowSpaceSize I ∧
     (∀ F : ColoredGraph, TreewidthAtMost F k → hom F (rsGraph I 0) ≠ hom F (rsGraph I 1) →
       HasContradictionWithin I.toParitySystem (5 * F.n + 1)) :=
   ⟨fun _ hτ => spoilerWins hk hτ,
@@ -56,7 +56,7 @@ theorem rowspace_compiler : ∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ
     ∀ I : ImplicitParitySystem k ℓ, ∃ G₀ G₁ : ColoredGraph,
       (∀ τ : ℕ, I.conflictRound = τ → SpoilerWinsWithin (k + 1) (Cₖ * (τ + 1)) G₀ G₁) ∧
       (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound → DuplicatorSurvives (k + 1) r G₀ G₁) ∧
-      G₀.n + G₁.n ≤ C * Lax119563.RowSpaceCompiler.sizeParameter I ∧
+      G₀.n + G₁.n ≤ C * Lax119563.RowSpaceCompiler.rowSpaceSize I ∧
       (∀ F : ColoredGraph, TreewidthAtMost F k → hom F G₀ ≠ hom F G₁ →
         HasContradictionWithin I.toParitySystem (5 * F.n + 1)) := by
   refine ⟨20, fun k hk => ⟨spoilerConst k, fun ℓ _ I => ?_⟩⟩

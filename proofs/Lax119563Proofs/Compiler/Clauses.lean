@@ -107,7 +107,7 @@ theorem reGraph_spec (hk : 3 ≤ k) (L : List (VName I)) (hp : L.Perm (vertexLis
         (reGraph I L 0) (reGraph I L 1)) ∧
     (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
       DuplicatorSurvives (k + 1) r (reGraph I L 0) (reGraph I L 1)) ∧
-    (reGraph I L 0).n + (reGraph I L 1).n ≤ 32 * sizeParameter I ∧
+    (reGraph I L 0).n + (reGraph I L 1).n ≤ 32 * matrixSize I ∧
     (reGraph I L 0).numEdges + (reGraph I L 1).numEdges ≤
       3 * ((reGraph I L 0).n + (reGraph I L 1).n) := by
   have hV := nodup_vertexList I
@@ -118,7 +118,7 @@ theorem reGraph_spec (hk : 3 ≤ k) (L : List (VName I)) (hp : L.Perm (vertexLis
   refine ⟨fun τ hτ hD => spoilerWins (by omega) hτ ((duplicatorSurvives_iff_of_corr C _).mpr hD),
     fun r hr => (duplicatorSurvives_iff_of_corr C r).mp
       (duplicatorSurvives (by omega) (not_hasConflict_of_lt I hr)), ?_, ?_⟩
-  · show L.length + L.length ≤ 32 * sizeParameter I
+  · show L.length + L.length ≤ 32 * matrixSize I
     have := card_vertexList_le (I := I) (by omega)
     omega
   · rw [numEdges_reGraph hL hV hp 0, numEdges_reGraph hL hV hp 1]

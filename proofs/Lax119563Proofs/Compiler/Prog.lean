@@ -65,32 +65,32 @@ set_option maxHeartbeats 1000000 in
 a schema edge part with a uniform `SchSpec` of cost `K (H + S + 1) · nodeCost w`. -/
 theorem prog_good {SCH : CStm CR CQ} {K : ℕ}
     (hSCH : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      SchSpec I (wordOf (H I) (sizeParameter I)) SCH
-        (K * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)))) :
+      SchSpec I (wordOf (H I) (matrixSize I)) SCH
+        (K * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)))) :
     ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      let w := 8 * (Nat.log 2 (bitLength I + sizeParameter I + 2) + 1)
+      let w := 8 * (Nat.log 2 (bitLength I + matrixSize I + 2) + 1)
       (prog SCH).Fits (encodeSystem I) w (NSt.zero CR CQ) ∧
       ((prog SCH).exec (encodeSystem I) (NSt.zero CR CQ)).out = gDesc I 0 ++ gDesc I 1 ∧
       (prog SCH).cost (encodeSystem I) w (NSt.zero CR CQ) ≤
-        7744 * (2 * K + 910010) * (bitLength I + sizeParameter I + 1) *
-          (Nat.log 2 (bitLength I + sizeParameter I + 2) + 1) ^ 3 := by
+        7744 * (2 * K + 910010) * (bitLength I + matrixSize I + 1) *
+          (Nat.log 2 (bitLength I + matrixSize I + 2) + 1) ^ 3 := by
   intro k hk ℓ hℓ I
-  show (prog SCH).Fits (encodeSystem I) (wordOf (H I) (sizeParameter I)) (NSt.zero CR CQ) ∧
+  show (prog SCH).Fits (encodeSystem I) (wordOf (H I) (matrixSize I)) (NSt.zero CR CQ) ∧
       ((prog SCH).exec (encodeSystem I) (NSt.zero CR CQ)).out = gDesc I 0 ++ gDesc I 1 ∧
-      (prog SCH).cost (encodeSystem I) (wordOf (H I) (sizeParameter I)) (NSt.zero CR CQ) ≤
-        7744 * (2 * K + 910010) * (H I + sizeParameter I + 1) *
-          (Nat.log 2 (H I + sizeParameter I + 2) + 1) ^ 3
-  have hU := CStm.nodeCost_ge (wordOf (H I) (sizeParameter I))
-  have hA' := cost_conv 210000 (H I) (sizeParameter I)
-  have hB' := cost_conv_lin (700010 + 2 * K) (H I) (sizeParameter I)
-  have hc := condCost_rv (wordOf (H I) (sizeParameter I)) rTriv
+      (prog SCH).cost (encodeSystem I) (wordOf (H I) (matrixSize I)) (NSt.zero CR CQ) ≤
+        7744 * (2 * K + 910010) * (H I + matrixSize I + 1) *
+          (Nat.log 2 (H I + matrixSize I + 2) + 1) ^ 3
+  have hU := CStm.nodeCost_ge (wordOf (H I) (matrixSize I))
+  have hA' := cost_conv 210000 (H I) (matrixSize I)
+  have hB' := cost_conv_lin (700010 + 2 * K) (H I) (matrixSize I)
+  have hc := condCost_rv (wordOf (H I) (matrixSize I)) rTriv
   obtain ⟨s, r, hout, hb, hp, htriv, hnt⟩ :=
     pre_good I (two_le_wordOf _ _) (by omega) (word_hS I (by omega))
-  have hf : (rv rTriv : Ex CR).Fits (wordOf (H I) (sizeParameter I)) s.env := hb.1 rTriv
-  suffices h : ∃ s' t, Good (encodeSystem I) (wordOf (H I) (sizeParameter I)) (prog SCH)
+  have hf : (rv rTriv : Ex CR).Fits (wordOf (H I) (matrixSize I)) s.env := hb.1 rTriv
+  suffices h : ∃ s' t, Good (encodeSystem I) (wordOf (H I) (matrixSize I)) (prog SCH)
       (NSt.zero CR CQ) s' t ∧ s'.out = gDesc I 0 ++ gDesc I 1 ∧
-      t ≤ 7744 * (2 * K + 910010) * (H I + sizeParameter I + 1) *
-          (Nat.log 2 (H I + sizeParameter I + 2) + 1) ^ 3 by
+      t ≤ 7744 * (2 * K + 910010) * (H I + matrixSize I + 1) *
+          (Nat.log 2 (H I + matrixSize I + 2) + 1) ^ 3 by
     obtain ⟨s', t, ⟨hF, hE, hC⟩, ho, ht⟩ := h
     exact ⟨hF, by rw [hE, ho], hC.trans ht⟩
   by_cases ht : trivSys I
@@ -114,21 +114,21 @@ theorem prog_good {SCH : CStm CR CQ} {K : ℕ}
 /-- **The machine clause of the concept**, from a schema edge part with a uniform `SchSpec`. -/
 theorem machine_clause_of_schSpec {SCH : CStm CR CQ} {K : ℕ}
     (hSCH : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      SchSpec I (wordOf (H I) (sizeParameter I)) SCH
-        (K * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)))) :
+      SchSpec I (wordOf (H I) (matrixSize I)) SCH
+        (K * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)))) :
     ∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
       ∀ I : ImplicitParitySystem k ℓ,
         ComputesWithin M (encodeSystem I) (encodeNats (gDesc I 0 ++ gDesc I 1))
-          (C * (bitLength I + sizeParameter I) *
-            Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c) :=
+          (C * (bitLength I + matrixSize I) *
+            Nat.log 2 (bitLength I + matrixSize I + 2) ^ c) :=
   machine_of_program (prog SCH) le_rfl 8 _ 3 (by norm_num) (by norm_num) (prog_good hSCH)
 
 /-- **The matrix compiler**, from a schema edge part with a uniform `SchSpec`: the statement
 of `Lax119563.MatrixCompiler.matrix_compiler`. -/
 theorem matrix_compiler_of_schSpec {SCH : CStm CR CQ} {K : ℕ}
     (hSCH : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      SchSpec I (wordOf (H I) (sizeParameter I)) SCH
-        (K * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I)))) :
+      SchSpec I (wordOf (H I) (matrixSize I)) SCH
+        (K * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)))) :
     ∃ compile : ∀ {k ℓ : ℕ}, ImplicitParitySystem k ℓ → ColoredGraph × ColoredGraph,
       (∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
@@ -136,14 +136,14 @@ theorem matrix_compiler_of_schSpec {SCH : CStm CR CQ} {K : ℕ}
             SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
           (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
-          (compile I).1.n + (compile I).2.n ≤ C * sizeParameter I ∧
+          (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
             3 * ((compile I).1.n + (compile I).2.n)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
-            (C * (bitLength I + sizeParameter I) *
-              Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c)) :=
+            (C * (bitLength I + matrixSize I) *
+              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) :=
   matrix_compiler_of_machine (machine_clause_of_schSpec hSCH)
 
 end Lax119563Proofs.Compiler

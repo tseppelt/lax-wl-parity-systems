@@ -138,7 +138,7 @@ lemma sum_get_eq' {α : Type*} (l : List α) (f : α → ℕ) :
 
 /-- **Size bound.** -/
 theorem card_names_le (hk : 3 ≤ k) (I : ImplicitParitySystem k ℓ) :
-    (names I).card ≤ 10 * Lax119563.RowSpaceCompiler.sizeParameter I := by
+    (names I).card ≤ 10 * Lax119563.RowSpaceCompiler.rowSpaceSize I := by
   classical
   have h0 : (names I).card ≤ ∑ X ∈ classes I, (labs I X).card := by
     unfold names
@@ -155,7 +155,7 @@ theorem card_names_le (hk : 3 ≤ k) (I : ImplicitParitySystem k ℓ) :
     rw [← Finset.mul_sum]
     congr 1
     exact sum_get_eq' I.schemas (fun e => e.domain.card + 2 ^ rowRank e)
-  unfold Lax119563.RowSpaceCompiler.sizeParameter
+  unfold Lax119563.RowSpaceCompiler.rowSpaceSize
   rw [h2] at h1
   rw [mul_add, ← mul_assoc]; omega
 

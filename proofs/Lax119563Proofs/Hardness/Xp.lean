@@ -162,13 +162,22 @@ lemma xp_kappa_padded {Mκ : Machine} {κ : List Bool → ℕ} {Cκ d : ℕ}
 
 /-- The decider on padded inputs. -/
 lemma xp_padded_decides {P : ParameterizedProblem} {M : Machine} {f : ℕ → ℕ}
-    (hdec : ∀ x : List Bool, DecidesWithin M x (x ∈ P.L) (f (P.κ x) * (x.length + 1) ^ f (P.κ x)))
+    (hdec : ∀ x : List Bool, DecidesExactlyWithin M x (x ∈ P.L) (f (P.κ x) * (x.length + 1) ^ f (P.κ x)))
     (x : List Bool) :
-    DecidesWithin (Main.Compose.comp dropMachine M false fun _ => false).toMachine
+    DecidesExactlyWithin (Main.Compose.comp dropMachine M false fun _ => false).toMachine
       (true :: true :: x) (x ∈ P.L) ((x.length + 4) ^ (2 * f (P.κ x) + 4)) := by
   have hc := Main.Compose.compose_decidesWithin dropMachine M false (fun _ => false)
     (x := true :: true :: x) (by simp) (drop_computesWithin x) (hdec x)
   exact Main.decidesWithin_mono hc (xp_halt_arith _ _)
+
+lemma succ_pow_le (n E : ℕ) : (n + 1) ^ E ≤ 2 ^ E * n ^ E + 2 ^ E := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have := Nat.one_le_two_pow (n := E)
+    simp only [zero_add, one_pow]
+    omega
+  · have : (n + 1) ^ E ≤ (2 * n) ^ E := Nat.pow_le_pow_left (by omega) E
+    rw [mul_pow] at this
+    exact this.trans (Nat.le_add_right _ _)
 
 /--
 ---
@@ -186,7 +195,14 @@ is polynomial in `|x|` with a degree independent of `k`, since the block width i
 -/
 theorem wl_xp_hard : ∀ P ∈ XP, FptReduces P paramWLProblem := by
   intro P hP
-  obtain ⟨⟨Mκ, -, Cκ, d, hκ⟩, M, -, f, hf, hdec⟩ := hP
+  obtain ⟨⟨Mκ, -, Cκ₀, d, hκ₀⟩, M, -, f, hf, hdec⟩ := hP
+  obtain ⟨Cκ, hCκ⟩ : ∃ C, C = Cκ₀ * 2 ^ d := ⟨_, rfl⟩
+  have hκ : ∀ x, ComputesWithin Mκ x (encodeNat (P.κ x)) (Cκ * x.length ^ d + Cκ) := fun x =>
+    Main.Compose.computesWithin_mono' (hκ₀ x) (by
+      rw [hCκ]
+      calc Cκ₀ * (x.length + 1) ^ d ≤ Cκ₀ * (2 ^ d * x.length ^ d + 2 ^ d) :=
+            Nat.mul_le_mul_left _ (succ_pow_le x.length d)
+        _ = Cκ₀ * 2 ^ d * x.length ^ d + Cκ₀ * 2 ^ d := by ring)
   have hF : MachineComputable fun k => 2 * f k + 4 :=
     MachineComputable.add_const (MachineComputable.mul_const hf 2) 4
   obtain ⟨Mf, -, hMf, hT⟩ := MachineComputable.exists_time hF

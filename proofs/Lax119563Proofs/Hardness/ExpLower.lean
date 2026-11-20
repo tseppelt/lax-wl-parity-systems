@@ -1,6 +1,7 @@
 import Lax119563.ExponentialLowerBound
 import Lax119563.ExponentialTimeHierarchy
 import Lax119563Proofs.Hardness.ParMachine
+import Lax119563Proofs.Hardness.PipelineLen
 import Lax119563Proofs.Hardness.ExpAsymptotics
 
 /-!
@@ -10,9 +11,10 @@ By the exponential time hierarchy theorem there is a language `L` decidable in t
 but not in time `O(2^{n/4})`. For an input `x` of length `n ≥ 2` choose the horizon
 `h = n + c₀` (so that the decider of `L` halts within `2^h` steps), `a = ⌈log₂ (n + 2)⌉` and
 the least `s` with `s a ≥ h + 2`. Then the packed width is `a`, and the pipeline produces
-graphs with `N = O((h + 3)^5)` vertices in polynomial time. A decider for WL Distinguishing
-running in time `O(2^{ε N^{1/5}})` with `ε` small would then decide `L` in time
-`O(2^{n/4})`.
+in polynomial time an instance of length `N = O((h + 4)^5)` (`pipeline_len`, with the
+explicit matrix compiler, whose output has length `O(S log S)`; here `S = O(h^4 2^a / a)`).
+A decider for WL Distinguishing running in time `O(2^{ε N^{1/5}})` with `ε` small would then
+decide `L` in time `O(2^{n/4})`.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings
@@ -23,28 +25,90 @@ namespace Lax119563Proofs.Hardness
 
 /-! ## Arithmetic -/
 
-/-- The size bound: `N = O(m^5)`. -/
-lemma exp_size_arith {CR s a h n m : ℕ} (ha1 : 1 ≤ a) (hah : a ≤ h + 2)
-    (hsa : s * a ≤ h + 2 + a) (hs : s + 1 ≤ h + 3) (h2a : 2 ^ a ≤ 2 * (n + 2))
-    (hm1 : h + 3 ≤ m) (hm2 : n + 2 ≤ m) :
-    CR * (s + 1) ^ 2 * 2 ^ a * (a + 1) * (h + 1) ^ 2 ≤ 12 * CR * m ^ 5 := by
-  have e1 : (s + 1) * a ≤ 3 * (h + 3) := by
-    have : (s + 1) * a = s * a + a := by ring
+/-- The length bound: the instance has length `O(m^5)`. The factor `log₂ S = O(a)` of the
+encoding is absorbed by `(s + 1) a = O(m)`. -/
+lemma exp_len_arith {Cs n s a h m c₀ : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ n + 2) (hn2 : n + 2 ≤ 2 ^ a)
+    (h2a : 2 ^ a ≤ 2 * (n + 2)) (hsa : s * a ≤ h + 2 + a) (hs : s + 1 ≤ h + 3)
+    (hh : h = n + c₀) (hm : m = h + 4) :
+    2 * (s + 1) + 1 + 3360 * (Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) + 1) *
+      (Nat.log 2 (Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) + 2) + 1) ≤
+      (3360 * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) + 3) * m ^ 5 := by
+  obtain ⟨Sb, hSb⟩ : ∃ Sb, Sb = Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) := ⟨_, rfl⟩
+  rw [← hSb]
+  have hm1 : 1 ≤ m := by omega
+  have ham : a + 1 ≤ m := by omega
+  -- (i) a crude bound for the logarithm
+  have hSb6 : Sb + 2 ≤ (2 * Cs + 2) * m ^ 6 := by
+    have h1 : (h + 1) ^ 2 ≤ m ^ 2 := Nat.pow_le_pow_left (by omega) 2
+    have h2 : (s + 1) ^ 2 ≤ m ^ 2 := Nat.pow_le_pow_left (by omega) 2
+    have h3 : 2 ^ a ≤ 2 * m := by omega
+    have h4 : Sb ≤ Cs * m ^ 2 * m ^ 2 * (2 * m) * m := by
+      rw [hSb]
+      exact Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left _ h1) h2) h3) ham
+    have e : Cs * m ^ 2 * m ^ 2 * (2 * m) * m = 2 * Cs * m ^ 6 := by ring
+    have h5 : 1 ≤ m ^ 6 := Nat.one_le_pow _ _ hm1
+    have e2 : (2 * Cs + 2) * m ^ 6 = 2 * Cs * m ^ 6 + 2 * m ^ 6 := by ring
     omega
-  have e2 : (s + 1) ^ 2 * (a + 1) ≤ 6 * m ^ 2 := by
-    calc (s + 1) ^ 2 * (a + 1) ≤ (s + 1) ^ 2 * (2 * a) := Nat.mul_le_mul_left _ (by omega)
-      _ = 2 * ((s + 1) * ((s + 1) * a)) := by ring
-      _ ≤ 2 * ((h + 3) * (3 * (h + 3))) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul hs e1)
-      _ = 6 * (h + 3) ^ 2 := by ring
-      _ ≤ 6 * m ^ 2 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hm1 2)
-  have e3 : 2 ^ a ≤ 2 * m := h2a.trans (by omega)
-  have e4 : (h + 1) ^ 2 ≤ m ^ 2 := Nat.pow_le_pow_left (by omega) 2
-  calc CR * (s + 1) ^ 2 * 2 ^ a * (a + 1) * (h + 1) ^ 2
-      = CR * ((s + 1) ^ 2 * (a + 1)) * 2 ^ a * (h + 1) ^ 2 := by ring
-    _ ≤ CR * (6 * m ^ 2) * (2 * m) * m ^ 2 :=
-        Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left _ e2) e3) e4
-    _ = 12 * CR * m ^ 5 := by ring
+  -- (ii) `m ≤ 2^{a + c₀ + 2}`
+  have hmp : m ≤ 2 ^ (a + (c₀ + 2)) := by
+    have h1 : c₀ + 2 < 2 ^ (c₀ + 2) := Nat.lt_two_pow_self
+    have h2 : 2 ≤ 2 ^ a := by
+      calc 2 = 2 ^ 1 := by norm_num
+        _ ≤ 2 ^ a := Nat.pow_le_pow_right (by norm_num) ha1
+    have h3 : 4 ≤ 2 ^ (c₀ + 2) := by
+      calc 4 = 2 ^ 2 := by norm_num
+        _ ≤ 2 ^ (c₀ + 2) := Nat.pow_le_pow_right (by norm_num) (by omega)
+    rw [pow_add]
+    have : 2 ^ a + 2 ^ (c₀ + 2) ≤ 2 ^ a * 2 ^ (c₀ + 2) := by nlinarith
+    omega
+  -- (iii) `log₂ (S + 2) + 1 ≤ K₁ a`
+  have hlog : Nat.log 2 (Sb + 2) + 1 ≤ (2 * Cs + 6 * c₀ + 21) * a := by
+    have h1 : Sb + 2 < 2 ^ (2 * Cs + 2 + 6 * (a + (c₀ + 2))) := by
+      have hA : 2 * Cs + 2 < 2 ^ (2 * Cs + 2) := Nat.lt_two_pow_self
+      have hB : m ^ 6 ≤ 2 ^ (6 * (a + (c₀ + 2))) := by
+        rw [mul_comm, pow_mul]; exact Nat.pow_le_pow_left hmp 6
+      have hB1 : 1 ≤ m ^ 6 := Nat.one_le_pow _ _ hm1
+      calc Sb + 2 ≤ (2 * Cs + 2) * m ^ 6 := hSb6
+        _ < 2 ^ (2 * Cs + 2) * 2 ^ (6 * (a + (c₀ + 2))) :=
+          Nat.mul_lt_mul_of_lt_of_le hA hB (by omega)
+        _ = _ := by rw [← pow_add]
+    have h2 := Nat.log_lt_of_lt_pow (by omega) h1
+    have h3 : (2 * Cs + 6 * c₀ + 15) * 1 ≤ (2 * Cs + 6 * c₀ + 15) * a :=
+      Nat.mul_le_mul_left _ ha1
+    have e : (2 * Cs + 6 * c₀ + 21) * a = (2 * Cs + 6 * c₀ + 15) * a + 6 * a := by ring
+    omega
+  -- (iv) `(S + 1) a = O(m^5)`
+  have hSa : (Sb + 1) * a ≤ (36 * Cs + 1) * m ^ 5 := by
+    have hsa' : (s + 1) * a ≤ 3 * m := by
+      have : (s + 1) * a = s * a + a := by ring
+      omega
+    have h1 : (s + 1) ^ 2 * (a + 1) * a ≤ 18 * m ^ 2 := by
+      calc (s + 1) ^ 2 * (a + 1) * a ≤ (s + 1) ^ 2 * (2 * a) * a :=
+            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (by omega))
+        _ = 2 * ((s + 1) * a) ^ 2 := by ring
+        _ ≤ 2 * (3 * m) ^ 2 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hsa' 2)
+        _ = 18 * m ^ 2 := by ring
+    have h2 : Sb * a ≤ 36 * Cs * m ^ 5 := by
+      calc Sb * a = Cs * (h + 1) ^ 2 * 2 ^ a * ((s + 1) ^ 2 * (a + 1) * a) := by rw [hSb]; ring
+        _ ≤ Cs * m ^ 2 * (2 * m) * (18 * m ^ 2) :=
+          Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left _
+            (Nat.pow_le_pow_left (by omega) 2)) (by omega)) h1
+        _ = 36 * Cs * m ^ 5 := by ring
+    have h3 : a ≤ m ^ 5 := le_trans (by omega) (Nat.le_self_pow (by norm_num) m)
+    have e : (Sb + 1) * a = Sb * a + a := by ring
+    have e2 : (36 * Cs + 1) * m ^ 5 = 36 * Cs * m ^ 5 + m ^ 5 := by ring
+    omega
+  have hfin : 3360 * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1) ≤
+      3360 * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) * m ^ 5 := by
+    calc 3360 * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1)
+        ≤ 3360 * (Sb + 1) * ((2 * Cs + 6 * c₀ + 21) * a) := Nat.mul_le_mul_left _ hlog
+      _ = 3360 * (2 * Cs + 6 * c₀ + 21) * ((Sb + 1) * a) := by ring
+      _ ≤ 3360 * (2 * Cs + 6 * c₀ + 21) * ((36 * Cs + 1) * m ^ 5) := Nat.mul_le_mul_left _ hSa
+      _ = _ := by ring
+  have hs3 : 2 * (s + 1) + 1 ≤ 3 * m ^ 5 := by
+    have : m ≤ m ^ 5 := Nat.le_self_pow (by norm_num) m
+    omega
+  exact (Nat.add_le_add hs3 hfin).trans (le_of_eq (by ring))
 
 /-- The time of the reduction: polynomial in `m`. -/
 lemma exp_time_arith {tP tR KP CR c s ℓ h m : ℕ} (htP : tP ≤ KP * m ^ 3)
@@ -117,7 +181,7 @@ Let `L ∈ DTIME(2^n) \ DTIME(2^{n/4})` be decided by `M` within `C₀ 2^n + C�
 put `c₀ = 2 C₀ + 2`. For `|x| = n ≥ 2`, `h = n + c₀`, `a = ⌈log₂(n + 2)⌉` and `s` the least
 number with `s a ≥ h + 2`, a machine computes `encodeNats [h, s] ++ x` in time `O(m^3)`
 (`m = n + c₀ + 4`), and the pipeline turns it in time `m^{O(1)}` into an instance
-`(s + 1, G₀, G₁)` with `N = |V(G₀)| + |V(G₁)| ≤ B m^5`, which `(s+1)`-WL distinguishes iff
+`(s + 1, G₀, G₁)` of length `N ≤ B m^5` (`exp_len_arith`), which `(s+1)`-WL distinguishes iff
 `x ∈ L`. With `ε = 1 / (4 (B + 1)^{1/5})`, a decider for WL Distinguishing within
 `C 2^{ε N^{1/5}} + C` steps runs within `C 2^{m/4} + C` steps on these instances; together
 with the polynomial reduction this decides `L` in time `O(2^{n/4})`, a contradiction.
@@ -125,14 +189,16 @@ with the polynomial reduction this decides `L` in time `O(2^{n/4})`, a contradic
 theorem exponential_lower_bound :
     ∃ ε : ℝ, 0 < ε ∧ ¬ ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ,
       ∀ (k : ℕ) (G H : ColoredGraph),
-        DecidesWithin M (encodeWLInstance k G H) (Distinguishes k G H)
-          ⌊C * (2 : ℝ) ^ (ε * ((G.n + H.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) + C⌋₊ := by
+        DecidesExactlyWithin M (encodeWLInstance k G H) (Distinguishes k G H)
+          ⌊C * (2 : ℝ) ^ (ε * ((encodeWLInstance k G H).length : ℝ) ^ ((1 : ℝ) / 5)) + C⌋₊ := by
   classical
   obtain ⟨L, ⟨M, hMdet, C₀, hM⟩, hnot⟩ := Lax119563.ExponentialTimeHierarchy.exp_time_hierarchy
-  obtain ⟨c, hpipe⟩ := pipeline
-  obtain ⟨R, -, CR, hR⟩ := hpipe M hMdet
+  obtain ⟨c, hpipe⟩ := pipeline_len
+  obtain ⟨R, -, CR, Cs, hR⟩ := hpipe M hMdet
+  obtain ⟨B, hB⟩ : ∃ B, B = 3360 * (2 * Cs + 6 * (2 * C₀ + 2) + 21) * (36 * Cs + 1) + 3 :=
+    ⟨_, rfl⟩
   obtain ⟨P, -, KP, hP⟩ := par_machine (2 * C₀ + 2)
-  refine ⟨1 / (4 * (((12 * CR : ℕ) : ℝ) + 1) ^ ((1 : ℝ) / 5)), by positivity, ?_⟩
+  refine ⟨1 / (4 * ((B : ℝ) + 1) ^ ((1 : ℝ) / 5)), by positivity, ?_⟩
   rintro ⟨W, -, CW, hW⟩
   apply hnot
   set A := 2 * KP + CR * 2 ^ c + 3 with hA
@@ -152,25 +218,26 @@ theorem exponential_lower_bound :
     have hsa := parS_mul_le (2 * C₀ + 2) x.length
     have hsle := parS_le (2 * C₀ + 2) x.length
     have hs2' := two_le_parS hc₀ x.length
+    have hn2 := le_pow_parA x.length
     have hpw := packedWidth_par (2 * C₀ + 2) x.length
     have hxh : x.length ≤ 2 ^ (x.length + (2 * C₀ + 2)) := (Nat.lt_two_pow_self).le.trans
       (Nat.pow_le_pow_right (by norm_num) (by omega))
-    obtain ⟨G₀, G₁, hacc, hsize, hcomp⟩ := hR x (x.length + (2 * C₀ + 2))
+    obtain ⟨G₀, G₁, hacc, hlen, hcomp⟩ := hR x (x.length + (2 * C₀ + 2))
       (parS (2 * C₀ + 2) x.length) hx (by omega) hxh hs2' (by omega)
-    rw [hpw] at hsize hcomp
+    rw [hpw] at hlen hcomp
     -- the decider of `L` halts within `2^h` steps
-    have hMx : DecidesWithin M x (x ∈ L) ⌊(C₀ : ℝ) * (2 : ℝ) ^ (x.length : ℝ) + C₀⌋₊ := hM x
-    have hhalt : (runOn M x (2 ^ (x.length + (2 * C₀ + 2)))).answer.isSome := by
+    have hMx : DecidesExactlyWithin M x (x ∈ L) ⌊(C₀ : ℝ) * (2 : ℝ) ^ (x.length : ℝ) + C₀⌋₊ := hM x
+    have hhalt : HaltsWithin M x (2 ^ (x.length + (2 * C₀ + 2))) := by
       obtain ⟨b, hb, -⟩ := Main.decidesWithin_mono hMx (floor_two_pow_le C₀ _)
-      simp [hb]
+      simp [HaltsWithin, hb]
     have hiff : x ∈ L ↔ Distinguishes (parS (2 * C₀ + 2) x.length + 1) G₀ G₁ :=
       (Main.accepts_iff_of_decidesWithin hMx).symm.trans (hacc hhalt)
     -- the reduction
     have hred := Main.Compose.compose_computesWithin P R false (fun _ => false)
       hx (hP x) hcomp
-    have hD : DecidesWithin W (encodeWLInstance (parS (2 * C₀ + 2) x.length + 1) G₀ G₁) (x ∈ L)
-        ⌊CW * (2 : ℝ) ^ (1 / (4 * (((12 * CR : ℕ) : ℝ) + 1) ^ ((1 : ℝ) / 5)) *
-          ((G₀.n + G₁.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) + CW⌋₊ := by
+    have hD : DecidesExactlyWithin W (encodeWLInstance (parS (2 * C₀ + 2) x.length + 1) G₀ G₁) (x ∈ L)
+        ⌊CW * (2 : ℝ) ^ (1 / (4 * ((B : ℝ) + 1) ^ ((1 : ℝ) / 5)) *
+          ((encodeWLInstance (parS (2 * C₀ + 2) x.length + 1) G₀ G₁).length : ℝ) ^ ((1 : ℝ) / 5)) + CW⌋₊ := by
       obtain ⟨b, hb, hPb⟩ := hW (parS (2 * C₀ + 2) x.length + 1) G₀ G₁
       exact ⟨b, hb, hPb.trans hiff.symm⟩
     refine Main.decidesWithin_mono (Main.Compose.compose_decidesWithin _ W _ _ hx hred hD) ?_
@@ -182,14 +249,15 @@ theorem exponential_lower_bound :
     generalize hh : n + (2 * C₀ + 2) = h at *
     generalize hm : h + 4 = m at *
     -- the estimates
-    have hN : G₀.n + G₁.n ≤ 12 * CR * m ^ 5 :=
-      hsize.trans (exp_size_arith ha1 (by omega) hsa (by omega) h2a (by omega) (by omega))
-    have hε := eps_mul_rpow_le (12 * CR) (G₀.n + G₁.n) m hN
+    have hN : (encodeWLInstance (s + 1) G₀ G₁).length ≤ B * m ^ 5 := by
+      rw [hB]
+      exact hlen.trans (exp_len_arith ha1 (by omega) hn2 h2a (by omega) (by omega) hh.symm hm.symm)
+    have hε := eps_mul_rpow_le B _ m hN
     have ht₁ := exp_time_arith (tP := KP * m ^ 3)
       (tR := CR * (s * 2 ^ a * (h + 1)) ^ c) (KP := KP) (CR := CR) (c := c) (s := s) (ℓ := a)
       (h := h) (m := m) le_rfl le_rfl (by omega) (h2a.trans (by omega)) (by omega) (by omega)
-    have hY : (2 : ℝ) ^ (1 / (4 * (((12 * CR : ℕ) : ℝ) + 1) ^ ((1 : ℝ) / 5)) *
-          ((G₀.n + G₁.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) ≤ (2 : ℝ) ^ ((m : ℝ) / 4) := by
+    have hY : (2 : ℝ) ^ (1 / (4 * ((B : ℝ) + 1) ^ ((1 : ℝ) / 5)) *
+          ((encodeWLInstance (s + 1) G₀ G₁).length : ℝ) ^ ((1 : ℝ) / 5)) ≤ (2 : ℝ) ^ ((m : ℝ) / 4) := by
       apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
       have : (0 : ℝ) ≤ m := Nat.cast_nonneg _
       linarith
@@ -200,8 +268,8 @@ theorem exponential_lower_bound :
       rw [hE]
       convert this using 3
       rw [← hm, ← hh]; push_cast; ring
-    have ht₂ := Nat.floor_le (a := (CW : ℝ) * (2 : ℝ) ^ (1 / (4 * (((12 * CR : ℕ) : ℝ) + 1) ^
-      ((1 : ℝ) / 5)) * ((G₀.n + G₁.n : ℕ) : ℝ) ^ ((1 : ℝ) / 5)) + CW) (by positivity)
+    have ht₂ := Nat.floor_le (a := (CW : ℝ) * (2 : ℝ) ^ (1 / (4 * ((B : ℝ) + 1) ^
+      ((1 : ℝ) / 5)) * ((encodeWLInstance (s + 1) G₀ G₁).length : ℝ) ^ ((1 : ℝ) / 5)) + CW) (by positivity)
     have := exp_final_arith _ _ A d CW E Q m _ _ _ hX (by positivity) ht₁ ht₂ hY hmZ hZ
     rw [hK]
     exact_mod_cast this

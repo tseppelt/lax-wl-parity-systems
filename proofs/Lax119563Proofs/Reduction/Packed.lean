@@ -162,7 +162,7 @@ theorem packed_bounds (M : Machine) : ∃ C : ℕ, ∀ (x : List Bool) (s ℓ H 
       ((runOn M x (2 ^ H)).answer.isSome → ((Iv M x s ℓ H).conflictRound < ⊤ ↔ Accepts M x)) ∧
       (Iv M x s ℓ H).numLocations ≤ C * (H + 1) ^ 2 ∧
       (Iv M x s ℓ H).schemas.length ≤ C * (H + 1) ^ 2 ∧
-      sizeParameter (Iv M x s ℓ H) ≤ C * (s + 1) ^ 2 * 2 ^ ℓ * (ℓ + 1) * (H + 1) ^ 2 := by
+      matrixSize (Iv M x s ℓ H) ≤ C * (s + 1) ^ 2 * 2 ^ ℓ * (ℓ + 1) * (H + 1) ^ 2 := by
   refine ⟨100 * (locConst M + 9 * cmdConst M + 4), fun x s ℓ H P hsH => ?_⟩
   set A := locConst M
   set B := cmdConst M
@@ -189,7 +189,7 @@ theorem packed_bounds (M : Machine) : ∃ C : ℕ, ∀ (x : List Bool) (s ℓ H 
       simp only [AP_commands]; exact List.length_map _
     have hn : (APv M x s ℓ H).numLocations = N := rfl
     rw [hc, hn] at hS
-    change sizeParameter (Iv M x s ℓ H) ≤ _ at hS
+    change matrixSize (Iv M x s ℓ H) ≤ _ at hS
     refine hS.trans ?_
     set Q := 2 ^ ℓ
     set k := s + 1
@@ -278,7 +278,7 @@ theorem packed_bounds_h (M : Machine) : ∃ C : ℕ, ∀ (x : List Bool) (h s : 
         C * (h + 1) ^ 2 ∧
       (Iv M x s (pkWidth x.length h s) (pkHorizon x.length h s)).schemas.length ≤
         C * (h + 1) ^ 2 ∧
-      sizeParameter (Iv M x s (pkWidth x.length h s) (pkHorizon x.length h s)) ≤
+      matrixSize (Iv M x s (pkWidth x.length h s) (pkHorizon x.length h s)) ≤
         C * (s + 1) ^ 2 * 2 ^ pkWidth x.length h s * (pkWidth x.length h s + 1) *
           (h + 1) ^ 2 := by
   obtain ⟨C, hC⟩ := packed_bounds M

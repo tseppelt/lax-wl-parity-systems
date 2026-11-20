@@ -101,7 +101,7 @@ theorem length_out_le {w : ℕ} (hw : 3 * (ordL I).length < 2 ^ w) :
     _ ≤ (2 * (2 + 7 * (ordL I).length)) * (2 * w + 1) :=
       Nat.mul_le_mul_right _ (by omega)
 
-lemma length_ordL_le (hk : 2 ≤ k) : (ordL I).length ≤ 16 * sizeParameter I := by
+lemma length_ordL_le (hk : 2 ≤ k) : (ordL I).length ≤ 16 * matrixSize I := by
   rw [(ordL_perm I).length_eq]; exact card_vertexList_le hk
 
 end Lax119563Proofs.Compiler

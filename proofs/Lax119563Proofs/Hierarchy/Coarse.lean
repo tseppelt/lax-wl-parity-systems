@@ -84,7 +84,7 @@ lemma diagLang_dt (B : ℕ) (hB : 1 ≤ B) : DT (diagLang B) (B : ℝ) := by
   refine ⟨diagMachine B, thenClocked_deterministic _ _ _, K * 2 ^ B, fun y => ?_⟩
   obtain ⟨s', ⟨t, ht, hr⟩, hH, hK⟩ := clockPrep_runs B hB y
   have hans := thenClocked_answer hr hH hK
-  have hdec : Lax119563.DeterministicTime.DecidesWithin (diagMachine B) y (y ∈ diagLang B)
+  have hdec : Lax119563.DeterministicTime.DecidesExactlyWithin (diagMachine B) y (y ∈ diagLang B)
       (t + y.length ^ B + 1) := by
     refine ⟨_, hans, ?_⟩
     simp only [diagLang, Set.mem_ofPred_eq]

@@ -108,15 +108,6 @@ lemma pre_arith {n L S d Y : ℕ} (hS : S ≤ n) (hL : L ≤ n)
       _ = d * (n * n) + d := by ring
   nlinarith
 
-lemma succ_pow_le (n E : ℕ) : (n + 1) ^ E ≤ 2 ^ E * n ^ E + 2 ^ E := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · have := Nat.one_le_two_pow (n := E)
-    simp only [zero_add, one_pow]
-    omega
-  · have : (n + 1) ^ E ≤ (2 * n) ^ E := Nat.pow_le_pow_left (by omega) E
-    rw [mul_pow] at this
-    exact this.trans (Nat.le_add_right _ _)
-
 /-- The final time bound. -/
 lemma total_arith {n d C c hh Q P t pre : ℕ} (hW : pre ≤ 100 * (d + 1) * (n + 1) ^ 2)
     (hh1 : hh + 1 ≤ (4 * (n + 1)) ^ d) (hQ : Q ≤ 8 * (n + 1))
@@ -153,7 +144,7 @@ lemma total_arith {n d C c hh Q P t pre : ℕ} (hW : pre ≤ 100 * (d + 1) * (n 
 /-- EXPTIME in the multitape model, from the cited single-tape simulation. -/
 lemma exptime_decides {L : Set (List Bool)} (hL : L ∈ EXPTIME) :
     ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ, ∃ p : Polynomial ℕ, ∀ w : List Bool,
-      DecidesWithin M w (w ∈ L) (C * (2 ^ p.eval w.length + w.length + 1)) := by
+      DecidesExactlyWithin M w (w ∈ L) (C * (2 ^ p.eval w.length + w.length + 1)) := by
   obtain ⟨M₀, p, hM₀⟩ := hL
   obtain ⟨M, hM, C, h⟩ := Lax119563.MachineTranslations.singleTape_simulation M₀
   refine ⟨M, hM, C, p, fun w => ?_⟩
@@ -163,9 +154,9 @@ lemma exptime_decides {L : Set (List Bool)} (hL : L ∈ EXPTIME) :
 
 /-- The decider on padded inputs. -/
 lemma padded_decides {L : Set (List Bool)} {M : Machine} {C : ℕ} {p : Polynomial ℕ}
-    (h : ∀ w : List Bool, DecidesWithin M w (w ∈ L) (C * (2 ^ p.eval w.length + w.length + 1)))
+    (h : ∀ w : List Bool, DecidesExactlyWithin M w (w ∈ L) (C * (2 ^ p.eval w.length + w.length + 1)))
     (x : List Bool) :
-    DecidesWithin (Main.Compose.comp dropMachine M false fun _ => false).toMachine
+    DecidesExactlyWithin (Main.Compose.comp dropMachine M false fun _ => false).toMachine
       (true :: true :: x) (x ∈ L) ((C + 25) * (2 ^ p.eval x.length + x.length + 1)) := by
   have hc := Main.Compose.compose_decidesWithin dropMachine M false (fun _ => false)
     (x := true :: true :: x) (by simp) (drop_computesWithin x) (h x)
@@ -263,11 +254,7 @@ theorem wl_exptime_hard : ∀ L ∈ EXPTIME, ManyOne L WLDistinguishing := by
       rw [hK, hE]
       exact htot
   choose f hf1 hf2 using key
-  refine ⟨f, Lax119563.MachineTranslations.tm2_of_polyTime (redTM R d).compile
-    (redTM_deterministic R d) (K * 2 ^ E) E (fun x => ?_), hf1⟩
-  refine Main.Compose.computesWithin_mono' (hf2 x) ?_
-  have := succ_pow_le x.length E
-  calc K * (x.length + 1) ^ E ≤ K * (2 ^ E * x.length ^ E + 2 ^ E) := Nat.mul_le_mul_left _ this
-    _ = K * 2 ^ E * x.length ^ E + K * 2 ^ E := by ring
+  exact ⟨f, Lax119563.MachineTranslations.tm2_of_polyTime (redTM R d).compile
+    (redTM_deterministic R d) K E hf2, hf1⟩
 
 end Lax119563Proofs.Hardness

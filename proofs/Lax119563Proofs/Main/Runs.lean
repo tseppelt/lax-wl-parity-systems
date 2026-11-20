@@ -4,7 +4,7 @@ import Lax119563.DeterministicTime
 # Elementary facts about deterministic runs
 
 Runs evaluated with the constant coin `false`: unfolding from the end, persistence of a
-halted configuration, and monotonicity of `DecidesWithin` in the time bound.
+halted configuration, and monotonicity of `DecidesExactlyWithin` in the time bound.
 -/
 
 open Lax489179.TuringMachine (Machine Config step run init)
@@ -49,14 +49,14 @@ theorem runOn_eq_of_le (M : Machine) (x : List Bool) {t t' : ℕ} (htt : t ≤ t
   exact run_false_of_halted M d _ h
 
 theorem decidesWithin_mono {M : Machine} {x : List Bool} {P : Prop} {t t' : ℕ}
-    (h : DecidesWithin M x P t) (htt : t ≤ t') : DecidesWithin M x P t' := by
+    (h : DecidesExactlyWithin M x P t) (htt : t ≤ t') : DecidesExactlyWithin M x P t' := by
   obtain ⟨b, hb, hP⟩ := h
   refine ⟨b, ?_, hP⟩
   rw [runOn_eq_of_le M x htt (by simp [hb]), hb]
 
 /-- A machine that decides `P` within some time accepts exactly when `P` holds. -/
 theorem accepts_iff_of_decidesWithin {M : Machine} {x : List Bool} {P : Prop} {t : ℕ}
-    (h : DecidesWithin M x P t) : Accepts M x ↔ P := by
+    (h : DecidesExactlyWithin M x P t) : Accepts M x ↔ P := by
   obtain ⟨b, hb, hP⟩ := h
   constructor
   · rintro ⟨t', ht'⟩

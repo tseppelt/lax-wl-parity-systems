@@ -30,7 +30,7 @@ theorem compileM_clauses :
           SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compileM I).1 (compileM I).2) ∧
         (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
           DuplicatorSurvives (k + 1) r (compileM I).1 (compileM I).2) ∧
-        (compileM I).1.n + (compileM I).2.n ≤ C * sizeParameter I ∧
+        (compileM I).1.n + (compileM I).2.n ≤ C * matrixSize I ∧
         (compileM I).1.numEdges + (compileM I).2.numEdges ≤
           3 * ((compileM I).1.n + (compileM I).2.n) :=
   ⟨32, fun k hk => ⟨2 * k + stepConst k, fun _ _ I =>
@@ -46,8 +46,8 @@ theorem matrix_compiler_of_machine
     (hM : ∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
       ∀ I : ImplicitParitySystem k ℓ,
         ComputesWithin M (encodeSystem I) (encodeNats (gDesc I 0 ++ gDesc I 1))
-          (C * (bitLength I + sizeParameter I) *
-            Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c)) :
+          (C * (bitLength I + matrixSize I) *
+            Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) :
     ∃ compile : ∀ {k ℓ : ℕ}, ImplicitParitySystem k ℓ → ColoredGraph × ColoredGraph,
       (∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
@@ -55,14 +55,14 @@ theorem matrix_compiler_of_machine
             SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
           (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
-          (compile I).1.n + (compile I).2.n ≤ C * sizeParameter I ∧
+          (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
             3 * ((compile I).1.n + (compile I).2.n)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
-            (C * (bitLength I + sizeParameter I) *
-              Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c)) := by
+            (C * (bitLength I + matrixSize I) *
+              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) := by
   obtain ⟨M, hD, C, c, h⟩ := hM
   refine ⟨compileM, compileM_clauses, M, hD, C, c, fun k hk ℓ hℓ I => ?_⟩
   rw [encode_compileM]

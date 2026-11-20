@@ -29,7 +29,7 @@ theorem matrixGraph_spec {k ℓ : ℕ} (hk : 3 ≤ k) (I : ImplicitParitySystem 
     (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
       DuplicatorSurvives (k + 1) r (matrixGraph I 0) (matrixGraph I 1)) ∧
     (∀ ε, (matrixGraph I ε).n = nV I) ∧
-    nV I ≤ 16 * sizeParameter I ∧
+    nV I ≤ 16 * matrixSize I ∧
     (∀ ε, (matrixGraph I ε).numEdges ≤ 3 * nV I) :=
   ⟨fun _ hτ => spoilerWins (by omega) hτ,
     fun _ hr => duplicatorSurvives (by omega) (not_hasConflict_of_lt I hr),
@@ -58,14 +58,14 @@ theorem matrix_compiler :
             SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
           (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
-          (compile I).1.n + (compile I).2.n ≤ C * sizeParameter I ∧
+          (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
             3 * ((compile I).1.n + (compile I).2.n)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
-            (C * (bitLength I + sizeParameter I) *
-              Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c)) :=
+            (C * (bitLength I + matrixSize I) *
+              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) :=
   Lax119563Proofs.Compiler.matrix_compiler_of_schSpec (SCH := Lax119563Proofs.Compiler.p4Sch)
     (K := 400000) (fun _ hk _ hℓ I => Lax119563Proofs.Compiler.p4Sch_spec I hk hℓ)
 

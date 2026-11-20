@@ -79,7 +79,7 @@ theorem iteration_number_lower_bound (k : ℕ) (hk : 3 ≤ k) :
       omega
     have hnle : G₀.n ≤ C₀ * CS * 2 ^ ℓ := by
       calc G₀.n ≤ G₀.n + G₁.n := Nat.le_add_right _ _
-        _ ≤ C₀ * sizeParameter (counter K ℓ) := hsize
+        _ ≤ C₀ * rowSpaceSize (counter K ℓ) := hsize
         _ ≤ C₀ * (CS * 2 ^ ℓ) := Nat.mul_le_mul_left _ (hCS ℓ)
         _ = C₀ * CS * 2 ^ ℓ := by ring
     rw [Nat.add_sub_cancel]

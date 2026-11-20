@@ -16,7 +16,7 @@ the machine for `f` on `κ x`.
   (haltTime Mf (encodeNat (κ x))) + 9 · nodeCost w`, where the two simulator costs are at most
   `simK M · (input length + halting time + 1) · nodeCost w` (`simNatCost_le`, `simInCost_le`).
 * `haltTime_le_of_computesWithin`: halting times are bounded by any time bound, e.g. by
-  `C |x|^d + C` for the machine of `IsParameterized`; for a computable `f`, the halting time
+  `C (|x| + 1)^d` for the machine of `IsParameterized`; for a computable `f`, the halting time
   of a machine computing `f` is itself computable (`machineComputable_haltTime`).
 -/
 

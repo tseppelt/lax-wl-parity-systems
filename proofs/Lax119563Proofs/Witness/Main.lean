@@ -122,7 +122,7 @@ theorem witness_lower_bound (k : ℕ) (hk : 3 ≤ k) :
     have hsize := relay_size (k := k) (ℓ := ℓ) (by omega)
     have hnE : G₀.n ≤ E * 2 ^ ℓ := by
       calc G₀.n ≤ G₀.n + G₁.n := Nat.le_add_right _ _
-        _ ≤ C * sizeParameter (relay k ℓ) := h3
+        _ ≤ C * rowSpaceSize (relay k ℓ) := h3
         _ ≤ C * (sizeConst k * 2 ^ ℓ) := Nat.mul_le_mul_left _ hsize
         _ ≤ C * (sizeConst k * 2 ^ ℓ) + 2 ^ ℓ := Nat.le_add_right _ _
         _ = E * 2 ^ ℓ := by rw [hE]; ring

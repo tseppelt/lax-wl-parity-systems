@@ -48,8 +48,8 @@ lemma drun_answer_mono {M : Machine} {c : Config M} {t t' : ℕ} {b : Bool}
   exact h
 
 lemma decidesWithin_mono {M : Machine} {x : List Bool} {P : Prop} {t t' : ℕ}
-    (h : Lax119563.DeterministicTime.DecidesWithin M x P t) (ht : t ≤ t') :
-    Lax119563.DeterministicTime.DecidesWithin M x P t' := by
+    (h : Lax119563.DeterministicTime.DecidesExactlyWithin M x P t) (ht : t ≤ t') :
+    Lax119563.DeterministicTime.DecidesExactlyWithin M x P t' := by
   obtain ⟨b, hb, hP⟩ := h
   exact ⟨b, drun_answer_mono hb ht, hP⟩
 

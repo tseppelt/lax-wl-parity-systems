@@ -46,15 +46,15 @@ lemma locBase_le_length : locBase I ≤ (ordL I).length := by
   rw [h2]
   exact Nat.le_add_right _ _
 
-lemma locBase_le (hk : 2 ≤ k) : locBase I ≤ 16 * sizeParameter I :=
+lemma locBase_le (hk : 2 ≤ k) : locBase I ≤ 16 * matrixSize I :=
   (locBase_le_length I).trans (length_ordL_le I hk)
 
 /-- **The word-size hypothesis** of the passes `P0`–`P3`. -/
 lemma word_hS (hk : 2 ≤ k) :
     16 * ((encodeSystem I).length + locBase I + 1) ≤
-      2 ^ wordOf (encodeSystem I).length (sizeParameter I) := by
+      2 ^ wordOf (encodeSystem I).length (matrixSize I) := by
   have h1 := locBase_le I hk
-  have h2 := two_pow_word (encodeSystem I).length (sizeParameter I)
+  have h2 := two_pow_word (encodeSystem I).length (matrixSize I)
   omega
 
 /-- **Cost conversion**: `nodeCost_le_sq` with `a = 8`. -/

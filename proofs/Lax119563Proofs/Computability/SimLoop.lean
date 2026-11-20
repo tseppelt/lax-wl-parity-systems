@@ -51,7 +51,7 @@ lemma ComputesWithin.haltTime {y : List Bool} {t : ℕ} (h : ComputesWithin M u 
   have hle := haltTime_le h.1
   have e := Main.runOn_eq_of_le M u hle (haltTime_spec ⟨t, h.1⟩)
   refine ⟨?_, hle⟩
-  unfold ComputesWithin at h ⊢
+  unfold ComputesWithin HaltsWithin at h ⊢
   rw [← e]; exact h
 
 end Halt

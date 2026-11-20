@@ -12,9 +12,8 @@ Put `s = k - 1`. By the time hierarchy theorem there is a language `L` decidable
 representation and the matrix compiler) with a hypothetical `O(N^{k-1-ε})` decider yields a
 decider for `L` running in time `O(n^{s - ε/2})`, a contradiction.
 
-We prove the stronger statement `runtime_lower_bound_length`, where `N` is the length of the
-encoding of the input pair, and derive the statement in terms of the number of vertices,
-which is at most the encoding length.
+Time is measured in the length `N` of the encoding of the input pair; the output of the
+reduction is at most as long as its running time.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings
@@ -40,7 +39,11 @@ theorem floor_rpow_le_floor (C N : ℕ) {e₁ e₂ : ℝ} (he : e₁ ≤ e₂) :
   push_cast
   nlinarith
 
-/-- **The time lower bound, in the length of the input.** For `k ≥ 3` and `ε > 0`, assume a
+/--
+---
+conclusion: Lax119563.RuntimeLowerBound.runtime_lower_bound
+---
+For `k ≥ 3` and `ε > 0`, assume a
 deterministic machine decides `k`-WL distinguishability within `C N^{k-1-ε} + C` steps on
 encoded pairs of length `N`. With `s = k - 1` and `ε' = min ε 1`, the time hierarchy theorem
 gives a language `L ∈ DTIME(n^s) \ DTIME(n^{s - ε'/2})`. The reduction maps inputs of length
@@ -48,9 +51,9 @@ gives a language `L ∈ DTIME(n^s) \ DTIME(n^{s - ε'/2})`. The reduction maps i
 distinguishes exactly for members of `L`. Running the reduction, rewinding, and then the fast
 decider (and answering inputs of length `< 2` directly) decides `L` within
 `2 t₁ + O(t₁^{k-1-ε'}) + O(1) = O(n^{s - ε'/2})` steps, contradicting the choice of `L`. -/
-theorem runtime_lower_bound_length (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 < ε) :
+theorem runtime_lower_bound (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 < ε) :
     ¬ ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ, ∀ G H : ColoredGraph,
-      DecidesWithin M (encodeGraphPair G H) (Distinguishes k G H)
+      DecidesExactlyWithin M (encodeGraphPair G H) (Distinguishes k G H)
         ⌊C * ((encodeGraphPair G H).length : ℝ) ^ ((k : ℝ) - 1 - ε) + C⌋₊ := by
   classical
   rintro ⟨W, -, C, hW⟩
@@ -62,7 +65,7 @@ theorem runtime_lower_bound_length (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 
   have hk' : (3 : ℝ) ≤ k := by exact_mod_cast hk
   have he : 1 ≤ e := by rw [he_def]; linarith
   -- the fast decider, with the exponent `e`
-  have hW' : ∀ G H : ColoredGraph, DecidesWithin W (encodeGraphPair G H) (Distinguishes k G H)
+  have hW' : ∀ G H : ColoredGraph, DecidesExactlyWithin W (encodeGraphPair G H) (Distinguishes k G H)
       ⌊((2 * C : ℕ) : ℝ) * ((encodeGraphPair G H).length : ℝ) ^ e + (2 * C : ℕ)⌋₊ := fun G H =>
     decidesWithin_mono (hW G H) (floor_rpow_le_floor C _ (by rw [he_def]; linarith))
   -- the hierarchy language
@@ -93,7 +96,7 @@ theorem runtime_lower_bound_length (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 
   · obtain ⟨G₀, G₁, hacc, hsize, hcomp⟩ := hR x hx
     have hks : s + 1 = k := by omega
     rw [hks, accepts_iff_of_decidesWithin (hL x)] at hacc
-    have hD : DecidesWithin W (encodeGraphPair G₀ G₁) (x ∈ L)
+    have hD : DecidesExactlyWithin W (encodeGraphPair G₀ G₁) (x ∈ L)
         ⌊((2 * C : ℕ) : ℝ) * ((encodeGraphPair G₀ G₁).length : ℝ) ^ e + (2 * C : ℕ)⌋₊ := by
       obtain ⟨b, hb, hP⟩ := hW' G₀ G₁
       exact ⟨b, hb, hP.trans hacc.symm⟩
@@ -115,49 +118,5 @@ theorem runtime_lower_bound_length (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 
     apply Nat.le_floor
     push_cast
     nlinarith
-
-lemma length_le_length_encodeNats (l : List ℕ) : l.length ≤ (encodeNats l).length := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    simp only [encodeNats, List.flatMap_cons, List.length_append, List.length_cons] at ih ⊢
-    have : 1 ≤ (encodeNat a).length := by simp [encodeNat]
-    omega
-
-/-- The encoding of a graph pair is at least as long as the number of vertices. -/
-lemma n_add_n_le_length_encodeGraphPair (G H : ColoredGraph) :
-    G.n + H.n ≤ (encodeGraphPair G H).length := by
-  refine le_trans ?_ (length_le_length_encodeNats _)
-  simp [graphDescription]
-  omega
-
-/--
----
-conclusion: Lax119563.RuntimeLowerBound.runtime_lower_bound
----
-The time lower bound in terms of the number `N = |V(G)| + |V(H)|` of vertices follows from
-`runtime_lower_bound_length`, since `N` is at most the length of the encoding of the pair:
-after lowering `ε` to `ε' = min ε 1` (so that the exponent `k - 1 - ε'` is positive), a
-decider within `C N^{k-1-ε} + C` steps also runs within `2C |enc|^{k-1-ε'} + 2C` steps.
--/
-theorem runtime_lower_bound (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 < ε) :
-    ¬ ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ, ∀ G H : ColoredGraph,
-      DecidesWithin M (encodeGraphPair G H) (Distinguishes k G H)
-        ⌊C * ((G.n + H.n : ℕ) : ℝ) ^ ((k : ℝ) - 1 - ε) + C⌋₊ := by
-  rintro ⟨M, hM, C, hC⟩
-  have hε' : 0 < min ε 1 := lt_min hε one_pos
-  refine runtime_lower_bound_length k hk (min ε 1) hε' ⟨M, hM, 2 * C, fun G H => ?_⟩
-  have hk' : (3 : ℝ) ≤ k := by exact_mod_cast hk
-  have he : 0 ≤ (k : ℝ) - 1 - min ε 1 := by linarith [min_le_right ε 1]
-  refine decidesWithin_mono (decidesWithin_mono (hC G H)
-    (floor_rpow_le_floor C _ (e₂ := (k : ℝ) - 1 - min ε 1) (by linarith [min_le_left ε 1])))
-    (Nat.floor_le_floor ?_)
-  have hN : ((G.n + H.n : ℕ) : ℝ) ^ ((k : ℝ) - 1 - min ε 1) ≤
-      ((encodeGraphPair G H).length : ℝ) ^ ((k : ℝ) - 1 - min ε 1) :=
-    Real.rpow_le_rpow (Nat.cast_nonneg _)
-      (by exact_mod_cast n_add_n_le_length_encodeGraphPair G H) he
-  have h2C : (0 : ℝ) ≤ ((2 * C : ℕ) : ℝ) := Nat.cast_nonneg _
-  push_cast at hN h2C ⊢
-  nlinarith
 
 end Lax119563Proofs.Main

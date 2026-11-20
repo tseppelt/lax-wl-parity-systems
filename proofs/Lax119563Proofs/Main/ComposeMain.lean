@@ -173,8 +173,8 @@ theorem answer_single (b : Bool) :
 /-- **Composition.** -/
 theorem compose_decidesWithin (R D : Machine) (a₀ : Bool) (a₁ : Bool → Bool)
     {x y : List Bool} {P : Prop} {t₁ t₂ : ℕ} (hx : 2 ≤ x.length)
-    (hR : ComputesWithin R x y t₁) (hD : DecidesWithin D y P t₂) :
-    DecidesWithin (comp R D a₀ a₁).toMachine x P (2 * t₁ + t₂ + 3) := by
+    (hR : ComputesWithin R x y t₁) (hD : DecidesExactlyWithin D y P t₂) :
+    DecidesExactlyWithin (comp R D a₀ a₁).toMachine x P (2 * t₁ + t₂ + 3) := by
   classical
   have hex : ∃ t, (runOn R x t).answer.isSome := ⟨t₁, hR.1⟩
   have hth : (runOn R x (Nat.find hex)).answer.isSome := Nat.find_spec hex
@@ -221,7 +221,7 @@ theorem compose_decidesWithin (R D : Machine) (a₀ : Bool) (a₁ : Bool → Boo
 /-- **Short inputs.** -/
 theorem compose_short (R D : Machine) (Q : List Bool → Prop) [DecidablePred Q]
     (x : List Bool) (hx : x.length < 2) :
-    DecidesWithin (comp R D (decide (Q [])) (fun b => decide (Q [b]))).toMachine x (Q x) 2 := by
+    DecidesExactlyWithin (comp R D (decide (Q [])) (fun b => decide (Q [b]))).toMachine x (Q x) 2 := by
   match x, hx with
   | [], _ =>
     refine decidesWithin_mono (t := 1) ?_ (by omega)

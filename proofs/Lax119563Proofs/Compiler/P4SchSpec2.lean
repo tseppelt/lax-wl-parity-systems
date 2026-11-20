@@ -118,17 +118,17 @@ lemma keep_notMem : ∀ r ∈ p4Keep, r ∉ bodyW ∧ r ∉ preW ∧ r ≠ rT �
 set_option maxHeartbeats 8000000 in
 /-- **The schema edge part of `P4` meets its interface.** -/
 theorem p4Sch_spec (hk : 3 ≤ k) (hℓ : 1 ≤ ℓ) :
-    SchSpec I (wordOf (H I) (sizeParameter I)) p4Sch
-      (400000 * (H I + sizeParameter I + 1) * Ex.nodeCost (wordOf (H I) (sizeParameter I))) := by
+    SchSpec I (wordOf (H I) (matrixSize I)) p4Sch
+      (400000 * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I))) := by
   intro ε hε st hst
   obtain ⟨hne, hbd, hpos, hEps, hM, hTriv, hW, hL, hL1, hE, hKk, hKL, hLB, hAns, hSch, hemp⟩ :=
     hst
-  have hw : 2 ≤ wordOf (H I) (sizeParameter I) := two_le_wordOf _ _
-  have h2w := two_pow_word (H I) (sizeParameter I)
+  have hw : 2 ≤ wordOf (H I) (matrixSize I) := two_le_wordOf _ _
+  have h2w := two_pow_word (H I) (matrixSize I)
   have hordL := length_ordL_le I (by omega : 2 ≤ k)
   have hLBl := locBase_le_length I
-  have hW16 : 16 * (H I + (ordL I).length + 1) ≤ 2 ^ wordOf (H I) (sizeParameter I) := by omega
-  have hH : 4 * (H I + 1) ≤ 2 ^ wordOf (H I) (sizeParameter I) := by omega
+  have hW16 : 16 * (H I + (ordL I).length + 1) ≤ 2 ^ wordOf (H I) (matrixSize I) := by omega
+  have hH : 4 * (H I + 1) ≤ 2 ^ wordOf (H I) (matrixSize I) := by omega
   have hz : (st.stk qSch).length ≤ 4 * H I := by
     rw [hSch, List.length_reverse]; exact length_schRecsUpTo_le I (by omega)
   obtain ⟨s0, g0, h0p, h0o, h0s, h0J, h0SB, h0PL, h0f⟩ :=
@@ -139,11 +139,11 @@ theorem p4Sch_spec (hk : 3 ≤ k) (hℓ : 1 ≤ ℓ) :
   have hb0 := (g0.bdd hw hbd hp0).1
   have h0o' : ∀ q, q ≠ qSch → q ≠ qS2 → s0.stk q = st.stk q := fun q h1 h2 => by
     rw [h0s, Function.update_of_ne h2, Function.update_of_ne h1]
-  have hF : BFix I (wordOf (H I) (sizeParameter I)) (ε : ZMod 2) s0 :=
+  have hF : BFix I (wordOf (H I) (matrixSize I)) (ε : ZMod 2) s0 :=
     ⟨hne, by omega, hℓ, hW16, by rw [h0f _ (by decide), hL], by rw [h0f _ (by decide), hKk],
       by rw [h0f _ (by decide), hLB], by rw [h0f _ (by decide), hEps, hεv], h0PL,
       by rw [h0f _ (by decide), hM]⟩
-  have hI0 : BInv I (wordOf (H I) (sizeParameter I)) (ε : ZMod 2) s0 0 s0 := by
+  have hI0 : BInv I (wordOf (H I) (matrixSize I)) (ε : ZMod 2) s0 0 s0 := by
     refine ⟨by omega, h0J, by rw [h0p, schAt_zero], by rw [h0SB]; simp [sBase], ?_, ?_, ?_, ?_,
       by simp [edUp, pairsRev], ?_, ?_, ?_, ?_, fun _ _ => rfl,
       by rw [h0f _ (by decide), hM]; simp [edUp], rfl, hb0, fun _ _ => rfl⟩
@@ -169,8 +169,8 @@ theorem p4Sch_spec (hk : 3 ≤ k) (hℓ : 1 ≤ ℓ) :
     (q' := qAns) (t := rT) (f := rP) (by decide) (by decide) s1 hb1
   refine ⟨s2, (g0.seq (g1.seq g2)).mono ?_, ⟨?_, ?_, ?_, ?_⟩, ?_⟩
   · rw [h1A2, List.length_reverse, ansUp_all]
-    have := spec_arith (N := Ex.nodeCost (wordOf (H I) (sizeParameter I))) (h := H I)
-      (L := locBase I) (S := sizeParameter I) (a := (ansAll I).flatten.length)
+    have := spec_arith (N := Ex.nodeCost (wordOf (H I) (matrixSize I))) (h := H I)
+      (L := locBase I) (S := matrixSize I) (a := (ansAll I).flatten.length)
       (locBase_le I (by omega)) (ansAll_len I hℓ)
     linarith only [this]
   · rw [h2s]

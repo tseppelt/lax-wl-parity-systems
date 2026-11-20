@@ -122,7 +122,7 @@ lemma sum_get_eq {α : Type*} (l : List α) (f : α → ℕ) :
   | cons a l ih => simp [Fin.sum_univ_succ]
 
 /-- **Matrix size.** -/
-theorem card_vertexList_le (hk : 2 ≤ k) : (vertexList I).length ≤ 16 * sizeParameter I := by
+theorem card_vertexList_le (hk : 2 ≤ k) : (vertexList I).length ≤ 16 * matrixSize I := by
   classical
   unfold vertexList
   rw [List.length_append, length_flatMap_eq (List.nodup_finRange _),
@@ -132,7 +132,7 @@ theorem card_vertexList_le (hk : 2 ≤ k) : (vertexList I).length ≤ 16 * sizeP
   have h2 : ∑ e, (schemaVerts I e).length ≤ 16 * (k + 1) * (I.schemas.map nnz).sum := by
     rw [← sum_get_eq, Finset.mul_sum]
     exact Finset.sum_le_sum fun e _ => length_schemaVerts hk e
-  unfold sizeParameter
+  unfold matrixSize
   calc _ ≤ 2 * ∑ v, (I.domain v).card + 16 * (k + 1) * (I.schemas.map nnz).sum :=
         Nat.add_le_add h1 h2
     _ ≤ _ := by ring_nf; omega

@@ -245,7 +245,7 @@ lemma succ_pow_le (n s : ℕ) : (n + 1) ^ s ≤ 2 ^ s * (n ^ s + 1) := by
 
 lemma padDecider_decides (hs : 1 ≤ s) (y : List Bool) :
     ∃ t, t ≤ padK ML.symbols C s * (y.length + 1) ^ s ∧
-      Lax119563.DeterministicTime.DecidesWithin (padDecider ML C s) y (y ∈ padLang ML C s) t := by
+      Lax119563.DeterministicTime.DecidesExactlyWithin (padDecider ML C s) y (y ∈ padLang ML C s) t := by
   rcases split_last_true y with ⟨x, j, rfl⟩ | ⟨n, rfl⟩
   · obtain ⟨s', ⟨t, ht, hr⟩, hH, hK⟩ := padPrep_runs_true (C := C) (s := s) x j
     have hans := thenClocked_answer hr hH hK
@@ -419,7 +419,7 @@ lemma padLen_rpow_le (n r : ℕ) (hr : 1 ≤ r) {a : ℝ} (ha : 1 ≤ a) :
       _ ≤ _ := by linarith
 
 lemma pad_mem_iff {L : Set (List Bool)} {ML : Machine} {C s r : ℕ} (hs : 1 ≤ s)
-    (hML : ∀ x, Lax119563.DeterministicTime.DecidesWithin ML x (x ∈ L)
+    (hML : ∀ x, Lax119563.DeterministicTime.DecidesExactlyWithin ML x (x ∈ L)
       ⌊(C : ℝ) * (x.length : ℝ) ^ ((s : ℝ) * r) + C⌋₊) (x : List Bool) :
     x ++ true :: List.replicate (x.length ^ r) false ∈ padLang ML C s ↔ x ∈ L := by
   set U := ((C + 1) * (x.length ^ r + 1)) ^ s
@@ -457,7 +457,7 @@ lemma pad_mem_iff {L : Set (List Bool)} {ML : Machine} {C s r : ℕ} (hs : 1 ≤
 /-- Unpadding: a fast decider of the padded language gives a fast decider of `L`. -/
 theorem dt_of_padLang {L : Set (List Bool)} {ML : Machine} {C s r : ℕ} {a : ℝ} (hs : 1 ≤ s)
     (hr : 1 ≤ r) (ha : 1 ≤ a)
-    (hML : ∀ x, Lax119563.DeterministicTime.DecidesWithin ML x (x ∈ L)
+    (hML : ∀ x, Lax119563.DeterministicTime.DecidesExactlyWithin ML x (x ∈ L)
       ⌊(C : ℝ) * (x.length : ℝ) ^ ((s : ℝ) * r) + C⌋₊)
     (hP : DT (padLang ML C s) a) : DT L (a * r) := by
   obtain ⟨MP, hMP, CP, hCP⟩ := hP
