@@ -21,22 +21,22 @@ open Ty Xp
 
 namespace Ty
 
-lemma bnd_P_mono {e e' d d' : ℕ} (he : e ≤ e') (hd : d ≤ d') (K ℓ : ℕ) :
+lemma bnd_P_mono {e e' d d' : ℕ} (he : e ≤ e') (hd : d ≤ d') (K : ℕ) (ℓ : Sc) :
     (P e d).bnd K ℓ ≤ (P e' d').bnd K ℓ := by
   simp only [bnd]
-  have h1 : 2 ^ (e * ℓ) ≤ 2 ^ (e' * ℓ) := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ he)
+  have h1 : 2 ^ (e * ℓ.l) ≤ 2 ^ (e' * ℓ.l) := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ he)
   have h2 : (ℓ + 1) ^ d ≤ (ℓ + 1) ^ d' := Nat.pow_le_pow_right (by omega) hd
   exact Nat.mul_le_mul (Nat.mul_le_mul_left _ h1) h2
 
-lemma lin_le_bnd (e d K ℓ : ℕ) : K * (ℓ + 1) ≤ (P e (d + 1)).bnd K ℓ := by
+lemma lin_le_bnd (e d K : ℕ) (ℓ : Sc) : K * (ℓ + 1) ≤ (P e (d + 1)).bnd K ℓ := by
   have := bnd_P_mono (Nat.zero_le e) (show 1 ≤ d + 1 by omega) K ℓ
   simpa [bnd] using this
 
-lemma two_pow_le_bnd {e : ℕ} (he : 1 ≤ e) (d ℓ : ℕ) : 2 ^ ℓ ≤ (P e d).bnd 1 ℓ := by
+lemma two_pow_le_bnd {e : ℕ} (he : 1 ≤ e) (d : ℕ) (ℓ : Sc) : 2 ^ ℓ.l ≤ (P e d).bnd 1 ℓ := by
   have := bnd_P_mono he (Nat.zero_le d) 1 ℓ
   simpa [bnd] using this
 
-lemma bnd_mul' (e d e' d' K K' ℓ : ℕ) :
+lemma bnd_mul' (e d e' d' K K' : ℕ) (ℓ : Sc) :
     (P e d).bnd K ℓ * (P e' d').bnd K' ℓ = (P (e + e') (d + d')).bnd (K * K') ℓ := bnd_mul ..
 
 end Ty
@@ -45,12 +45,12 @@ namespace Gn
 
 /-- Fits below `2^(K (ℓ+1))` with cost `≤ K 2^(e ℓ) (ℓ+1)^(d+1)`. -/
 def HasCost (τs : List Ty) (g : Gn) (e d : ℕ) : Prop :=
-  ∀ K₀, ∃ K, ∀ ℓ (x : List Bool) ρ, x.length ≤ 2 ^ ℓ → Ag K₀ ℓ τs ρ →
+  ∀ K₀, ∃ K, ∀ (ℓ : Sc) (x : List Bool) ρ, x.length ≤ 2 ^ ℓ.l → Ag K₀ ℓ τs ρ →
     g.Fits x (2 ^ (K * (ℓ + 1))) ρ ∧ g.cost x ρ ≤ (P e (d + 1)).bnd K ℓ
 
 /-- The output has length in class `τ`. -/
 def HasLen (τs : List Ty) (g : Gn) (τ : Ty) : Prop :=
-  ∀ K₀, ∃ K, ∀ ℓ (x : List Bool) ρ, x.length ≤ 2 ^ ℓ → Ag K₀ ℓ τs ρ →
+  ∀ K₀, ∃ K, ∀ (ℓ : Sc) (x : List Bool) ρ, x.length ≤ 2 ^ ℓ.l → Ag K₀ ℓ τs ρ →
     (g.out x ρ).length ≤ τ.bnd K ℓ
 
 variable {τs : List Ty}
@@ -175,15 +175,15 @@ lemma loop_arith {Kl Kg ℓ L c0 S X Y : ℕ} (hX : 1 ≤ X) (hY : ℓ + 1 ≤ Y
     nlinarith
   nlinarith
 
-lemma bnd_split (e₀ d₀ e d K ℓ : ℕ) :
+lemma bnd_split (e₀ d₀ e d K : ℕ) (ℓ : Sc) :
     (P (e₀ + e) (d₀ + d + 1)).bnd K ℓ =
-      K * ((2 ^ (e₀ * ℓ) * (ℓ + 1) ^ d₀) * (2 ^ (e * ℓ) * (ℓ + 1) ^ (d + 1))) := by
+      K * ((2 ^ (e₀ * ℓ.l) * (ℓ + 1) ^ d₀) * (2 ^ (e * ℓ.l) * (ℓ + 1) ^ (d + 1))) := by
   simp only [Ty.bnd, Nat.add_mul, pow_add]; ring
 
-lemma one_le_X (e d ℓ : ℕ) : 1 ≤ 2 ^ (e * ℓ) * (ℓ + 1) ^ d :=
+lemma one_le_X (e d : ℕ) (ℓ : Sc) : 1 ≤ 2 ^ (e * ℓ.l) * (ℓ + 1) ^ d :=
   Nat.one_le_iff_ne_zero.mpr (by positivity)
 
-lemma succ_le_Y (e d ℓ : ℕ) : ℓ + 1 ≤ 2 ^ (e * ℓ) * (ℓ + 1) ^ (d + 1) := by
+lemma succ_le_Y (e d : ℕ) (ℓ : Sc) : ↑ℓ + 1 ≤ 2 ^ (e * ℓ.l) * (ℓ + 1) ^ (d + 1) := by
   have := Ty.lin_le_bnd e d 1 ℓ
   simpa [Ty.bnd] using this
 
@@ -234,7 +234,7 @@ lemma hasCost_loopX {lim : Xp} {g : Gn} {e₀ d₀ e d : ℕ} (hl : HasTy τs li
   have k2 := Ty.two_pow_le_bnd (le_max_left 1 (e₀ + e)) (d₀ + d + 1) ℓ
   have k2' : (P (max 1 (e₀ + e)) (d₀ + d + 1)).bnd 1 ℓ + (P (max 1 (e₀ + e)) (d₀ + d + 1)).bnd 1 ℓ
       = (P (max 1 (e₀ + e)) (d₀ + d + 1)).bnd 2 ℓ := Ty.bnd_add ..
-  have k2'' := Nat.one_le_two_pow (n := ℓ)
+  have k2'' := Nat.one_le_two_pow (n := ℓ.l)
   have k3 := Ty.bnd_add (max 1 (e₀ + e)) (d₀ + d + 1) (Kl * Kg + 2 * Kl + 1) 2 ℓ
   have k4 := Ty.bnd_mono (show Kl * Kg + 2 * Kl + 1 + 2 ≤ Kl * Kg + 2 * Kl + 3 + Kg by omega) ℓ
     (P (max 1 (e₀ + e)) (d₀ + d + 1))
@@ -250,6 +250,7 @@ lemma hasCost_len {g : Gn} {e d : ℕ} (hg : HasCost (τs ++ [P 1 0]) g e d) :
       simp only [Ty.bnd, one_mul, pow_zero, mul_one]
       exact Nat.le_mul_of_pos_left _ (by omega)))
   obtain ⟨g1, g2⟩ := hKg ℓ x _ hx hA'
+  have hlL := ℓ.le
   refine ⟨⟨lt_of_le_of_lt hx (Nat.pow_lt_pow_right (by norm_num) (by nlinarith)),
     fits_up (by omega) g1⟩, ?_⟩
   simp only [cost]
@@ -261,7 +262,7 @@ lemma hasCost_len {g : Gn} {e d : ℕ} (hg : HasCost (τs ++ [P 1 0]) g e d) :
   have k5 := Ty.bnd_add (max 1 e) (d + 1) Kg 2 ℓ
   omega
 
-lemma log_le_lin {v K ℓ : ℕ} {τ : Ty} (hv : v ≤ τ.bnd K ℓ) :
+lemma log_le_lin {v K : ℕ} {ℓ : Sc} {τ : Ty} (hv : v ≤ τ.bnd K ℓ) :
     Nat.log 2 v ≤ (P 0 1).bnd (K + τ.lift) ℓ := by
   have h := le_trans hv (Ty.bnd_le_big K ℓ τ)
   calc Nat.log 2 v ≤ Nat.log 2 (2 ^ ((K + τ.lift) * (ℓ + 1))) := Nat.log_mono_right h

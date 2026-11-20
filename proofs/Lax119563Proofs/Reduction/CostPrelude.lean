@@ -25,10 +25,11 @@ lemma hasCost_lenLog {τs : List Ty} {n : ℕ} (hn : τs.length = n) {g : Gn} {e
   have hρ : ρ.length = n := hA.length_eq.trans hn
   set m := x.length
   set L := Nat.log 2 m
-  have hL : L ≤ ℓ := by
-    calc L ≤ Nat.log 2 (2 ^ ℓ) := Nat.log_mono_right hx
-      _ = ℓ := Nat.log_pow (by norm_num) ℓ
-  have hp : 2 ^ L ≤ 2 ^ ℓ := Nat.pow_le_pow_right (by norm_num) hL
+  have hL : L ≤ ℓ.l := by
+    calc L ≤ Nat.log 2 (2 ^ ℓ.l) := Nat.log_mono_right hx
+      _ = ℓ.l := Nat.log_pow (by norm_num) ℓ.l
+  have hlL := ℓ.le
+  have hp : 2 ^ L ≤ 2 ^ ℓ.l := Nat.pow_le_pow_right (by norm_num) hL
   have e1 : (var n).eval (ρ ++ [m]) = m := by
     simp only [Xp.eval]
     rw [List.getD_append_right _ _ _ _ (by omega)]; simp [hρ]
@@ -44,9 +45,9 @@ lemma hasCost_lenLog {τs : List Ty} {n : ℕ} (hn : τs.length = n) {g : Gn} {e
           exact le_trans hp (Nat.le_mul_of_pos_left _ (by omega)))
   have hstk : ρ ++ [m] ++ [L] ++ [1 * 2 ^ L] = ρ ++ [m, L, 1 * 2 ^ L] := by simp
   obtain ⟨g1, g2⟩ := hKg ℓ x _ hx hA'
-  have hB1 : ℓ + 1 ≤ (Kg + 10) * (ℓ + 1) := by nlinarith
-  have hlt : 2 ^ ℓ < 2 ^ ((Kg + 10) * (ℓ + 1)) := Nat.pow_lt_pow_right (by norm_num) (by omega)
-  have hl1 : ℓ < 2 ^ ((Kg + 10) * (ℓ + 1)) := lt_of_lt_of_le Nat.lt_two_pow_self hlt.le
+  have hB1 : ↑ℓ + 1 ≤ (Kg + 10) * (ℓ + 1) := by nlinarith
+  have hlt : 2 ^ ℓ.l < 2 ^ ((Kg + 10) * (ℓ + 1)) := Nat.pow_lt_pow_right (by norm_num) (by omega)
+  have hl1 : ℓ.l < 2 ^ ((Kg + 10) * (ℓ + 1)) := lt_of_lt_of_le Nat.lt_two_pow_self hlt.le
   refine ⟨⟨by omega, ?_, ?_⟩, ?_⟩
   · show (var n).Fits _ (ρ ++ [m])
     simp only [Xp.Fits]; rw [show (ρ ++ [m]).getD n 0 = m from e1]; omega

@@ -22,6 +22,23 @@ Typing rules: `Xp.hasTy_var/const/add/addBig/lt/half/odd/mulB/mulBBig/shl/shr/xo
 
 namespace Lax119563Proofs.Reduction
 
+/-- A pair of scales `l ≤ L`: `2^l` bounds the input length and the values of the classes
+`P 1 _`, `L` the linear quantities. A scale is coerced to `L`. -/
+structure Sc where
+  /-- The exponential scale. -/
+  l : ℕ
+  /-- The linear scale. -/
+  L : ℕ
+  le : l ≤ L
+
+instance : CoeOut Sc ℕ := ⟨Sc.L⟩
+
+/-- The scale `(ℓ, ℓ)`. -/
+def Sc.diag (ℓ : ℕ) : Sc := ⟨ℓ, ℓ, le_rfl⟩
+
+@[simp] lemma Sc.diag_l (ℓ : ℕ) : (Sc.diag ℓ).l = ℓ := rfl
+@[simp] lemma Sc.diag_L (ℓ : ℕ) : (Sc.diag ℓ).L = ℓ := rfl
+
 /-- Growth classes. -/
 inductive Ty
   /-- At most `K · 2^(e ℓ) · (ℓ + 1)^d`. -/
@@ -32,8 +49,8 @@ inductive Ty
 namespace Ty
 
 /-- The bound of a class with constant `K` at scale `ℓ`. -/
-def bnd : Ty → ℕ → ℕ → ℕ
-  | P e d, K, ℓ => K * 2 ^ (e * ℓ) * (ℓ + 1) ^ d
+def bnd : Ty → ℕ → Sc → ℕ
+  | P e d, K, ℓ => K * 2 ^ (e * ℓ.l) * (ℓ + 1) ^ d
   | big, K, ℓ => 2 ^ (K * (ℓ + 1))
 
 /-- Inclusion of classes. -/
@@ -53,7 +70,7 @@ lemma Le.refl : ∀ τ : Ty, Le τ τ
 
 lemma le_big (τ : Ty) : Le τ big := by cases τ <;> trivial
 
-lemma bnd_mono {K K' : ℕ} (h : K ≤ K') (ℓ : ℕ) : ∀ τ : Ty, τ.bnd K ℓ ≤ τ.bnd K' ℓ
+lemma bnd_mono {K K' : ℕ} (h : K ≤ K') (ℓ : Sc) : ∀ τ : Ty, τ.bnd K ℓ ≤ τ.bnd K' ℓ
   | P e d => by
     simp only [bnd]
     exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ h)
@@ -65,28 +82,30 @@ lemma pow_succ_le (ℓ d : ℕ) : (ℓ + 1) ^ d ≤ 2 ^ (d * ℓ) := by
   rw [Nat.mul_comm, pow_mul]
   exact Nat.pow_le_pow_left (succ_le_two_pow ℓ) d
 
-lemma bnd_le_big (K ℓ : ℕ) : ∀ τ : Ty, τ.bnd K ℓ ≤ 2 ^ ((K + τ.lift) * (ℓ + 1))
+lemma bnd_le_big (K : ℕ) (ℓ : Sc) : ∀ τ : Ty, τ.bnd K ℓ ≤ 2 ^ ((K + τ.lift) * (ℓ + 1))
   | P e d => by
     simp only [bnd, lift]
     have h1 : K ≤ 2 ^ K := Nat.lt_two_pow_self.le
     have h3 := pow_succ_le ℓ d
-    calc K * 2 ^ (e * ℓ) * (ℓ + 1) ^ d ≤ 2 ^ K * 2 ^ (e * ℓ) * 2 ^ (d * ℓ) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_right _ h1) h3
+    have h2 : 2 ^ (e * ℓ.l) ≤ 2 ^ (e * ℓ) :=
+      Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_left _ ℓ.le)
+    calc K * 2 ^ (e * ℓ.l) * (↑ℓ + 1) ^ d ≤ 2 ^ K * 2 ^ (e * ℓ) * 2 ^ (d * ℓ) :=
+          Nat.mul_le_mul (Nat.mul_le_mul h1 h2) h3
       _ = 2 ^ (K + e * ℓ + d * ℓ) := by rw [pow_add, pow_add]
       _ ≤ 2 ^ ((K + (e + d)) * (ℓ + 1)) :=
           Nat.pow_le_pow_right (by norm_num) (by nlinarith)
   | big => by simp [bnd, lift]
 
-lemma bnd_lt_big (K ℓ : ℕ) (τ : Ty) : τ.bnd K ℓ < 2 ^ ((K + τ.lift + 1) * (ℓ + 1)) :=
+lemma bnd_lt_big (K : ℕ) (ℓ : Sc) (τ : Ty) : τ.bnd K ℓ < 2 ^ ((K + τ.lift + 1) * (ℓ + 1)) :=
   lt_of_le_of_lt (bnd_le_big K ℓ τ) (Nat.pow_lt_pow_right (by norm_num) (by nlinarith))
 
-lemma bnd_le_of_le {τ τ' : Ty} (h : Le τ τ') (K ℓ : ℕ) : τ.bnd K ℓ ≤ τ'.bnd (K + τ.lift) ℓ := by
+lemma bnd_le_of_le {τ τ' : Ty} (h : Le τ τ') (K : ℕ) (ℓ : Sc) : τ.bnd K ℓ ≤ τ'.bnd (K + τ.lift) ℓ := by
   cases τ with
   | P e d =>
     cases τ' with
     | P e' d' =>
       simp only [bnd, lift]
-      have h1 : 2 ^ (e * ℓ) ≤ 2 ^ (e' * ℓ) :=
+      have h1 : 2 ^ (e * ℓ.l) ≤ 2 ^ (e' * ℓ.l) :=
         Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ h.1)
       have h2 : (ℓ + 1) ^ d ≤ (ℓ + 1) ^ d' := Nat.pow_le_pow_right (by omega) h.2
       exact Nat.mul_le_mul (Nat.mul_le_mul (by omega) h1) h2
@@ -96,21 +115,21 @@ lemma bnd_le_of_le {τ τ' : Ty} (h : Le τ τ') (K ℓ : ℕ) : τ.bnd K ℓ �
     | P _ _ => exact h.elim
     | big => simp [bnd, lift]
 
-lemma one_le_bnd {K : ℕ} (hK : 1 ≤ K) (ℓ : ℕ) : ∀ τ : Ty, 1 ≤ τ.bnd K ℓ
+lemma one_le_bnd {K : ℕ} (hK : 1 ≤ K) (ℓ : Sc) : ∀ τ : Ty, 1 ≤ τ.bnd K ℓ
   | P e d => by
     simp only [bnd]
-    have h1 : 1 ≤ 2 ^ (e * ℓ) := Nat.one_le_two_pow
+    have h1 : 1 ≤ 2 ^ (e * ℓ.l) := Nat.one_le_two_pow
     have h2 : 1 ≤ (ℓ + 1) ^ d := Nat.one_le_pow _ _ (by omega)
     exact Nat.mul_le_mul (Nat.mul_le_mul hK h1) h2
   | big => Nat.one_le_two_pow
 
-lemma bnd_P00 (K ℓ : ℕ) : (P 0 0).bnd K ℓ = K := by simp [bnd]
+lemma bnd_P00 (K : ℕ) (ℓ : Sc) : (P 0 0).bnd K ℓ = K := by simp [bnd]
 
-lemma bnd_mul (e d e' d' K K' ℓ : ℕ) :
+lemma bnd_mul (e d e' d' K K' : ℕ) (ℓ : Sc) :
     (P e d).bnd K ℓ * (P e' d').bnd K' ℓ = (P (e + e') (d + d')).bnd (K * K') ℓ := by
   simp only [bnd, Nat.add_mul, pow_add]; ring
 
-lemma bnd_add (e d K K' ℓ : ℕ) :
+lemma bnd_add (e d K K' : ℕ) (ℓ : Sc) :
     (P e d).bnd K ℓ + (P e d).bnd K' ℓ = (P e d).bnd (K + K') ℓ := by
   simp only [bnd]; ring
 
@@ -119,7 +138,7 @@ end Ty
 open Ty
 
 /-- The stack `ρ` agrees with the classes `τs`, with constant `K` at scale `ℓ`. -/
-def Ag (K ℓ : ℕ) (τs : List Ty) (ρ : List ℕ) : Prop :=
+def Ag (K : ℕ) (ℓ : Sc) (τs : List Ty) (ρ : List ℕ) : Prop :=
   List.Forall₂ (fun v τ => v ≤ τ.bnd K ℓ) ρ τs
 
 /-- Pointwise inclusion of classes. -/
@@ -130,7 +149,7 @@ def liftL (τs : List Ty) : ℕ := (τs.map Ty.lift).sum
 
 namespace Ag
 
-variable {K K' ℓ : ℕ} {τs : List Ty} {ρ : List ℕ}
+variable {K K' : ℕ} {ℓ : Sc} {τs : List Ty} {ρ : List ℕ}
 
 lemma mono (h : K ≤ K') (hA : Ag K ℓ τs ρ) : Ag K' ℓ τs ρ :=
   hA.imp fun _ τ hv => le_trans hv (Ty.bnd_mono h ℓ τ)
@@ -236,7 +255,7 @@ lemma cost_append {n : ℕ} {ρ : List ℕ} (hρ : ρ.length = n) (l : List ℕ)
 
 /-- `e` has values in class `τ`, fits below `2^(K (ℓ+1))` and costs at most `K (ℓ + 1)`. -/
 def HasTy (τs : List Ty) (e : Xp) (τ : Ty) : Prop :=
-  ∀ K₀, ∃ K, ∀ ℓ ρ, Ag K₀ ℓ τs ρ →
+  ∀ K₀, ∃ K, ∀ (ℓ : Sc) ρ, Ag K₀ ℓ τs ρ →
     e.eval ρ ≤ τ.bnd K ℓ ∧ e.Fits (2 ^ (K * (ℓ + 1))) ρ ∧ e.cost ρ ≤ K * (ℓ + 1)
 
 variable {τs : List Ty}
@@ -245,7 +264,7 @@ lemma two_pow_mono {K K' ℓ : ℕ} (h : K ≤ K') : 2 ^ (K * (ℓ + 1)) ≤ 2 ^
   Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ h)
 
 /-- Enlarging the constant. -/
-lemma HasTy.of_le_K {e : Xp} {τ : Ty} {K K' ℓ : ℕ} {ρ : List ℕ} (h : K ≤ K')
+lemma HasTy.of_le_K {e : Xp} {τ : Ty} {K K' : ℕ} {ℓ : Sc} {ρ : List ℕ} (h : K ≤ K')
     (H : e.eval ρ ≤ τ.bnd K ℓ ∧ e.Fits (2 ^ (K * (ℓ + 1))) ρ ∧ e.cost ρ ≤ K * (ℓ + 1)) :
     e.eval ρ ≤ τ.bnd K' ℓ ∧ e.Fits (2 ^ (K' * (ℓ + 1))) ρ ∧ e.cost ρ ≤ K' * (ℓ + 1) :=
   ⟨le_trans H.1 (Ty.bnd_mono h ℓ τ), Fits.mono (two_pow_mono h) _ H.2.1,
@@ -370,13 +389,13 @@ lemma hasTy_odd {a : Xp} {τ : Ty} (ha : HasTy τs a τ) : HasTy τs (odd a) (P 
   · simp only [cost]; nlinarith
 
 /-- A linear iteration count: `2^k` is `big`. -/
-lemma two_pow_lin {k K ℓ : ℕ} (hk : k ≤ (P 0 1).bnd K ℓ) : 2 ^ k ≤ 2 ^ (K * (ℓ + 1)) :=
+lemma two_pow_lin {k K : ℕ} {ℓ : Sc} (hk : k ≤ (P 0 1).bnd K ℓ) : 2 ^ k ≤ 2 ^ (K * (ℓ + 1)) :=
   Nat.pow_le_pow_right (by norm_num) (by simpa [Ty.bnd] using hk)
 
-lemma lin_le {k K ℓ : ℕ} (hk : k ≤ (P 0 1).bnd K ℓ) : k ≤ K * (ℓ + 1) := by
+lemma lin_le {k K : ℕ} {ℓ : Sc} (hk : k ≤ (P 0 1).bnd K ℓ) : k ≤ K * (ℓ + 1) := by
   simpa [Ty.bnd] using hk
 
-lemma mul_two_pow_lt {a k Ka Kk ℓ : ℕ} {τ : Ty} (ha : a ≤ τ.bnd Ka ℓ)
+lemma mul_two_pow_lt {a k Ka Kk : ℕ} {ℓ : Sc} {τ : Ty} (ha : a ≤ τ.bnd Ka ℓ)
     (hk : k ≤ (P 0 1).bnd Kk ℓ) : a * 2 ^ k < 2 ^ ((Ka + τ.lift + Kk + 1) * (ℓ + 1)) := by
   have h1 := le_trans ha (Ty.bnd_le_big Ka ℓ τ)
   have h2 := two_pow_lin hk
