@@ -184,28 +184,6 @@ def moves : Loc M H → List (Move (Loc M H) s)
   | .setJ ν h c =>
     (List.finRange 4).map fun (q : Fin 4) => .step 0 2 q.val h.val (.cell ⟨H, by omega⟩ 0 ν c)
 
-/-- All locations. -/
-def allLocs : List (Loc M H) :=
-  [.accept, .reject, .query] ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 3 ×ˢ (List.finRange _ ×ˢ allCV M))).map
-    fun a => .cell a.1 a.2.1 a.2.2.1 a.2.2.2) ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 3 ×ˢ allExt M)).map
-    fun a => .state a.1 a.2.1 a.2.2) ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 2 ×ˢ (List.finRange _ ×ˢ List.finRange (H + 1)))).map
-    fun a => .headIn a.1 a.2.1 a.2.2.1 a.2.2.2) ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 2 ×ˢ (List.finRange _ ×ˢ List.finRange 8))).map
-    fun a => .headSet a.1 a.2.1 a.2.2.1 a.2.2.2) ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 2 ×ˢ (List.finRange _ ×ˢ
-    (allCV M ×ˢ List.finRange 8)))).map
-    fun a => .restore a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2) ++
-  ((List.finRange (H + 1) ×ˢ (List.finRange 2 ×ˢ (List.finRange _ ×ˢ
-    (allCV M ×ˢ List.finRange 8)))).map
-    fun a => .gather a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2) ++
-  ((List.finRange _ ×ˢ (allRows M ×ˢ (allCV M ×ˢ List.finRange _))).map
-    fun a => .baseCell a.1 a.2.1 a.2.2.1 a.2.2.2) ++
-  ((allRows M ×ˢ List.finRange _).map fun a => .baseState a.1 a.2) ++
-  ((List.finRange _ ×ˢ (List.finRange 4 ×ˢ allCV M)).map fun a => .setJ a.1 a.2.1 a.2.2)
-
 end Defs
 
 end Lax119563Proofs.Circuits

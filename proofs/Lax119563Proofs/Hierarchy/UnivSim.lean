@@ -14,8 +14,6 @@ open Prog
 /-- Tokens. -/
 abbrev Tok := Fin 15
 
-/-- Input bits. -/
-abbrev tF : Tok := 0
 abbrev tT : Tok := 1
 /-- Unary unit and end of a number. -/
 abbrev tU : Tok := 2
@@ -58,7 +56,7 @@ abbrev DONE : Stk := 14
 abbrev FLG : Stk := 15
 
 attribute [simp] IN Y P LS RS LS2 RS2 QS KEY KEY2 TBL TBL2 INS TMP DONE FLG
-attribute [simp] tF tT tU tS tR tM tE tN tH0 tH1 tL tZ tRt tSep tEnd
+attribute [simp] tT tU tS tR tM tE tN tH0 tH1 tL tZ tRt tSep tEnd
 
 /-- Programs of the simulator. -/
 abbrev SProg := Prog 16 13

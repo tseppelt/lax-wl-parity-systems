@@ -16,11 +16,6 @@ namespace Lax119563Proofs.Reduction
 
 open Xp Ty
 
-/-- The classes of the globals (levels `0 … 13`). -/
-def globTys : List Ty :=
-  [P 1 0, P 0 1, P 0 1, P 0 1, P 0 1, P 0 5, P 0 7, P 0 7, P 0 0, P 0 0, P 0 20, P 0 20, P 0 7,
-    P 1 0]
-
 namespace Xp
 
 /-- The minimum of `a` and `b`. -/

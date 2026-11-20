@@ -167,10 +167,4 @@ theorem encodeWLInstance_mem_iff (k : ℕ) (G H : ColoredGraph) :
 
 /-! ## Fixed instances -/
 
-/-- The graph with one vertex. -/
-abbrev oneVertex : ColoredGraph := ⟨1, ⊥, fun _ => 0⟩
-
-/-- The empty graph. -/
-abbrev emptyGraph : ColoredGraph := ⟨0, ⊥, fun _ => 0⟩
-
 end Lax119563Proofs.Hardness

@@ -120,20 +120,6 @@ def fieldBadX (iℓX kX tX vX qX ℓX : Xp) : Xp :=
   and (and (le iℓX (add kX tX)) (lt (add kX tX) (add iℓX ℓX)))
     (not (eq (odd (shr (shl vX iℓX) (add kX tX))) (odd (shr qX tX))))
 
-/-- **The domain violations** (at depth `d`). -/
-def violGen (s d : ℕ) (iX vX xbX gkX g1X g2X g3X ℓX HX : Xp) : Gn :=
-  Gn.when (not (eq iX (const s)))
-    (.ite (eq gkX (const 0))
-      (.loop g2X (Gn.when (fieldBadX (mul ℓX iX) g1X (var (d + 1)) vX g3X ℓX) (.emit (const 0))))
-      (.ite (eq gkX (const 1))
-        (Gn.when (not (or (and (eq iX (const 0)) (eq (initCVX g1X vX xbX) g2X))
-            (and (not (eq iX (const 0))) (eq vX (fieldX (mul ℓX iX) ℓX HX)))))
-          (.emit (const 0)))
-        (.ite (eq gkX (const 2))
-          (Gn.when (not (or (not (eq iX g1X)) (not (eq vX (fieldX (mul ℓX iX) ℓX HX)))))
-            (.emit (const 0)))
-          (Gn.when (not (eq vX (const 0))) (.emit (const 0))))))
-
 lemma eval_fieldX {ρ : List ℕ} (iℓX ℓX HX : Xp) :
     (fieldX iℓX ℓX HX).eval ρ = field (2 ^ HX.eval ρ) (iℓX.eval ρ) (ℓX.eval ρ) := by
   simp [fieldX, field]

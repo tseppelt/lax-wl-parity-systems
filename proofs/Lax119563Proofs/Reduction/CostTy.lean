@@ -34,9 +34,6 @@ structure Sc where
 
 instance : CoeOut Sc ℕ := ⟨Sc.L⟩
 
-/-- The scale `(ℓ, ℓ)`. -/
-def Sc.diag (ℓ : ℕ) : Sc := ⟨ℓ, ℓ, le_rfl⟩
-
 /-- Growth classes. -/
 inductive Ty
   /-- At most `K · 2^(e ℓ) · ((ℓ : ℕ) + 1)^d`. -/

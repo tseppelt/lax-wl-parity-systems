@@ -23,26 +23,13 @@ open Function (update)
 
 namespace TM
 
-/-- `test; while c do (body; test)`. -/
-def whileM (test : TM k Γ) (c : (Fin k → Γ) → Bool) (body : TM k Γ) : TM k Γ :=
-  test ;; loop c (body ;; test)
-
 variable [TapeAlphabet Γ]
-
-/-- Copy, moving left on tape `i` and right on tape `j`, while `p` holds on tape `i`. -/
-def copyLR (i j : Fin k) (p : Γ → Bool) : TM k Γ :=
-  loop (fun s => p (s i)) (act₂ i j fun a _ => ((a, .left), (a, .right)))
 
 
 /-- The `d` cells at and to the left of the head, read from right to left. -/
 def _root_.Lax119563Proofs.Machines.Tape.leftWord (t : Tape Γ) : ℕ → List Γ
   | 0 => []
   | d + 1 => t.read :: Tape.leftWord ⟨t.head - 1, t.cells⟩ d
-
-/-- Append the word `u` just left of the head of tape `i` (preceded by a symbol violating `p`
-or by the left end) in reverse order to tape `j`; the head of tape `i` ends on the first
-symbol of `u`. -/
-def revCopy (i j : Fin k) (p : Γ → Bool) : TM k Γ := moveL i ;; copyLR i j p ;; moveR i
 
 /-- Add the length of the word on tape `i` (from the head on) to the number on tape `c`. -/
 def countLen [DecidableEq Γ] (i c : Fin k) : TM k Γ :=

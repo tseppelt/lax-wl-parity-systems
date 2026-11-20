@@ -202,19 +202,6 @@ theorem seq_runsWithin {M₁ M₂ : TM k Γ} {T T₁ T₂ : Tapes k Γ} {t₁ t�
   obtain ⟨s₁, hs₁, h₁⟩ := h₁; obtain ⟨s₂, hs₂, h₂⟩ := h₂
   exact ⟨s₁ + s₂, by omega, seq_haltsIn h₁ h₂⟩
 
-/-- Branch on a function of the scanned symbols, at no cost. -/
-def branch {ι : Type} [Fintype ι] [DecidableEq ι] (g : (Fin k → Γ) → ι)
-    (M : ι → TM k Γ) : TM k Γ where
-  Q := Option (Σ i, (M i).Q)
-  start := none
-  δ
-    | none, s => ((M (g s)).δ (M (g s)).start s).map fun p => (some ⟨g s, p.1⟩, p.2)
-    | some ⟨i, q⟩, s => ((M i).δ q s).map fun p => (some ⟨i, p.1⟩, p.2)
-
-/-- Conditional on a predicate of the scanned symbols, at no cost. -/
-def ite (c : (Fin k → Γ) → Bool) (M₁ M₂ : TM k Γ) : TM k Γ :=
-  branch c fun b => bif b then M₁ else M₂
-
 /-- `while c do B`: test `c` on the scanned symbols; if it holds, run `B` (one extra
 transition per iteration) and repeat. -/
 def loop (c : (Fin k → Γ) → Bool) (B : TM k Γ) : TM k Γ where

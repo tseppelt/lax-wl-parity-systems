@@ -123,15 +123,6 @@ def forkBlk (NX : Xp) (b : ℕ) : List (List Xp) :=
 /-- The guard numbers of a command. -/
 def gdX (b : ℕ) : List Xp := [var (b + 21), var (b + 22), var (b + 23), var (b + 24)]
 
-/-- The body of the command enumerator: count `j` (level `b + 25`) and `e₀` (level
-`b + 26`), then run `body` for the schemas of the command. -/
-def cmdBody (b : ℕ) (HX RX NX : Xp) (body : Gn) : Gn :=
-  .count (cmdEnum M s (b + 26) HX RX (Gn.when (beforeX b (b + 26)) (.emit (const 0))))
-    (.count (cmdEnum M s (b + 27) HX RX (Gn.when (beforeX b (b + 27))
-        (.ite (var (b + 27 + 17)) (Gn.emitN 9) (Gn.emitN 4))))
-      (.ite (var (b + 17)) (Gn.blkGen (var (b + 26)) (gdX b) body (forkBlk NX b))
-        (Gn.blkGen (var (b + 26)) (gdX b) body (assignBlk NX b))))
-
 /-- The location number `N + 8 r + t` of detector slot `t`. -/
 def detX (NX rX : Xp) (t : ℕ) : Xp := add (add NX (mulC 8 rX)) (const t)
 
@@ -140,10 +131,6 @@ def detGen (NX rX p0X EcX : Xp) (body : Gn) : Gn :=
   Gn.bindL (List.replicate 27 (const 0))
     (Gn.blkGen EcX [const 3, const 0, const 0, const 0] body
       (gadgetX p0X (const 0) (detX NX rX 0) (detX NX rX 1) (detX NX rX 2) (detX NX rX 3)))
-
-/-- **The schema enumerator.** -/
-def schEnum (b : ℕ) (HX RX NX rX p0X EcX : Xp) (body : Gn) : Gn :=
-  .seq (cmdEnum M s b HX RX (cmdBody M s b HX RX NX body)) (detGen NX rX p0X EcX body)
 
 end Gens
 

@@ -141,12 +141,6 @@ theorem MachineComputable.id' : MachineComputable fun k => k := by
 
 /-! ## Composition -/
 
-/-- The statement for `f ∘ g`. -/
-noncomputable def compS (Mf Mg : Machine) : CStm (need Mf + need Mg + 3) (need Mf + need Mg) :=
-  seqL [startS _ 3 le_rfl, callS Mg _ 3 (by omega) (ex _ 3 0),
-    callS Mf _ 3 (by omega) (ρs Mg _ 3 (by omega) .out),
-    .emit (.var (ρs Mf _ 3 (by omega) .out))]
-
 /-! ## Pointwise arithmetic -/
 
 /-- The statement for `H (f k) (g k)`. -/

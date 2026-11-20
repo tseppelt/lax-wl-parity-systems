@@ -24,31 +24,9 @@ variable {M : Machine} {H : ℕ}
 instance : DecidableEq (Loc M H) := fun a b =>
   decidable_of_iff (a.code = b.code) Loc.code_injective.eq_iff
 
-/-- The register width `ℓ = log₂ n + C₀ + 4`. -/
-def timeWidth (C₀ n : ℕ) : ℕ := Nat.log 2 n + C₀ + 4
-
-/-- The horizon `H = s ℓ - 2`; the simulation covers `2^H` steps. -/
-def timeHorizon (s C₀ n : ℕ) : ℕ := s * timeWidth C₀ n - 2
-
-/-- The address commands of the verifier, over the listed locations without repetitions. -/
-def verifierCmds (M : Machine) (x : List Bool) (s ℓ H : ℕ) : List (ACmd (Loc M H) s) :=
-  progCmds ℓ (allLocs M H).dedup (moves M x s ℓ H)
-
 lemma code_accept_ne_reject : (Loc.accept : Loc M H).code ≠ Loc.reject.code := fun h => by
   have := Loc.code_injective h
   cases this
-
-/-- The register program simulating `M` on `x`. -/
-def timeProgram (M : Machine) (s C₀ : ℕ) (x : List Bool) :
-    RegisterProgram s (timeWidth C₀ x.length) :=
-  compile (numLoc M (timeHorizon s C₀ x.length)) Loc.code .accept .reject
-    code_accept_ne_reject
-    (verifierCmds M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length))
-
-/-- The query location of `timeProgram`; the query valuation is zero. -/
-def timeQuery (M : Machine) (s C₀ : ℕ) (x : List Bool) :
-    Fin (timeProgram M s C₀ x).numLocations :=
-  (Loc.query : Loc M (timeHorizon s C₀ x.length)).code
 
 /-! ## Correctness -/
 
@@ -80,9 +58,6 @@ lemma length_flatMap_le {α β : Type} {l : List α} {f : α → List β} {k : �
 
 /-- A bound on the number of moves at a location other than the root cells `cell 0 0 ν c`. -/
 def movBound0 (M : Machine) : ℕ := 16 + 8 * (M.symbols + 3) * rowBound M
-
-/-- A bound on the number of moves at a location. -/
-def movBound (M : Machine) (s : ℕ) : ℕ := s + movBound0 M
 
 /-- `1` at the root cells `cell 0 0 ν c` (which carry the `s - 1` tests `missGuard`), else `0`. -/
 def Loc.rootCount : Loc M H → ℕ

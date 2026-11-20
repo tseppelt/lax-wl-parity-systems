@@ -161,24 +161,7 @@ theorem incr_ofWord (i : Fin k) (m : ℕ) {T : Tapes k Γ} (hT : T i = .ofWord [
 
 /-! ## Equality test -/
 
-/-- Move right on tapes `i` and `j` while their scanned symbols agree and are not blank. -/
-def eqScan (i j : Fin k) : TM k Γ :=
-  loop (fun s => decide (s i = s j ∧ s i ≠ blank)) (act₂ i j fun a b => ((a, .right), (b, .right)))
-
-/-- Branch on the equality of the blank-free words on tapes `i` and `j` (heads on position
-`0`, where they return before the branch is taken). -/
-def ifEq (i j : Fin k) (M₁ M₂ : TM k Γ) : TM k Γ :=
-  eqScan i j ;; ite (fun s => decide (s i = blank ∧ s j = blank))
-    (rewind i ;; rewind j ;; M₁) (rewind i ;; rewind j ;; M₂)
-
 /-! ## Writing codes -/
-
-/-- Append `encodeNat m` to the word on tape `o` (head after its end), where `m` is the
-number on tape `i` (head on position `0`, where it returns). -/
-def emitNat (i o : Fin k) : TM k Γ :=
-  loop (fun s => decide (s i ≠ blank))
-      (writeR o (bit true) ;; act₂ i o fun a _ => ((a, .right), (a, .right))) ;;
-    writeR o (bit false) ;; rewind i
 
 end TM
 

@@ -131,12 +131,6 @@ noncomputable def e0Of (x : List Bool) (ℓ H j : ℕ) : ℕ :=
   (((verifierCmds' M x s ℓ H).take j).map cmdSz).sum
 
 variable (M s) in
-/-- The stacks of all schemas. -/
-noncomputable def schStks (b : ℕ) (HX RX NX rX p0X EcX : Xp) (x : List Bool) (ρ : List ℕ)
-    (ℓ H : ℕ) : List (List ℕ) :=
-  (cmdStks M s b HX RX x ρ H).zipIdx.flatMap (fun p =>
-    cmdSchStks NX b p.1 p.2 (e0Of (M := M) (s := s) x ℓ H p.2)) ++ detStks NX rX p0X EcX ρ
-
 /-! ## Bounds -/
 
 lemma bnd_var {i n : ℕ} (h : i < n) : (var i).Bnd n := h

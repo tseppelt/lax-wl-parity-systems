@@ -113,23 +113,6 @@ lemma inc_spec {r t : Fin R} (hrt : r ≠ t) {st : HSt R} (ht : st.env t < 2 ^ w
   · simp [HSt.set_env_ne _ hrt]; omega
   · simp [HSt.set_env_ne _ hrt]
 
-/-- The instruction doing nothing (cost `1`). -/
-def HProg.skip : HProg R := .loop (fun _ => false) .rst
-
-/-- Append the digits `ds` (most significant first) to `r`: `r := 2 r + d` for each `d`. -/
-def HProg.pushDigits (r : Fin R) : List Bool → HProg R
-  | [] => HProg.skip
-  | d :: ds => .seq (if d then .one r else .dbl r) (HProg.pushDigits r ds)
-
-/-- The value of a digit list, most significant first, appended to `v`. -/
-def digitsVal (v : ℕ) : List Bool → ℕ
-  | [] => v
-  | d :: ds => digitsVal (2 * v + d.toNat) ds
-
-/-- `r := c`. -/
-def HProg.setC (r : Fin R) (c : ℕ) : HProg R :=
-  .seq (.clr r) (HProg.pushDigits r (Nat.bits c).reverse)
-
 /-! ## Counting loops -/
 
 /-- `for i ∈ [0, lim): body`, with the flag `f` (`[i < lim]`) and the scratch register `t`. -/

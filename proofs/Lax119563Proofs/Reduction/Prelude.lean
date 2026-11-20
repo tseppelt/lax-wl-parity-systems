@@ -21,25 +21,6 @@ open Lax119563.ImplicitParitySystems Lax119563Proofs.Programs
 
 namespace Gn
 
-/-- The size count body: `9` zeros for a fork, `4` for an assignment (record at `b + 17`). -/
-def szBody (b : ℕ) : Gn := .ite (var (b + 17)) (emitN 9) (emitN 4)
-
-/-- **The prelude.** -/
-def prelude (M : Machine) (s C₀ : ℕ) (g : Gn) : Gn :=
-  len <| log (var 0) <|
-  bind (add (var 1) (const (C₀ + 4))) <|
-  bind (add (mulC (s - 2) (var 2)) (mulC 2 (add (var 1) (const (C₀ + 3))))) <|
-  bind (add (var 3) (const (1 + cM M))) <|
-  bind (mulC (16 * cM M ^ 3) (mul (var 4) (var 4))) <|
-  count (cmdEnum M s 7 (var 3) (var 4) (emit (const 0))) <|
-  count (cmdEnum M s 8 (var 3) (var 4) (szBody 8)) <|
-  bind (const 2) <|
-  bind (const 0) <|
-  count (schEnum M s 11 gH gR gN gr gp0 gEc (emit (const 0))) <|
-  bind (add (add (var 5) (mulC 8 (var 6))) (const 4)) <|
-  bind (add (add (var 5) (mulC 8 (var 6))) (const 3)) <|
-  bind (minR (pow2 (var 2)) (mulC (2 ^ (C₀ + 4)) (add (var 0) (const 1)))) g
-
 end Gn
 
 /-! ## Steps -/

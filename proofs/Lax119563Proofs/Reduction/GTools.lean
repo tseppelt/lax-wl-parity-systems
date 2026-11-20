@@ -57,33 +57,6 @@ lemma eval_or (a b : Xp) :
   show (if (0 : ℕ) < a.eval ρ + b.eval ρ then 1 else 0) = _
   split_ifs <;> omega
 
-/-- The number of nodes. -/
-def size : Xp → ℕ
-  | var _ => 1
-  | const _ => 1
-  | add a b => a.size + b.size + 1
-  | lt a b => a.size + b.size + 1
-  | half a => a.size + 1
-  | odd a => a.size + 1
-  | mulB a b k => a.size + b.size + k.size + 1
-  | shl a k => a.size + k.size + 1
-  | shr a k => a.size + k.size + 1
-  | xorM a b k => a.size + b.size + k.size + 1
-
-/-- All values are below `2 ^ W` and all loop counts at most `W`. -/
-def Small (W : ℕ) (ρ : List ℕ) : Xp → Prop
-  | var i => ρ.getD i 0 < 2 ^ W
-  | const c => c < 2 ^ W
-  | add a b => a.Small W ρ ∧ b.Small W ρ ∧ a.eval ρ + b.eval ρ < 2 ^ W
-  | lt a b => a.Small W ρ ∧ b.Small W ρ
-  | half a => a.Small W ρ
-  | odd a => a.Small W ρ
-  | mulB a b k => a.Small W ρ ∧ b.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W ∧
-      a.eval ρ * (b.eval ρ % 2 ^ k.eval ρ) < 2 ^ W
-  | shl a k => a.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W ∧ a.eval ρ * 2 ^ k.eval ρ < 2 ^ W
-  | shr a k => a.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W
-  | xorM a b k => a.Small W ρ ∧ b.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W
-
 end Xp
 
 namespace Gn
@@ -97,10 +70,6 @@ def seqL : List Gn → Gn
 
 /-- `g` if `c ≠ 0`. -/
 def when (c : Xp) (g : Gn) : Gn := ite c g skip
-
-/-- `f i` for the value `i < n` of `v`; nothing if `v ≥ n`. -/
-def dispatch (v : Xp) (n : ℕ) (f : ℕ → Gn) : Gn :=
-  seqL ((List.range n).map fun i => when (Xp.eq v (.const i)) (f i))
 
 lemma out_seqL (gs : List Gn) : (seqL gs).out x ρ = gs.flatMap fun g => g.out x ρ := by
   induction gs with

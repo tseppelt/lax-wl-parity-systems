@@ -351,14 +351,6 @@ lemma hasCost_brGen {RX HX : Xp} (hR : LinX Γ RX) (hH : LinX Γ HX) {body : Gn}
 
 end Gn
 
-/-- The classes of the digits and differences (levels `b, …, b + 13`). -/
-def digTys : List Ty :=
-  [P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1,
-    P 0 1]
-
-/-- The classes of the levels `b, …, b + 24` of the body of the command enumerator. -/
-def cmdTys : List Ty := digTys ++ [P 0 5, P 0 5] ++ P 0 0 :: recTys
-
 lemma hasCost_loop' {τs l : List Ty} {lim : Xp} {g : Gn} {e₀ d₀ e d : ℕ}
     (hl : HasTy (τs ++ l) lim (P e₀ d₀)) (hg : HasCost (τs ++ (l ++ [P e₀ d₀, P e₀ d₀])) g e d) :
     HasCost (τs ++ l) (Gn.loop lim g) (e₀ + e) (d₀ + d) :=

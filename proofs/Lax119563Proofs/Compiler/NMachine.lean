@@ -27,14 +27,6 @@ variable {R Q : ℕ}
 def countLoopN : Hierarchy.Prog (R + Q + 7) 0 :=
   .loop (fun t => (t nT0).isSome) (.seq (moveOne nT0 nT1) (.pop nIo))
 
-/-- The output phase. -/
-def finalPN : Hierarchy.Prog (R + Q + 7) 0 :=
-  .seq (moveAll nOut nT0) (.seq countLoopN (moveAll nT1 nIo))
-
-/-- The machine of a register program. -/
-noncomputable def NProg.machine (p : NProg R Q) : Machine :=
-  Hierarchy.Prog.toMachine (K := R + Q + 6) (.seq (compileN p) finalPN) (fun _ => false)
-
 lemma countLoopN_runsH : ∀ (l : List Sym) (S : Stacks (R + Q + 7) 0) (hd : Fin (R + Q + 7) → ℤ),
     S nT0 = l →
     ∃ hd' : Fin (R + Q + 7) → ℤ, hd' nIo = hd nIo + l.length ∧

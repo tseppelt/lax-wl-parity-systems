@@ -25,9 +25,6 @@ def numTys : List Ty := [P 0 0, P 0 7, P 0 7, P 0 7, .big]
 /-- The classes of the guard numbers. -/
 def gdTys : List Ty := [P 0 0, P 0 1, P 0 0, P 0 0]
 
-/-- The classes of the levels `b, …, b + 36` of the body of the schema enumerator. -/
-def schTys : List Ty := cmdTys ++ [P 0 7, P 0 7] ++ P 0 7 :: (numTys ++ gdTys)
-
 variable {Γ : List Ty}
 
 /-- Typed lists of expressions. -/

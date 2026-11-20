@@ -49,18 +49,6 @@ noncomputable def verifierCmds' (M : Machine) (x : List Bool) (s ℓ H : ℕ) :
     List (ACmd (Loc M H) s) :=
   progCmds ℓ (locsByCode M H) (moves M x s ℓ H)
 
-/-- The time simulation program with commands in code order. -/
-noncomputable def timeProgram' (M : Machine) (s C₀ : ℕ) (x : List Bool) :
-    RegisterProgram s (timeWidth C₀ x.length) :=
-  compile (numLoc M (timeHorizon s C₀ x.length)) Loc.code .accept .reject
-    code_accept_ne_reject
-    (verifierCmds' M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length))
-
-/-- The query location. -/
-def timeQuery' (M : Machine) (s C₀ : ℕ) (x : List Bool) :
-    Fin (timeProgram' M s C₀ x).numLocations :=
-  (Loc.query : Loc M (timeHorizon s C₀ x.length)).code
-
 /-- The commands in code order: for each number `c`, the moves of the decoded location. -/
 lemma verifierCmds'_eq (x : List Bool) (s ℓ : ℕ) :
     verifierCmds' M x s ℓ H = (List.range (numLoc M H)).flatMap fun c =>

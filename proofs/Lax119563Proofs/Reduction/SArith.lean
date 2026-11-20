@@ -15,19 +15,6 @@ variable {R : ℕ} {x : List Bool} {w : ℕ}
 
 namespace Stm
 
-/-- The accumulating loop `for i < lim: acc := acc + e`. -/
-def accum (i lim acc : Fin R) (e : Ex R) : Stm R :=
-  loop i lim (set acc (Ex.add (Ex.var acc) e))
-
-/-- `acc := a * b` (by `b` additions; `i` is a counter). -/
-def mulS (a b acc i : Fin R) : Stm R :=
-  seq (set acc (Ex.const 0)) (accum i b acc (Ex.var a))
-
-/-- `acc := a - b` (truncated; by counting `t < a` with `b ≤ t`). -/
-def subS (a b acc i : Fin R) : Stm R :=
-  seq (set acc (Ex.const 0))
-    (accum i a acc (Ex.lt (Ex.var b) (Ex.add (Ex.var i) (Ex.const 1))))
-
 /-- `acc := acc * 2 ^ k` (by `k` doublings). -/
 def shlS (k acc i : Fin R) : Stm R := loop i k (set acc (Ex.add (Ex.var acc) (Ex.var acc)))
 

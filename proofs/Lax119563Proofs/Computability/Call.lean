@@ -77,25 +77,6 @@ def addOp : ArithOp (· + ·) where
     simp only [Fits, Ex.Fits, Ex.eval]
     exact ⟨lt_two_pow_of_le (by omega), lt_two_pow_of_le (by omega), lt_two_pow_of_le hW⟩
 
-/-- Maximum. -/
-def maxOp : ArithOp max where
-  op a b o _ _ _ := .ite (.lt (.var a) (.var b)) (.set o (.var b)) (.set o (.var a))
-  W A B := A + B
-  spec := fun {R Q x w} a b o s t u hnd hw st hW => by
-    have ha : st.env a < 2 ^ w := lt_two_pow_of_le (by omega)
-    have hb : st.env b < 2 ^ w := lt_two_pow_of_le (by omega)
-    by_cases hab : st.env a < st.env b
-    · have hc : (Ex.lt (.var a) (.var b) : Ex _).eval st.env ≠ 0 := by simp [Ex.eval, hab]
-      refine ⟨⟨⟨ha, hb⟩, by rw [if_pos hc]; exact hb⟩, ?_, fun r hr _ _ _ => ?_, ?_, ?_, ?_⟩
-      · simp only [exec, if_pos hc]; simp [Ex.eval, hab.le]
-      · simp only [exec, if_pos hc]; simp [Function.update_of_ne hr]
-      all_goals simp only [exec, if_pos hc]; rfl
-    · have hc : ¬ (Ex.lt (.var a) (.var b) : Ex _).eval st.env ≠ 0 := by simp [Ex.eval, hab]
-      refine ⟨⟨⟨ha, hb⟩, by rw [if_neg hc]; exact ha⟩, ?_, fun r hr _ _ _ => ?_, ?_, ?_, ?_⟩
-      · simp only [exec, if_neg hc]; simp [Ex.eval]; omega
-      · simp only [exec, if_neg hc]; simp [Function.update_of_ne hr]
-      all_goals simp only [exec, if_neg hc]; rfl
-
 lemma nodup6 {R : ℕ} {a b o s t u : Fin R} (h : [a, b, o, s, t, u].Nodup) :
     a ≠ b ∧ a ≠ o ∧ a ≠ s ∧ a ≠ t ∧ a ≠ u ∧ b ≠ o ∧ b ≠ s ∧ b ≠ t ∧ b ≠ u ∧ o ≠ s ∧ o ≠ t ∧
       o ≠ u ∧ s ≠ t ∧ s ≠ u ∧ t ≠ u := by

@@ -85,43 +85,6 @@ variable (M s)
 def rvB (b : ℕ) (HX : Xp) : RVals :=
   ⟨var (b + 9), var (b + 3), var (b + 10), var (b + 11), var (b + 12), var (b + 13), HX⟩
 
-/-- `t1 + R (t2 + C (t3 + C (t4 + R t5)))`. -/
-def restX (C b : ℕ) (RX : Xp) : Xp :=
-  add (var (b + 9)) (mul (add (var (b + 7)) (mulC C (add (var (b + 5)) (mulC C (add (var (b + 3))
-    (mul (var (b + 1)) RX)))))) RX)
-
-/-- The runtime values are in range. -/
-def validX (b : ℕ) (HX : Xp) : SKind M → Xp
-  | .cell .. | .state .. | .headSet .. | .restore .. | .gather .. =>
-      lt (var (b + 9)) (add HX (const 1))
-  | .headIn .. => and (lt (var (b + 9)) (add HX (const 1))) (lt (var (b + 3)) (add HX (const 1)))
-  | _ => const 1
-
-/-- The kind `K` has location number `tag + 16 rest`. -/
-def matchX (b : ℕ) (HX RX : Xp) (K : SKind M) : Xp :=
-  and (eq ((K.sloc (var (b + 9)) (var (b + 3))).codeX RX HX)
-    (add (const (K.sloc (var (b + 9)) (var (b + 3))).tag) (mulC 16 (var (b + 14)))))
-    (validX M b HX K)
-
-/-- The commands of the location of kind `K`. -/
-def kindGen (b : ℕ) (HX RX : Xp) (body : Gn) (K : SKind M) : Gn :=
-  Gn.bind ((K.sloc (var (b + 9)) (var (b + 3))).codeX RX HX)
-    (Gn.brGen RX HX body (K.brs (s := s) (rvB b HX)))
-
-/-- The commands of the locations with given digits `t1, …, t5`, in order of the tag. -/
-def tupleGen (b : ℕ) (HX RX : Xp) (body : Gn) : Gn :=
-  Gn.seqL ((List.range 16).map fun t =>
-    Gn.firstL (matchX M b HX RX) (kindGen M s b HX RX body) (kindsOfTag M t))
-
-/-- **The command enumerator.** -/
-def cmdEnum (b : ℕ) (HX RX : Xp) (body : Gn) : Gn :=
-  .loop (const (cM M)) (.loop RX (.loop (const (cM M)) (.loop (const (cM M)) (.loop RX (
-    Gn.bindSub (b + 10) (var (b + 9)) (const 1) (
-    Gn.bindSub (b + 11) (var (b + 3)) (const 1) (
-    Gn.bindSub (b + 12) HX (add (var (b + 9)) (const 1)) (
-    Gn.bindSub (b + 13) (add HX (const 2)) (var (b + 9)) (
-    .bind (restX (cM M) b RX) (tupleGen M s b HX RX body))))))))))
-
 /-- The stack below the source number, for the digits `t = (tag, t1, …, t5)`. -/
 def stkT (ρ : List ℕ) (H R C : ℕ) (t : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) : List ℕ :=
   ρ ++ [C, t.2.2.2.2.2, R, t.2.2.2.2.1, C, t.2.2.2.1, C, t.2.2.1, R, t.2.1,
