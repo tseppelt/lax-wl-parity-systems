@@ -172,4 +172,124 @@ theorem pipeline_fine : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
     exact fine_time_arith hsh (packedWidth_le_succ hxh (by omega) hs) (by omega)
       hxin le_rfl hH hSz le_rfl
 
+/-! ## The reduction -/
+
+lemma parA_le_log {n : ℕ} (hn : 2 ≤ n) : parA n ≤ Nat.log 2 n + 2 := by
+  unfold parA
+  refine Nat.clog_le_of_le_pow ?_
+  have h1 := Nat.lt_pow_succ_log_self (b := 2) (by norm_num) n
+  rw [pow_succ] at h1 ⊢
+  rw [pow_succ]
+  have : 1 ≤ 2 ^ Nat.log 2 n := Nat.one_le_two_pow
+  omega
+
+lemma one_le_log {n : ℕ} (hn : 2 ≤ n) : 1 ≤ Nat.log 2 n :=
+  Nat.le_log_of_pow_le (by norm_num) (by simpa using hn)
+
+lemma packedWidth_le_horizon (n s a c₀ : ℕ) (hs : 1 ≤ s) (ha : Nat.clog 2 (n + 2) = a) :
+    packedWidth n (s * a + c₀) s ≤ a + c₀ + 2 := by
+  unfold packedWidth
+  refine max_le (by omega) (Nat.div_le_of_le_mul ?_)
+  have : c₀ ≤ s * c₀ := Nat.le_mul_of_pos_left _ hs
+  have e : s * (a + c₀ + 2) = s * a + s * c₀ + 2 * s := by ring
+  omega
+
+/-- The halting bound: `C₀ n^s + C₀ ≤ 2^{s a + c₀}` for `n + 2 ≤ 2^a` and `C₀ < 2^{c₀}`. -/
+lemma halt_le {C₀ n s a c₀ : ℕ} (hs : 1 ≤ s) (ha : n + 2 ≤ 2 ^ a) (hc : C₀ ≤ 2 ^ c₀) :
+    C₀ * n ^ s + C₀ ≤ 2 ^ (s * a + c₀) := by
+  have h1 : n ^ s < (n + 2) ^ s := Nat.pow_lt_pow_left (by omega) (by omega)
+  have h2 : (n + 2) ^ s ≤ (2 ^ a) ^ s := Nat.pow_le_pow_left ha _
+  have e : 2 ^ (s * a + c₀) = (2 ^ a) ^ s * 2 ^ c₀ := by rw [pow_add, ← pow_mul, mul_comm a s]
+  rw [e]
+  calc C₀ * n ^ s + C₀ = C₀ * (n ^ s + 1) := by ring
+    _ ≤ 2 ^ c₀ * (2 ^ a) ^ s := Nat.mul_le_mul hc (by omega)
+    _ = _ := by ring
+
+/-- The time bound of the reduction. -/
+lemma red_arith {n Lg a TP TR KP Cf E B cf : ℕ} (hn : 1 ≤ n) (hLg : 1 ≤ Lg)
+    (ha : a + 1 ≤ 4 * Lg) (hTP : TP ≤ KP * (n + 1) * (a + 1) ^ 2)
+    (hTR : TR ≤ Cf * (E * n) * (B * Lg) ^ cf) :
+    n + (2 * TP + TR + 3) ≤ (64 * KP + Cf * E * B ^ cf + 4) * n * Lg ^ (cf + 2) := by
+  obtain ⟨W, hW⟩ : ∃ W, W = n * Lg ^ (cf + 2) := ⟨_, rfl⟩
+  have hL2 : Lg ^ 2 ≤ Lg ^ (cf + 2) := Nat.pow_le_pow_right hLg (by omega)
+  have hLc : Lg ^ cf ≤ Lg ^ (cf + 2) := Nat.pow_le_pow_right hLg (by omega)
+  have hnW : n ≤ W := hW ▸ Nat.le_mul_of_pos_right _ (by positivity)
+  have hTP' : TP ≤ 32 * KP * W := by
+    calc TP ≤ KP * (2 * n) * (4 * Lg) ^ 2 :=
+          hTP.trans (Nat.mul_le_mul (Nat.mul_le_mul_left KP (show n + 1 ≤ 2 * n by omega))
+            (Nat.pow_le_pow_left ha 2))
+      _ = 32 * KP * (n * Lg ^ 2) := by ring
+      _ ≤ 32 * KP * W := Nat.mul_le_mul_left _ (hW ▸ Nat.mul_le_mul_left _ hL2)
+  have hTR' : TR ≤ Cf * E * B ^ cf * W := by
+    calc TR ≤ Cf * (E * n) * (B * Lg) ^ cf := hTR
+      _ = Cf * E * B ^ cf * (n * Lg ^ cf) := by rw [mul_pow]; ring
+      _ ≤ Cf * E * B ^ cf * W := Nat.mul_le_mul_left _ (hW ▸ Nat.mul_le_mul_left _ hLc)
+  have e : (64 * KP + Cf * E * B ^ cf + 4) * n * Lg ^ (cf + 2) =
+      2 * (32 * KP * W) + Cf * E * B ^ cf * W + 4 * W := by rw [hW]; ring
+  omega
+
+/-- **The quasi-linear reduction from `DTIME(n^s)` to `(s+1)`-WL Distinguishing** (with an
+absolute exponent `c`). The output length is bounded by the running time. -/
+theorem time_reduction : ∃ c : ℕ, ∀ s : ℕ, 2 ≤ s → ∀ M : Machine, Deterministic M →
+    (∃ C₀ : ℕ, ∀ x : List Bool, (runOn M x (C₀ * x.length ^ s + C₀)).answer.isSome) →
+    ∃ R : Machine, Deterministic R ∧ ∃ C : ℕ, ∀ x : List Bool, 2 ≤ x.length →
+      ∃ G₀ G₁ : ColoredGraph,
+        (Accepts M x ↔ Distinguishes (s + 1) G₀ G₁) ∧
+        (encodeGraphPair G₀ G₁).length ≤ C * x.length * Nat.log 2 x.length ^ c ∧
+        ComputesWithin R x (encodeGraphPair G₀ G₁) (C * x.length * Nat.log 2 x.length ^ c) := by
+  obtain ⟨cf, hfine⟩ := pipeline_fine
+  refine ⟨cf + 2, fun s hs M hM ⟨C₀, hC₀⟩ => ?_⟩
+  obtain ⟨Rf, -, Cf, hRf⟩ := hfine M hM
+  obtain ⟨Pm, -, KP, hP⟩ := horizon_machine s (C₀ + 2)
+  refine ⟨(Compose.comp Pm Rf false fun _ => false).toMachine,
+    AMachine.toMachine_deterministic _,
+    64 * KP + Cf * 2 ^ (C₀ + 2 + 4) * (3 * s + (C₀ + 2) + 1) ^ cf + 4, fun x hx => ?_⟩
+  obtain ⟨a, ha⟩ : ∃ a, a = parA x.length := ⟨_, rfl⟩
+  have ha1 : 1 ≤ a := ha ▸ one_le_parA _
+  have hapow : x.length + 2 ≤ 2 ^ a := ha ▸ le_pow_parA _
+  have hapow' : 2 ^ a ≤ 2 * (x.length + 2) := ha ▸ pow_parA_le _
+  have hsa : s ≤ s * a := Nat.le_mul_of_pos_right _ ha1
+  have hxh : x.length ≤ 2 ^ (s * a + (C₀ + 2)) :=
+    le_trans (by omega) (Nat.pow_le_pow_right (by norm_num) (show a ≤ s * a + (C₀ + 2) by
+      have : a ≤ s * a := Nat.le_mul_of_pos_left _ (by omega)
+      omega))
+  obtain ⟨G₀, G₁, hacc, hcomp⟩ := hRf x (s * a + (C₀ + 2)) s hx (by omega) hxh hs (by omega)
+  -- the machine halts within `2^h` steps
+  have hhalt : (runOn M x (2 ^ (s * a + (C₀ + 2)))).answer.isSome := by
+    have hle := halt_le (C₀ := C₀) (n := x.length) (s := s) (c₀ := C₀ + 2) (by omega) hapow
+      (le_trans Nat.lt_two_pow_self.le (Nat.pow_le_pow_right (by norm_num) (by omega)))
+    rw [runOn_eq_of_le M x hle (hC₀ x)]
+    exact hC₀ x
+  -- the reduction
+  have hPx := hP x
+  rw [← ha] at hPx
+  have hred := Compose.compose_computesWithin Pm Rf false (fun _ => false) hx hPx hcomp
+  obtain ⟨Lg, hLg⟩ : ∃ Lg, Lg = Nat.log 2 x.length := ⟨_, rfl⟩
+  have hLg1 : 1 ≤ Lg := hLg ▸ one_le_log hx
+  have haL : a ≤ Lg + 2 := ha ▸ hLg ▸ parA_le_log hx
+  have hℓ : packedWidth x.length (s * a + (C₀ + 2)) s ≤ a + (C₀ + 2) + 2 :=
+    packedWidth_le_horizon _ _ _ _ (by omega) ha.symm
+  have hQ : 2 ^ packedWidth x.length (s * a + (C₀ + 2)) s ≤ 2 ^ (C₀ + 2 + 4) * x.length := by
+    calc 2 ^ packedWidth x.length (s * a + (C₀ + 2)) s ≤ 2 ^ (a + (C₀ + 2) + 2) :=
+          Nat.pow_le_pow_right (by norm_num) hℓ
+      _ = 2 ^ a * 2 ^ (C₀ + 2 + 2) := by rw [← pow_add]; ring_nf
+      _ ≤ (4 * x.length) * 2 ^ (C₀ + 2 + 2) := Nat.mul_le_mul_right _ (by omega)
+      _ = 2 ^ (C₀ + 2 + 4) * x.length := by rw [pow_add 2 (C₀ + 2) 4, pow_add 2 (C₀ + 2) 2]; ring
+  have hY : s * a + (C₀ + 2) + 1 ≤ (3 * s + (C₀ + 2) + 1) * Lg := by
+    have : s * a ≤ s * (3 * Lg) := Nat.mul_le_mul_left _ (by omega)
+    have e : (3 * s + (C₀ + 2) + 1) * Lg = s * (3 * Lg) + (C₀ + 2 + 1) * Lg := by ring
+    have : (C₀ + 2 + 1) * 1 ≤ (C₀ + 2 + 1) * Lg := Nat.mul_le_mul_left _ hLg1
+    omega
+  have hTR : Cf * 2 ^ packedWidth x.length (s * a + (C₀ + 2)) s * (s * a + (C₀ + 2) + 1) ^ cf ≤
+      Cf * (2 ^ (C₀ + 2 + 4) * x.length) * ((3 * s + (C₀ + 2) + 1) * Lg) ^ cf :=
+    Nat.mul_le_mul (Nat.mul_le_mul_left _ hQ) (Nat.pow_le_pow_left hY _)
+  have hT := red_arith (n := x.length) (a := a) (Lg := Lg) (KP := KP) (by omega) hLg1 (by omega)
+    le_rfl hTR
+  rw [← hLg]
+  have hlen := length_le_of_computesWithin hred
+  refine ⟨G₀, G₁, ?_, ?_, Compose.computesWithin_mono' hred ?_⟩
+  · rw [hacc hhalt]
+  · omega
+  · omega
+
 end Lax119563Proofs.Main

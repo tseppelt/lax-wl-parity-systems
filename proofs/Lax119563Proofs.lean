@@ -195,7 +195,6 @@ import Lax119563Proofs.Reduction.Prelude
 import Lax119563Proofs.Reduction.SysDesc
 import Lax119563Proofs.Reduction.SysGen
 import Lax119563Proofs.Reduction.CostSys
-import Lax119563Proofs.Reduction.Main
 import Lax119563Proofs.Reduction.Packed
 import Lax119563Proofs.Reduction.PkCmd
 import Lax119563Proofs.Reduction.PkStk
@@ -367,3 +366,5 @@ import Lax119563Proofs.Computability.PreMachine
 import Lax119563Proofs.Hardness.XpProgram
 import Lax119563Proofs.Hardness.XpMachine
 import Lax119563Proofs.Hardness.Xp
+import Lax119563Proofs.Hardness.HorizonMachine
+import Lax119563Proofs.Main.TimeReduction
