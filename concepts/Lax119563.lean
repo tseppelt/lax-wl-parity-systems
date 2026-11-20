@@ -21,7 +21,6 @@ import Lax119563.RowSpaceCompiler
 import Lax119563.RuntimeLowerBound
 import Lax119563.Stabilization
 import Lax119563.TimeHierarchy
-import Lax119563.TimeReduction
 import Lax119563.TreewidthClasses
 import Lax119563.UncoloredWitnessUpperBound
 import Lax119563.WLProblems

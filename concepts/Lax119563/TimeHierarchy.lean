@@ -22,7 +22,8 @@ not interchangeable here. The available Turing machine notions compare as follow
 * **Mathlib, single-tape machines** (`Turing.TM0`, `Turing.TM1`). These are one-tape models.
   A single-tape machine needs $\Omega(n^2)$ steps for tasks that a two-tape machine does in
   linear time, such as recognizing palindromes or copying its input. Our reduction
-  (`time_reduction`) runs in quasi-linear time $O(n \log^c n)$ only on several tapes, and the
+  (built from `packed_representation` and `matrix_compiler`) runs in quasi-linear time
+  $O(n \log^c n)$ only on several tapes, and the
   sharp hierarchy $\mathsf{DTIME}(n^a) \subsetneq \mathsf{DTIME}(n^s)$ for every real
   $a < s$ is a multitape statement.
 * **Mathlib, multi-stack machines** (`Turing.FinTM2` with `TM2OutputsInTime`,
