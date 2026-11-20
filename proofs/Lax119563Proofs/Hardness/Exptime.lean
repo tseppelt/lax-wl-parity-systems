@@ -2,6 +2,7 @@ import Lax119563.EXPTIMEHardness
 import Lax119563.MachineTranslations
 import Lax119563Proofs.Hardness.Pipeline
 import Lax119563Proofs.Hardness.ExpMachine
+import Mathlib.Algebra.Polynomial.Eval.Degree
 
 /-!
 # WL Distinguishing is EXPTIME-hard
