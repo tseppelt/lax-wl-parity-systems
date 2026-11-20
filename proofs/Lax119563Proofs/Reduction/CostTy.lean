@@ -4,15 +4,16 @@ import Lax119563Proofs.Reduction.FitsBasic
 # Growth classes of values and typed expressions
 
 To bound the values and the costs of generators uniformly in the input, every value is
-assigned a *growth class* `Ty` with respect to a scale `ℓ` (in the end `ℓ ≈ log₂ |x|`):
-* `P e d`: values `≤ K · 2^(e ℓ) · ((ℓ : ℕ) + 1)^d` (`P 0 1`: linear in `ℓ`, `P 0 d`: polylogarithmic,
-  `P 1 0`: linear in `|x|`);
-* `big`: values `≤ 2^(K ((ℓ : ℕ) + 1))` (polynomial in `|x|`), where `K` is a constant depending on
-  the syntax only.
+assigned a *growth class* `Ty` with respect to a pair of scales `ℓ = (l, L)` (`Sc`, `l ≤ L`; a
+scale is coerced to `L`): `2^l` bounds the input length, `L` the linear quantities (for the
+quasi-linear analysis both are `≈ log₂ |x|`, `Sc.diag`):
+* `P e d`: values `≤ K · 2^(e l) · (L + 1)^d` (`P 0 1`: linear, `P 0 d`: polynomial in `L`,
+  `P 1 0`: linear in `2^l`);
+* `big`: values `≤ 2^(K (L + 1))`, where `K` is a constant depending on the syntax only.
 
 `Ag K ℓ τs ρ`: the stack `ρ` agrees with the classes `τs` (with constant `K`).
 `Xp.HasTy τs e τ`: for every constant of the stack there is a constant `K` such that the value
-of `e` is in class `τ`, `e` fits below `2^(K ((ℓ : ℕ) + 1))` and costs at most `K ((ℓ : ℕ) + 1)`. The
+of `e` is in class `τ`, `e` fits below `2^(K (L + 1))` and costs at most `K (L + 1)`. The
 loop-based operations `mulB, shl, shr, xorM` need a linear (`P 0 1`) iteration count.
 
 Typing rules: `Xp.hasTy_var/const/add/addBig/lt/half/odd/mulB/mulBBig/shl/shr/xorM`, with
