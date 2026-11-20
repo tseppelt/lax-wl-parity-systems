@@ -208,9 +208,6 @@ theorem drop_computesWithin (x : List Bool) :
   simp [hX, bitsWord]
   omega
 
-theorem dropMachine_deterministic : Deterministic dropMachine :=
-  (dropTM ;; finish 1).deterministic_compile
-
 /-! ## The reduction machine -/
 
 section Red
