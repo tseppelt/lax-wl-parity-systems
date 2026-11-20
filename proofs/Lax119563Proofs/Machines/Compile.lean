@@ -12,9 +12,8 @@ to a machine of the archive model by enumerating states (initial state first) an
 (blank, `false`, `true` first). A run of `t` transitions followed by halting becomes a run of
 `t + 1` steps. The compiled machine is deterministic by construction.
 
-Main results: `TM.computesWithin` and `TM.decidesWithin`, which turn a `RunsWithin`
-specification on the input tapes `inputTapes k x` into `ComputesWithin` and `DecidesExactlyWithin`
-for the compiled machine.
+Main result: `TM.computesWithin`, which turns a `RunsWithin` specification on the input tapes
+`inputTapes k x` into `ComputesWithin` for the compiled machine.
 -/
 
 open Lax489179.TuringMachine

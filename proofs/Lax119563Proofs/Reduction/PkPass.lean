@@ -10,8 +10,9 @@ where `y` is the (preprocessed) input and `Λ ≥ (s + 1) ℓ` bounds the bit po
 `i ℓ + t` in an address. `GlobP` records the values read by the body.
 
 * `schEnum_ctxP`: the schema enumerator `schEnumP` as a loop over schema indices;
-* `violGenP`: the domain test `violGen` with the number `s` of data blocks and the
-  bit position `i ℓ` of block `i` given by expressions (`violGenP_nil_iff_mem`);
+* `violGenP`: the domain test of a schema at a coordinate (emits nothing iff the coordinate
+  lies in the domain), with the number `s` of data blocks and the bit position `i ℓ` of block
+  `i` given by expressions (`violGenP_nil_iff_mem`);
 * `xorFields_testBit`: the bits of the checksum shift as parities.
 -/
 
@@ -245,7 +246,7 @@ theorem violGenP_out_eq_nil_iff {y : List Bool} {τ : List ℕ} {d : ℕ}
       have g2' : gk ≠ 2 := by omega
       by_cases hv0 : v = 0 <;> simp [his, hv0, g0, g1', g2']
 
-/-- **The domain test on a schema stack** (as `violGen_nil_iff_mem`). -/
+/-- **The domain test on a schema stack.** -/
 theorem violGenP_nil_iff_mem {y : List Bool} {N b d : ℕ}
     {sc : Schema (s + 1) ℓ N} {τ σ : List ℕ}
     (hτ : τ.length = b + 37) (hrec : SchRec M x s ℓ H sc (τ.drop (b + 28)))

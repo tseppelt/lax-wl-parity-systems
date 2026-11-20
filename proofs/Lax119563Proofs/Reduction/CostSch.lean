@@ -2,15 +2,11 @@ import Lax119563Proofs.Reduction.CostCmd
 import Lax119563Proofs.Reduction.SchGen
 
 /-!
-# Fits and cost of the schema enumerator
+# Fits and cost of the schema generators
 
-**`hasCost_schEnum`**: with linear `HX, RX`, globals `NX, rX, p0X, EcX` in class `P 0 7`
-(polylogarithmic), and a body with `HasCost (τs ++ schTys) body e d`, the schema enumerator
-has `HasCost τs (schEnum M s b HX RX NX rX p0X EcX body) e (d + 12)` (the command enumerator
-around the counting command enumerators of `cmdBody`). `schTys` are the classes of the levels
-`b, …, b + 36` of the body (the command levels `cmdTys`, the counts `j, e₀` and the schema
-index `P 0 7`, the record `[tern, u, v, en, msk]` with classes `numTys` and the guard
-numbers with classes `gdTys`).
+Classes `numTys` of the record `[tern, u, v, en, msk]` of a schema and `gdTys` of the guard
+numbers; the cost of the block generator (`hasCost_blkGen`) and of emitting numbers
+(`hasCost_emitN`), and the class of the key comparison `beforeX` (`hasTy_beforeX`).
 -/
 
 namespace Lax119563Proofs.Reduction

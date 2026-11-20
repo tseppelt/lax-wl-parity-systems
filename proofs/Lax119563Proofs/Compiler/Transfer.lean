@@ -5,14 +5,12 @@ import Lax119563.GameCharacterization
 /-!
 # Transfer of the pebble game along renumberings with junk vertices
 
-(Moved here from the former `Reduction/Transfer.lean`, deleted in `proofs/reduction9`.)
-
 Two pairs of colored graphs `(G₀, G₁)` on `Fin n` and `(G'₀, G'₁)` on `Fin n'`, each pair with a
 common color function, are *corresponding* if, after removing a set of *junk* vertices in each
 pair (isolated in both graphs of the pair, with colors not used by any other vertex), there is a
 bijection of the remaining vertices preserving adjacency in both graphs and the equality of
-colors. Then Duplicator wins the bijective `m`-pebble game on one pair iff she wins it on the
-other (`duplicatorWins_iff_of_corr`).
+colors. Then if Duplicator survives `r` rounds of the bijective `m`-pebble game on the first
+pair, she survives `r` rounds on the second (`survivesFrom_transfer`).
 -/
 
 open Lax119563.ColoredGraphs Lax119563.PebbleGame

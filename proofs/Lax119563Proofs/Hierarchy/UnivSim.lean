@@ -3,8 +3,28 @@ import Lax119563Proofs.Hierarchy.Programs
 /-!
 # The universal simulator as a stack program
 
-Tokens, stack names and the program `Universal.sim`.  See `Plan.lean` for the layout of the
-code of a machine and of its configurations on the stacks.
+Tokens, stack names and the program `Universal.sim`, a stack program over the tokens
+`F T U S R M E N H0 H1 L Z Rt Sep End`. Correctness is only needed on inputs
+`y = code M ++ z`; on other inputs a clock bounds the running time.
+
+* Code: tokens, 4 bits each. Token stream `R^{k+1} Sep R^k Sep table End`, where `k + 1` is
+  the number of tapes of `M`, and `table` is the concatenation over all keys `(q, c)` of
+  `key(q, c) ++ [M] ++ (ins (δ q c)).reverse ++ [E]` with
+  `key(q, c) = enc q ++ enc c_k ++ … ++ enc c_0`, `enc n = U^n S`, `ins (halt b) = [H_b]`,
+  `ins (next q' w mv) = N :: enc q' ++ ⋯ (enc w_j ++ [mv_j]) ⋯`.
+* Configuration of `M`: state `q` in unary on `QS`; stack `LS` holds for `j = 0..k` the cells
+  left of head `j` (nearest first, encoded) each followed by `R`; `RS` likewise the scanned
+  cell and the cells to its right (an empty right part means blank).
+* Init: parse the code from stack `0` (keeping the consumed bits on `Y`), move the two `R`
+  blocks to `LS`/`RS`, keep the table on `TBL`, push `R` and the input symbols onto `RS`.
+* Step: (1) build `KEY` by copying the scanned symbol of each record of `RS` (rotating
+  records through `RS2`) and then `enc q`; (2) search `TBL` for the entry whose key equals
+  `KEY` (token comparison through `KEY2`/`TBL2`), copy its instruction to `INS` (reversing
+  it); (3) on `H_b` push `H_b` on `DONE`; on `N` set `QS := q'` and for each record write
+  `w_j` and move (`L`: one symbol `LS → RS`, `Rt`: `RS → LS`), rotating records through
+  `LS2`/`RS2`.
+* Cost: every phase is `O((size of all stacks + 1)^2)`; sizes grow by `O(m)` per step, so `T`
+  simulated steps cost `c_M (n + T + 1)^3`.
 -/
 
 namespace Lax119563Proofs.Hierarchy.Universal

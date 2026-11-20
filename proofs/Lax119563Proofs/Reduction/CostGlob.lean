@@ -2,14 +2,10 @@ import Lax119563Proofs.Reduction.CostGn
 import Lax119563Proofs.Reduction.CostDom
 
 /-!
-# Classes of the globals
+# The minimum of two expressions
 
-`globTys`: the growth classes of the 14 globals of `globs` (levels `0 … 13`), as computed by
-the prelude: `|x|` and `2^ℓ` are linear in `|x|` (`P 1 0`), `log₂ |x|, ℓ, H, R` are linear
-in `ℓ` (`P 0 1`), the location, command and schema counts are polylogarithmic.
-
-`Xp.minR a b` (the minimum, of the class of `b` whatever the class of `a`) is used by the
-prelude to compute `2^ℓ` in class `P 1 0`.
+`Xp.minR a b` (the minimum, of the class of `b` whatever the class of `a`; `hasTy_minR`) is
+used by the prelude to compute `2^ℓ` in class `P 1 0`.
 -/
 
 namespace Lax119563Proofs.Reduction

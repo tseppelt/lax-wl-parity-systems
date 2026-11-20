@@ -44,7 +44,7 @@ end Xp
 
 /-! ## The domain test -/
 
-/-- **Fits and cost of the domain test** (as `hasCost_violGen`). -/
+/-- **Fits and cost of the domain test**: one loop over the field width `g2X`. -/
 theorem hasCost_violGenP {d : ℕ} (hd : Γ.length = d) {sX iX iℓX vX xbX gkX g1X g2X g3X ℓX HX : Xp}
     {τs τv τx τg τq : Ty} (hs : HasTy Γ sX τs) (hi : TyB Γ iX (P 0 1)) (hiℓ : TyB Γ iℓX (P 0 1))
     (hv : TyB Γ vX τv) (hx : HasTy Γ xbX τx)

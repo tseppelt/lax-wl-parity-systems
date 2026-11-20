@@ -2,11 +2,10 @@ import Lax119563Proofs.Reduction.CostSch
 import Lax119563Proofs.Reduction.DomGen
 
 /-!
-# Fits and cost of the domain test
+# Classes of the domain test expressions
 
-**`hasCost_violGen`**: on a context of length `d`, with a block index `iX` of class `P 0 0`,
-linear `ℓX, HX, g1X, g2X` and arbitrary `vX, xbX, gkX, g3X` (all reading only the context),
-the domain test has `HasCost Γ (violGen s d …) 0 1` (one loop over the field width `g2X`).
+Typing lemmas for the expressions of the domain test: `hasTy_mulCBig`, `hasTy_le`,
+`hasTy_fieldX`, `hasTy_fieldBadX`.
 -/
 
 namespace Lax119563Proofs.Reduction

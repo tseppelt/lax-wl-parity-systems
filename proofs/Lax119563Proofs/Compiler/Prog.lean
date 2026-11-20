@@ -10,8 +10,7 @@ import Lax119563Proofs.Compiler.Final
 * **`prog_good`**: if `SCH` satisfies `SchSpec I (wordOf H S) SCH (K (H + S + 1) · nodeCost w)`
   for every system with `k ≥ 3`, `ℓ ≥ 1`, then `prog SCH` satisfies the hypotheses of
   `machine_of_program` with `a = 8`, `e = 3` and constant `7744 (2K + 910010)`;
-* **`machine_clause_of_schSpec`**: the machine clause of the concept;
-* **`matrix_compiler_of_schSpec`**: the concept statement (via `matrix_compiler_of_machine`).
+* **`machine_clause_of_schSpec`**: the machine clause of the concept.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler

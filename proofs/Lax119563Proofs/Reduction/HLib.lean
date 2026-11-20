@@ -6,7 +6,7 @@ import Lax119563Proofs.Reduction.Bits
 # A library of register programs
 
 `HLe x w p st st' T`: `p` runs from `st` to `st'` within cost `T`. Derived instructions with
-exact specifications: increment (`inc`), constants (`setC`), counting loops (`forUp`).
+exact specifications: increment (`inc`), counting loops (`forUp`).
 -/
 
 namespace Lax119563Proofs.Reduction

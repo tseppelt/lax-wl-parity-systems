@@ -3,15 +3,12 @@ import Lax119563Proofs.Reduction.CostPassBase
 import Lax119563Proofs.Reduction.CostGlob
 
 /-!
-# The prelude: computing the globals
+# Facts for the prelude
 
-`prelude M s C₀ g` pushes the 14 globals `globs M x s ℓ H` (for `ℓ = timeWidth C₀ |x|`,
-`H = timeHorizon s C₀ |x|`) and runs `g` on them (**`out_prelude`**, for `s ≥ 2`):
-`|x|` (`len`), `log₂ |x|` (`log`), `ℓ`, `H`, `R`, `N = 16 C^3 R^2` (`C = cM M`) by expressions, the command
-count `r` and the schema count `Ec` by counting runs of the command enumerator, the codes of
-`query` (`2`) and `accept` (`0`), the number `E` of schemas by a counting run of the schema
-enumerator, `W, det` by expressions and `2^ℓ` as
-`min (2^ℓ) (2^(C₀+4) (|x| + 1))` (so that it is of class `P 1 0`).
+Lemmas used to compute the globals of the packed generator (`Reduction/PkPre`): outputs of
+`bind` and `count` steps (`out_bind_step`, `out_count_step`), the number of locations of the
+compiled verifier program (`Iv_numLocations`), the codes of `query` (`2`) and `accept` (`0`)
+(`code_query_val`, `code_accept_val`) and well-formedness of `Gn.len` (`Gn.wfx_len`).
 -/
 
 namespace Lax119563Proofs.Reduction

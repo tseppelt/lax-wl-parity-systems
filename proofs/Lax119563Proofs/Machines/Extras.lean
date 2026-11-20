@@ -4,12 +4,8 @@ import Mathlib.Data.Nat.Log
 import Lax119563Proofs.Machines.Numbers
 
 /-!
-# Further combinators and routines
+# Counting the length of a word
 
-* `TM.whileM test c body`: a loop whose condition is read after running a test machine
-  (`test ;; loop c (body ;; test)`), with a lemma along a sequence of tape families.
-* `TM.revCopy`: copy a word in reverse order onto the end of another tape (e.g. to turn the
-  little-endian digits of a number into big-endian ones).
 * `TM.countLen`: add the length of a word to a counter.
 -/
 

@@ -1,14 +1,13 @@
 import Lax119563Proofs.Circuits.TimeSimulation
 
 /-!
-# The time program with commands in code order
+# Locations in code order
 
-`timeProgram'` has the locations and moves of `Circuits.timeProgram`, but its command list
-enumerates the locations in the order of their numbers (`Loc.code`):
-`progCmds ℓ (locsByCode M H) moves` with `locsByCode = (range numLoc).filterMap decodeLoc`.
-Then the index of a command is a count of the commands at smaller location numbers, which
-a generator can compute. Acceptance (`timeProgram'_accepts_iff`) and the size bounds carry
-over.
+`locsByCode M H = (range numLoc).filterMap decodeLoc` enumerates the locations of the verifier
+program in the order of their numbers (`Loc.code`; `decodeLoc_code`, `mem_locsByCode`).
+`verifierCmds'` is the command list of the verifier program in this order
+(`verifierCmds'_eq`), so that the index of a command is a count of the commands at smaller
+location numbers, which a generator can compute.
 -/
 
 namespace Lax119563Proofs.Reduction

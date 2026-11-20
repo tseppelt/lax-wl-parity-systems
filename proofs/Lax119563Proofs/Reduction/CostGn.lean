@@ -10,7 +10,7 @@ every input with `|x| ≤ 2^ℓ`, the generator fits below `2^(K ((ℓ : ℕ) + 
 
 Rules for every constructor (`hasCost_skip/emit/seq/ite/bind/loop/loopX/len/log/count`), with
 `HasCost.mono` (larger exponents) and `HasCost.ctx` (smaller context classes), and the derived
-generators `seqL`, `when`, `dispatch`, `bindL`, `bindSub`. The cost exponents add up along
+generators `seqL`, `when`, `bindL`, `bindSub`. The cost exponents add up along
 nested loops: a loop over a linear range (`P 0 1`) adds `1` to `d`, a loop over a range linear in
 `|x|` (`P 1 0`) adds `1` to `e`.
 -/

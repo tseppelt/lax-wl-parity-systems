@@ -3,10 +3,9 @@ import Lax119563Proofs.Reduction.SLib
 /-!
 # Arithmetic with structured statements
 
-Accumulating loops `acc := acc + e` (`Stm.exec_accum`) and derived routines:
-multiplication by repeated addition (`mulS`), truncated subtraction by counting (`subS`),
-multiplication by a power of two by repeated doubling (`shlS`), and halving `p` times
-(`shrS`). Each comes with its exact value; costs follow from `Good.loop`.
+Multiplication by a power of two by repeated doubling (`shlS`), halving `p` times (`shrS`) and
+the bitwise exclusive or of the low bits (`xorS`), each with its exact value
+(`exec_shlS`, `exec_shrS`, `exec_xorS`).
 -/
 
 namespace Lax119563Proofs.Reduction

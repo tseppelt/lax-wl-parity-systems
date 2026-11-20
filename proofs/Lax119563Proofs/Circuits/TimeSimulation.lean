@@ -2,17 +2,14 @@ import Lax119563Proofs.Circuits.VerifierComplete
 import Lax119563Proofs.Circuits.LocCode
 
 /-!
-# Deterministic time as a register program
+# Facts about the time-simulation program
 
-The mathematical content of the lemma "Time simulation": for a machine `M` halting within
-`C₀ n^s + C₀` steps (`s ≥ 2`), the explicit `s`-register program `timeProgram M s C₀ x` over
-`𝔽₂^ℓ` with `ℓ = timeWidth C₀ n = log₂ n + C₀ + 4` accepts the query
-`(timeQuery M s C₀ x, 0)` iff `M` accepts `x`; it has at most `C (log₂ n)^5` locations and
-commands (`time_simulation`).
-
-The program depends on `x` only through `n = |x|`, except for the membership tables of the
-guards `hitGuard` on register `0`, which list the offsets `u < 2^ℓ` at which the initial
-first tape carries a given cell value.
+Facts about the locations and moves of the register program simulating a machine run
+(`Circuits/MoveProgram`, `Circuits/Verifier`), used by the packed representation: the codes
+of the accepting and rejecting locations differ (`code_accept_ne_reject`), an answer of the
+run decides acceptance (`accepts_iff_answer`), and the number of moves at a location is
+bounded (`moves_length_le'`, with `movBound0` away from the root cells counted by
+`Loc.rootCount`).
 -/
 
 namespace Lax119563Proofs.Circuits

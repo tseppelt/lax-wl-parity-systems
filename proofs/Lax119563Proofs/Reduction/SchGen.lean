@@ -1,18 +1,14 @@
 import Lax119563Proofs.Reduction.CmdStk
 
 /-!
-# The schema enumerator
+# Blocks of the schema enumerator
 
-`schEnum M s b HX RX NX rX p0X EcX body` runs `body` once for every schema of the compiled
-code-ordered time program, in order, on a stack of length `b + 37` extending `ρ` (the
-globals, `ρ.length = b`), with the schema index at level `b + 27` and the record
-`[tern, u, v, en, msk, gk, g1, g2, g3]` at levels `b + 28 … b + 36` (`SchRec`: the numbers
-of the schema in the sense of `SchMatch`, and its domain `guardDomain (toGuard g) true` for
-the guard `g` described by `gk, g1, g2, g3` (`GDescQ`: `GDesc`, or the query guard `v = 0`
-for `gk = 3`)).
-
-Inside the command enumerator, the index `j` of the command and the index `e₀` of its first
-schema are computed by counting the commands with a smaller key (`length_out_before`).
+The schema records and their generators: for a schema of the compiled code-ordered time
+program, `SchRec` describes the record `[tern, u, v, en, msk, gk, g1, g2, g3]` (the numbers of
+the schema in the sense of `SchMatch`, and its domain `guardDomain (toGuard g) true` for the
+guard `g` described by `gk, g1, g2, g3`; `GDescQ`: `GDesc`, or the query guard `v = 0` for
+`gk = 3`). `blkGen` emits the records of the schemas of a command (`out_blkGen`), built from
+`slotX`, `assignBlk`, `forkBlk`, `gdX` and the determinism test `detGen`.
 -/
 
 namespace Lax119563Proofs.Reduction

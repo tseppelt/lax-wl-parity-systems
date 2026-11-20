@@ -7,9 +7,7 @@ import Lax119563Proofs.Machines.WordRoutines
 
 A natural number `m` is stored on a tape as the word `natWord m`, its binary digits least
 significant first (`Nat.bits m`, no leading zeros, empty for `0`), normally with the head on
-position `0`. Routines: zero test (a scanned blank), increment (`incr`), equality test
-(`eqScan`, followed by rewinding), and writing the self-delimiting code `encodeNat m`
-(`emitNat`).
+position `0`. Routine: increment (`incr`).
 -/
 
 open Lax489179.TuringMachine (Move)

@@ -1,20 +1,16 @@
 import Lax119563Proofs.Reduction.SymMoves
 
 /-!
-# The command enumerator
+# Command records of the verifier program
 
-`cmdEnum M s b HX RX body` runs `body` once for every command of the code-ordered verifier
-program, in order: it loops over the digits `t5 < C, t4 < R, t3 < C, t2 < C, t1 < R` of the
-location numbers (`R = radix M H`, the value of `RX`; `C = cM M`; `H` the value of `HX`), pushes
-`t1 - 1`, `t4 - 1`, `H - t1 - 1`, `H + 2 - t1` and
-`rest = t1 + R (t2 + C (t3 + C (t4 + R t5)))`, then for each
-tag `t < 16` finds the kind whose location has number `t + 16 rest` (`matchX`), pushes that
-number and, for each move of the location, its index `k` and the eight numbers of its command
-(`SMv.recX`).
+Generators and stacks describing the commands of the code-ordered verifier program, location by
+location: `firstL c f` runs `f a` for the first `a` with `c a ≠ 0`, `brGen RX HX body` runs
+`body` for the moves of the selected branch, each with its index and command record
+(`SMv.recX`). For a location `L` (location numbers in radix `R = radix M H` and `C = cM M`),
+`stkL ρ H L` is the stack of the body below the move records and `recsOf L` are the records.
 
-With `ρ.length = b` the body runs on the stack `stkL ρ L ++ r` for the records `r ∈ recsOf L`
-(`out_cmdEnum`), and `desc_recsOf`: the records are `k :: rs[k]` where `rs` describes the
-commands of the moves of `L` (`CmdDesc`).
+`desc_recsOf`: the records are `k :: rs[k]` where `rs` describes the commands of the moves of
+`L` (`CmdDesc`).
 -/
 
 namespace Lax119563Proofs.Reduction

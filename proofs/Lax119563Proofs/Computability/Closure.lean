@@ -3,14 +3,12 @@ import Lax119563Proofs.Computability.Call
 /-!
 # Closure properties of computable functions
 
-`MachineComputable` is closed under constants, the identity, composition, the arithmetic
-operations `+`, `·`, `max`, `^` (pointwise), and has monotone majorants:
+`MachineComputable` contains constants and the identity and is closed under the arithmetic
+operations `+`, `·`, `^` (pointwise):
 
-* `MachineComputable.const`, `MachineComputable.id'`, `MachineComputable.comp`;
-* `MachineComputable.arith` (any `ArithOp`), `.add`, `.mul`, `.max`, `.pow`, and the
-  derived `.affine` (`a k + b`), `.pow_const`, `.two_pow`, `.add_const`, `.mul_const`;
-* `MachineComputable.exists_monotone_ge`: `f ≤ g` for a computable monotone `g` (the running
-  maximum `g k = max_{i ≤ k} f i`, `MachineComputable.runMax`).
+* `MachineComputable.const`, `MachineComputable.id'`;
+* `MachineComputable.arith` (any `ArithOp`), `.add`, `.mul`, `.pow`, and the derived
+  `.pow_const`, `.add_const`, `.mul_const`.
 -/
 
 open Lax119563.BinaryEncodings Lax119563Proofs.Reduction Lax119563Proofs.Compiler

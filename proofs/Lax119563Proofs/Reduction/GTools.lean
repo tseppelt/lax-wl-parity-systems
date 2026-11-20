@@ -5,11 +5,7 @@ import Lax119563Proofs.Reduction.GMachine
 
 * derived expressions: `Xp.eq`, `Xp.not`, `Xp.and`, `Xp.or` (on `0/1`), `Xp.mulC` (by a
   constant), `Xp.pow2`, with their values;
-* derived generators: `Gn.seqL` (a static list), `Gn.when`, `Gn.dispatch v n f`
-  (`f (value of v)` if it is `< n`), with their outputs;
-* `Xp.Small W`: all values `< 2^W` and all loop counts `≤ W`; it implies
-  `Xp.Fits (2^(2W))` and `cost ≤ size * (W + 3)`;
-* uniform cost bounds for loops.
+* derived generators: `Gn.seqL` (a static list) and `Gn.when`, with their outputs.
 -/
 
 namespace Lax119563Proofs.Reduction

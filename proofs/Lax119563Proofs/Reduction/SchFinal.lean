@@ -1,12 +1,12 @@
 import Lax119563Proofs.Reduction.SchOut
 
 /-!
-# The schema enumerator: correctness
+# The schema stacks describe the schemas
 
-`out_schEnum`: for the compiled code-ordered time program `I` (with `ℓ, H` arbitrary), the
-schema enumerator runs its body on the stacks `schStks`, which correspond to the schemas of
-`I` in order: each has length `b + 37`, extends the globals `ρ`, has its index at level
-`b + 27` and a record describing the schema (`SchRec`) from level `b + 28` on.
+`StkSch`: a stack of the schema enumerator has length `b + 37`, extends the globals `ρ`, has its
+index at level `b + 27` and a record describing the schema (`SchRec`) from level `b + 28` on;
+`stkSch_of`, `forall₂_stks`: the stacks of the commands correspond to the schemas of the
+compiled code-ordered time program, in order.
 -/
 
 namespace Lax119563Proofs.Reduction

@@ -1,12 +1,12 @@
 import Lax119563Proofs.Reduction.SchGen
 
 /-!
-# The output of the schema enumerator
+# The stacks of the schemas
 
-`out_schEnum`: the schema enumerator runs its body on the stacks `schStks`, one per schema of
-the compiled code-ordered time program, in order; each extends the globals `ρ`, has length
-`b + 37`, carries its index at level `b + 27` and a record describing the schema (`SchRec`)
-from level `b + 28` on.
+The stacks on which the body of the schema enumerator runs, per command (`cmdSchStks`,
+`detStks`, with the index `e0Of` of the first schema of a command), bounds on the expressions
+of the schema blocks (`bnd_gadgetX`, `bnd_slotX`, …) and the output of the determinism test
+(`out_detGen`).
 -/
 
 namespace Lax119563Proofs.Reduction

@@ -20,8 +20,6 @@ Main results:
 * `singleTape_simulation_succ`: for every `M₀` there is a deterministic machine `M` (independent of
   the input and the time bound) such that, whenever `M₀` halts on `w` within `T` steps in the
   configuration `c`, `M` decides `M₀.accept c.q = true` within `T + 1` steps.
-* `exptime_decidesWithin`: every language in `EXPTIME` is decided by a deterministic machine of
-  the archive model within `2 ^ p(|w|) + 1` steps, for a polynomial `p`.
 * `Lax119563Proofs.Bridges.singleTape_simulation`: the concept statement
   `Lax119563.MachineTranslations.singleTape_simulation` (with `C = 1`).
 -/

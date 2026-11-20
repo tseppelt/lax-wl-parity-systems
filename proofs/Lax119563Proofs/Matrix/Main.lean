@@ -6,9 +6,11 @@ import Lax119563Proofs.Compiler.Bound
 /-!
 # The matrix compiler
 
-The explicit pair `matrixGraph I 0, matrixGraph I 1` satisfies the combinatorial claims of the
-matrix compiler (`matrixGraph_spec`); the concept statement, including the construction time,
-follows from the compiler program `prog p4Sch` (`Compiler/Prog`, `Compiler/P4SchSpec2`).
+The construction is `Compiler.compileM I`, the explicit matrix graphs with vertices in the
+order of the compiler machine: it satisfies the game, size and edge clauses (`reGraph_spec`,
+`Compiler/Clauses`), its encoding has length `O((S + 1) log (S + 2))`
+(`Compiler.length_out_le_log`), and it is computed by the compiler program `prog p4Sch`
+(`Compiler/Prog`, `Compiler/P4SchSpec2`).
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.ImplicitSystemEncodings Lax119563.MatrixCompiler
@@ -22,12 +24,14 @@ namespace Lax119563Proofs.Matrix
 ---
 conclusion: Lax119563.MatrixCompiler.matrix_compiler
 ---
-The construction is the pair of explicit graphs `matrixGraph I 0`, `matrixGraph I 1` (vertices
-listed by `vertexList I`, colors the position of the first vertex of a class): Spoiler follows a
-derivation of the conflict backwards through the strips with row sweeps, Duplicator maintains
-seed descriptions with coefficient bits repaired in an untouched repetition, the size bound
-counts the vertex list and the edge bound uses that every edge contains a hub of degree at most
-three (`matrixGraph_spec`). The construction time is witnessed by the counter-machine program
+The construction is the pair of explicit matrix graphs, with vertices listed in the order
+`ordL I` produced by the compiler machine and colors the position of the first vertex of a
+class (`Compiler.compileM`): Spoiler follows a derivation of the conflict backwards through the
+strips with row sweeps, Duplicator maintains seed descriptions with coefficient bits repaired in
+an untouched repetition, the size bound counts the vertex list and the edge bound uses that
+every edge contains a hub of degree at most three (`Compiler.reGraph_spec`). Colors and edge
+endpoints are numbers below `3 |V|`, so the encoding has length `O((S + 1) log (S + 2))`
+(`Compiler.length_out_le_log`). The construction time is witnessed by the counter-machine program
 `prog p4Sch` (`Compiler/Prog`): the passes `P0`–`P3` compute the location and schema data
 and the answers of the join, `P4` emits both graph descriptions, its schema edge part
 `p4Sch` meeting the interface `SchSpec` with linear cost (`p4Sch_spec`); the program is

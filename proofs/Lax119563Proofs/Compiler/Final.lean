@@ -4,10 +4,10 @@ import Lax119563Proofs.Compiler.OutDesc
 # The matrix compiler from the machine
 
 `compileM I := (reGraph I (ordL I) 0, reGraph I (ordL I) 1)` satisfies the game, size and edge
-clauses (`compileM_clauses`, from `reGraph_spec` and `ordL_perm`), and its encoding is
+clauses (by `reGraph_spec` and `ordL_perm`), and its encoding is
 `encodeNats (gDesc I 0 ++ gDesc I 1)` (`encode_compileM`). Hence the concept statement follows
 from a single machine computing `encodeNats (gDesc I 0 ++ gDesc I 1)` from `encodeSystem I`
-within the bound (`matrix_compiler_of_machine`); the machine is item 4 of the plan.
+within the bound (`Compiler/Prog`).
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs

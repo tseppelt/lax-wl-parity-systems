@@ -87,8 +87,8 @@ lemma one_le_bitLength {k ℓ : ℕ} (I : ImplicitParitySystem k ℓ) : 1 ≤ bi
 
 /-- **The concept from a structured program.** A statement `c` that, for word size
 `w = a (L + 1)`, fits, emits `gDesc I 0 ++ gDesc I 1` from the zero state on the input
-`encodeSystem I`, and costs at most `K (H + S + 1)(L + 1)^e` (`e ≥ 1`) yields the machine of
-`matrix_compiler_of_machine`, with time `((2^(e+1) + 80)(K + 3400) + 30)(H + S) L^e`. -/
+`encodeSystem I`, and costs at most `K (H + S + 1)(L + 1)^e` (`e ≥ 1`) yields a machine for the
+machine clause of the matrix compiler, with time `((2^(e+1) + 80)(K + 3400) + 30)(H + S) L^e`. -/
 theorem machine_of_program {R Q D : ℕ} (c : CStm R Q) (hd : c.depth ≤ D) (a K e : ℕ)
     (ha : 2 ≤ a) (he : 1 ≤ e)
     (hc : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,

@@ -1,13 +1,10 @@
 import Lax119563Proofs.Reduction.CostGn
 
 /-!
-# Quasi-linear machines from generators
+# Lengths of encodings
 
-`Gn.computesWithin_quasiLinear`: a generator with `HasCost [] g 1 d` (cost
-`O(2^ℓ (ℓ+1)^(d+1))` at every scale `ℓ` with `|x| ≤ 2^ℓ`, values below `2^(O(ℓ))`) gives a
-deterministic machine computing `encodeNats (g.out x [])` within
-`C · |x| · (log₂ |x|)^(d + 3)` steps for `|x| ≥ 2` (word size `w = O(log |x|)`; the
-exponent `d + 3` accounts for the cost `κ w = O(w²)` of a unit and for the output length).
+`length_encodeNat_le`, `length_encodeNats_le`: bounds on the length of the binary encoding of
+numbers and lists of numbers.
 -/
 
 open Lax119563.BinaryEncodings Lax119563.DeterministicTime

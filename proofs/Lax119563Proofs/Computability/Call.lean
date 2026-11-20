@@ -8,7 +8,7 @@ and run the simulator (`call_good`). Afterwards the output register of the simul
 the value computed by `M`, all stacks are empty again, and the extra registers are kept.
 
 `ArithOp H`: a statement computing `H a b` on registers (for large enough word size), with
-instances for `+`, `·`, `max` and `^`.
+instances for `+` and `·` (`addOp`, `mulOp`; `^` is `powOp` in `Computability/Closure`).
 -/
 
 open Lax119563.BinaryEncodings Lax119563Proofs.Reduction Lax119563Proofs.Compiler

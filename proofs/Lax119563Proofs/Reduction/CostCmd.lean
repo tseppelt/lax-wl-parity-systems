@@ -2,7 +2,7 @@ import Lax119563Proofs.Reduction.CostGn
 import Lax119563Proofs.Reduction.CmdEnum
 
 /-!
-# Fits and cost of the command enumerator
+# Fits and cost of the command generators
 
 * `LinX Γ a`: `a` is linear (`P 0 1`) and reads only the levels of `Γ`; `TyB Γ a τ` likewise for
   a class `τ`.
@@ -10,9 +10,7 @@ import Lax119563Proofs.Reduction.CmdEnum
   of a constant one, so in fact `P 0 3`), given linear
   runtime fields (`SLoc.Ok`); `SMv.recX_tyB`: the eight numbers of a move have the classes
   `recTys` (the mask is `big`); `SKind.brs_ok`: all branches of all kinds are typed.
-* **`hasCost_cmdEnum`**: if the body has `HasCost (τs ++ cmdTys) body e d`, then the command
-  enumerator has `HasCost τs (cmdEnum M s b HX RX body) e (d + 6)` (five loops over the
-  digits and one counting loop for the subtractions), for linear `HX, RX`.
+* `hasCost_firstL`, `hasCost_brGen`: the cost of the generators of `Reduction/CmdEnum`.
 -/
 
 namespace Lax119563Proofs.Reduction

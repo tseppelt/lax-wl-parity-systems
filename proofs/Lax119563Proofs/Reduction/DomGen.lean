@@ -2,13 +2,12 @@ import Lax119563Proofs.Reduction.GuardEval
 import Lax119563Proofs.Reduction.SchFinal
 
 /-!
-# The domain test as a generator
+# Expressions for the domain test
 
-`violGen s d iX vX xbX gkX g1X g2X g3X ℓX HX` (run at depth `d`) emits nothing iff the
-coordinate with block `i` and register value `v` lies in the domain described by the guard
-numbers `[gk, g1, g2, g3]`, i.e. `i = s ∨ gEval x ℓ H [gk, g1, g2, g3] i v`
-(`violGen_out_eq_nil_iff`; `xbX` must evaluate to `inBit x v`). Used under `Gn.count`, it
-pushes `0` iff the coordinate is in the domain.
+The field expressions of the domain test of a schema: `fieldX` (a field of a register value),
+`fieldBadX` (the field violates the guard; `fieldBad_iff`, `fieldOK_iff`) and `initCVX` (the
+initial cell value), with their values, and further evaluation lemmas for the derived
+expressions (`Xp.le`, `eval_and'`, `eval_or'`, `eval_not'`, `eval_shr`, `eval_xorM`).
 -/
 
 namespace Lax119563Proofs.Reduction

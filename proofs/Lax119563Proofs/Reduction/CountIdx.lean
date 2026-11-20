@@ -2,11 +2,10 @@ import Mathlib.Data.List.Pairwise
 import Mathlib.Order.Basic
 
 /-!
-# Indices as counts
+# The lexicographic order on keys
 
-In a list whose keys strictly increase, the index of an entry is the number of entries with
-a smaller key (`length_filter_lt_getElem`). This turns the position of a command (or schema)
-in the enumeration order into a count, which a generator computes with `Gn.count`.
+`lexLt`: the strict lexicographic order on pairs of numbers (irreflexive and asymmetric), used
+for the keys of the command and schema stacks.
 -/
 
 namespace Lax119563Proofs.Reduction

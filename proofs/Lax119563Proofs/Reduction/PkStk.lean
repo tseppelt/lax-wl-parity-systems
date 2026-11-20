@@ -3,7 +3,8 @@ import Lax119563Proofs.Reduction.PkCmd
 /-!
 # The stacks of the command enumerator for a runtime number of blocks
 
-As `CmdStk` for `cmdEnumP`: `cmdStksP` (the stacks of the body, one per command, in order),
+For the command enumerator `cmdEnumP`: `cmdStksP` (the stacks of the body, one per command,
+in order),
 `out_cmdEnumP'`, `cmdStksP_forall₂` (relation `StkCmd`), `keys_cmdStksP` (the keys are
 `keyList`) and `length_out_beforeP` (counting the commands before a given one).
 -/
@@ -98,7 +99,8 @@ theorem keyList_pairwise' {x : List Bool} {ℓ H : ℕ} :
 
 variable {x y : List Bool} {b H : ℕ} {SX HX RX : Xp}
 
-/-- **Counting before** (as `length_out_before`). -/
+/-- **Counting before**: the length of the output of a nested enumerator whose body is
+`when (beforeX b b') g` is a sum over the stacks before the outer one. -/
 theorem length_out_beforeP {ρ σ : List ℕ} (ℓ : ℕ) (hρ : ρ.length = b) (hHb : HX.Bnd b)
     (hRb : RX.Bnd b) (hSb : SX.Bnd b) (hH : HX.eval ρ = H) (hR : RX.eval ρ = radix M H)
     (hS : SX.eval ρ = s) (hs : 1 ≤ s)

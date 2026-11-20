@@ -2,18 +2,14 @@ import Lax119563Proofs.Reduction.SchEnum
 import Lax119563Proofs.Reduction.SchList
 
 /-!
-# The stacks of the command enumerator
+# The stacks of the commands
 
-`cmdStks`: the stacks on which the body of `cmdEnum` runs, one per command, in order
-(`out_cmdEnum'`: the output is `cmdStks.flatMap body.out`). They correspond to the commands
-of `verifierCmds'` (`cmdStks_forall₂`, relation `StkCmd`: length `b + 25`, prefix `ρ`,
-source number at level `b + 15`, `CmdDesc` of the levels from `b + 17` on), and their keys
-(levels `b + 15, b + 16`) are the list `keyList` (independent of `b` and `ρ`), which strictly
-increases.
-
-`length_out_before`: the length of the output of a nested enumerator whose body is
-`when (beforeX b b') g` (key smaller than the key of the outer stack) is a sum over the
-first `j` stacks, `j` being the index of the outer stack.
+`cmdStks`: the stacks of the commands of the code-ordered verifier program, one per command,
+in order. They correspond to the commands of `verifierCmds'` (relation `StkCmd`: length
+`b + 25`, prefix `ρ`, source number at level `b + 15`, `CmdDesc` of the levels from `b + 17`
+on; `block_desc`), and their keys (levels `b + 15, b + 16`) are the list `keyList`
+(independent of `b` and `ρ`), which strictly increases (`keyList_pairwise`). `beforeX b b'`
+compares the key of a stack with the key of an outer stack (`eval_beforeX`).
 -/
 
 namespace Lax119563Proofs.Reduction

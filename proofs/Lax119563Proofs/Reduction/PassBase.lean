@@ -3,8 +3,10 @@ import Lax119563Proofs.Reduction.DomGen
 /-!
 # Infrastructure of the system generator
 
-* `Iv M x s ℓ H`: the compiled code-ordered time program (as in `out_schEnum`);
-* `schEnum_ctx`: the schema enumerator as `(range E).flatMap` over contexts `SchCtx`.
+* `Iv M x s ℓ H`: the compiled code-ordered time program, the implicit parity system emitted
+  by the generator;
+* `SchCtx`: the context of the body of the schema enumerator at a schema index, and lemmas on
+  `List.getD` and `flatMap` over ranges.
 -/
 
 namespace Lax119563Proofs.Reduction

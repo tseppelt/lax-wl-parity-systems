@@ -2,16 +2,13 @@ import Lax119563.WLProblems
 import Lax119563Proofs.Machines.Numbers
 
 /-!
-# Decoding WL instances, and fixed instances
+# Decoding WL instances
 
 * `encodeNats` is injective (`encodeNats_injective`), and the description of a colored graph
   determines the graph and is self-delimiting (`graphDescription_append_inj`). Hence
   `encodeWLInstance k G H ∈ WLDistinguishing ↔ Distinguishes k G H`
   (`encodeWLInstance_mem_iff`).
 * The leading number of an encoded instance is its dimension (`leadingNat_encodeWLInstance`).
-* Fixed instances: `k`-WL (`k ≥ 1`) distinguishes a one-vertex graph from the empty graph
-  (`distinguishes_one_empty`) and never distinguishes a graph from itself
-  (`not_distinguishes_self`).
 -/
 
 open Lax119563.ColoredGraphs Lax119563.WeisfeilerLeman Lax119563.BinaryEncodings

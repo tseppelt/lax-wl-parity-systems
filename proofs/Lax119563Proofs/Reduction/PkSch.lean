@@ -4,10 +4,10 @@ import Lax119563Proofs.Reduction.SchFinal
 /-!
 # The schema enumerator for a runtime number of blocks
 
-As `SchGen`, `SchOut`, `SchFinal` for the command enumerator `cmdEnumP`:
 `schEnumP M b SX HX RX NX rX p0X EcX body` runs `body` once for every schema of the compiled
-code-ordered time program, on the stacks `schStksP` (`out_schEnumP`), with the same layout as
-`schEnum` (length `b + 37`, index at `b + 27`, record `SchRec` from `b + 28` on).
+code-ordered time program, on the stacks `schStksP` (`out_schEnumP`): each has length `b + 37`,
+carries its index at level `b + 27` and the record `SchRec` of the schema from `b + 28` on
+(the blocks of `Reduction/SchGen`, the stacks of `Reduction/SchOut`, `Reduction/SchFinal`).
 -/
 
 namespace Lax119563Proofs.Reduction

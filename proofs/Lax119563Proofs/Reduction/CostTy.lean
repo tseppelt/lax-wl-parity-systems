@@ -5,8 +5,7 @@ import Lax119563Proofs.Reduction.FitsBasic
 
 To bound the values and the costs of generators uniformly in the input, every value is
 assigned a *growth class* `Ty` with respect to a pair of scales `ℓ = (l, L)` (`Sc`, `l ≤ L`; a
-scale is coerced to `L`): `2^l` bounds the input length, `L` the linear quantities (for the
-quasi-linear analysis both are `≈ log₂ |x|`, `Sc.diag`):
+scale is coerced to `L`): `2^l` bounds the input length, `L` the linear quantities:
 * `P e d`: values `≤ K · 2^(e l) · (L + 1)^d` (`P 0 1`: linear, `P 0 d`: polynomial in `L`,
   `P 1 0`: linear in `2^l`);
 * `big`: values `≤ 2^(K (L + 1))`, where `K` is a constant depending on the syntax only.

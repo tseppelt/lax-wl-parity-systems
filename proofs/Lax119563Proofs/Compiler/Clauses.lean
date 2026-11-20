@@ -10,7 +10,7 @@ adjacency `adjN I ε`, color the position of the first name of the class) satisf
 size and edge clauses of the matrix compiler with the constants of `matrixGraph`
 (`reGraph_spec`). This leaves the choice of the vertex order to the construction machine.
 
-* `duplicatorSurvives_of_corr`: the round-bounded version of `duplicatorWins_iff_of_corr`
+* `duplicatorSurvives_of_corr`: Duplicator's survival transfers along a correspondence
   (the transfer lemma `survivesFrom_transfer` is round by round);
 * `reEquiv`: the renumbering between two orders, `reCorr`, `numEdges_reGraph`.
 -/

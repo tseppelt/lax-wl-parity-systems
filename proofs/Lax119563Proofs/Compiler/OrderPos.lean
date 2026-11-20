@@ -16,8 +16,7 @@ Closed formulas for `clsStart I X` (the position of the first name of class `X` 
   with labels `slotLabs`: `[(0,0)]` for initialized coordinate classes, else `bits1`).
 * Tracks: `trackAt_stepsC` (the track before the entry `j` of a column is the entry `j - 1`,
   or the start class), `trackAt_numSteps` (the last entry), `stepsC_ne_nil` (`k ≥ 2`).
-* Order: `schBase_add_le`, `locBase_le_clsStart_coord`, `clsStart_add_le_sch`,
-  `nbrPos_of_pairwise`.
+* Order: `schBase_add_le`.
 -/
 
 open Lax119563.ImplicitParitySystems Lax119563.MatrixCompiler Lax119563.ColoredGraphs

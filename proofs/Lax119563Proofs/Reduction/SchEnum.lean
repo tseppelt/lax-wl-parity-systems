@@ -2,12 +2,11 @@ import Lax119563Proofs.Reduction.CmdEnum
 import Lax119563Proofs.Reduction.CountIdx
 
 /-!
-# Towards the schema enumerator
+# Keys of the command records
 
-`keys_pairwise`: the keys `(location number, move index)` of the records produced by the
-command enumerator strictly increase (lexicographically), so the index of a command in the
-code-ordered command list is the number of records with a smaller key (`CountIdx`), which a
-generator computes with `Gn.count` over a nested `cmdEnum`.
+`keys_pairwise`: the keys `(location number, move index)` of the command records strictly
+increase (lexicographically, `lexLt`), so the index of a command in the code-ordered command
+list is the number of records with a smaller key, which a generator computes with `Gn.count`.
 -/
 
 namespace Lax119563Proofs.Reduction
