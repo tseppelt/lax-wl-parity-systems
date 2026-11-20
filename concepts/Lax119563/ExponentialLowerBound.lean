@@ -12,7 +12,7 @@ Turing machine decides $\textsc{WL Distinguishing}$ in time $O(2^{\varepsilon N^
 where $N$ is the total order of the input graphs.
 
 The proof applies the reduction from exponential time to a language in
-$\mathsf{DTIME}(2^n) \setminus \mathsf{DTIME}(2^{n/2})$: for inputs of length $n$ it produces
+$\mathsf{DTIME}(2^n) \setminus \mathsf{DTIME}(2^{n/4})$: for inputs of length $n$ it produces
 graphs with $N = O(n^5 / \log n)$ vertices in polynomial time.
 
 # Implementation notes
