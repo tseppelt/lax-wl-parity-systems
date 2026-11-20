@@ -4,9 +4,10 @@ import Lax119563Proofs.Reduction.SymMoves
 # The command enumerator
 
 `cmdEnum M s b HX RX body` runs `body` once for every command of the code-ordered verifier
-program, in order: it loops over the digits `t5, t4, t3, t2, t1 < R` of the location numbers
-(`R = radix M H`, the value of `RX`; `H` the value of `HX`), pushes `t1 - 1`, `t4 - 1`,
-`H - t1 - 1`, `H + 2 - t1` and `rest = t1 + R (t2 + R (t3 + R (t4 + R t5)))`, then for each
+program, in order: it loops over the digits `t5 < C, t4 < R, t3 < C, t2 < C, t1 < R` of the
+location numbers (`R = radix M H`, the value of `RX`; `C = cM M`; `H` the value of `HX`), pushes
+`t1 - 1`, `t4 - 1`, `H - t1 - 1`, `H + 2 - t1` and
+`rest = t1 + R (t2 + C (t3 + C (t4 + R t5)))`, then for each
 tag `t < 16` finds the kind whose location has number `t + 16 rest` (`matchX`), pushes that
 number and, for each move of the location, its index `k` and the eight numbers of its command
 (`SMv.recX`).
@@ -84,10 +85,10 @@ variable (M s)
 def rvB (b : ℕ) (HX : Xp) : RVals :=
   ⟨var (b + 9), var (b + 3), var (b + 10), var (b + 11), var (b + 12), var (b + 13), HX⟩
 
-/-- `t1 + R (t2 + R (t3 + R (t4 + R t5)))`. -/
-def restX (b : ℕ) (RX : Xp) : Xp :=
-  add (var (b + 9)) (mul (add (var (b + 7)) (mul (add (var (b + 5)) (mul (add (var (b + 3))
-    (mul (var (b + 1)) RX)) RX)) RX)) RX)
+/-- `t1 + R (t2 + C (t3 + C (t4 + R t5)))`. -/
+def restX (C b : ℕ) (RX : Xp) : Xp :=
+  add (var (b + 9)) (mul (add (var (b + 7)) (mulC C (add (var (b + 5)) (mulC C (add (var (b + 3))
+    (mul (var (b + 1)) RX)))))) RX)
 
 /-- The runtime values are in range. -/
 def validX (b : ℕ) (HX : Xp) : SKind M → Xp
@@ -114,22 +115,22 @@ def tupleGen (b : ℕ) (HX RX : Xp) (body : Gn) : Gn :=
 
 /-- **The command enumerator.** -/
 def cmdEnum (b : ℕ) (HX RX : Xp) (body : Gn) : Gn :=
-  .loop RX (.loop RX (.loop RX (.loop RX (.loop RX (
+  .loop (const (cM M)) (.loop RX (.loop (const (cM M)) (.loop (const (cM M)) (.loop RX (
     Gn.bindSub (b + 10) (var (b + 9)) (const 1) (
     Gn.bindSub (b + 11) (var (b + 3)) (const 1) (
     Gn.bindSub (b + 12) HX (add (var (b + 9)) (const 1)) (
     Gn.bindSub (b + 13) (add HX (const 2)) (var (b + 9)) (
-    .bind (restX b RX) (tupleGen M s b HX RX body))))))))))
+    .bind (restX (cM M) b RX) (tupleGen M s b HX RX body))))))))))
 
 /-- The stack below the source number, for the digits `t = (tag, t1, …, t5)`. -/
-def stkT (ρ : List ℕ) (H R : ℕ) (t : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) : List ℕ :=
-  ρ ++ [R, t.2.2.2.2.2, R, t.2.2.2.2.1, R, t.2.2.2.1, R, t.2.2.1, R, t.2.1,
+def stkT (ρ : List ℕ) (H R C : ℕ) (t : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) : List ℕ :=
+  ρ ++ [C, t.2.2.2.2.2, R, t.2.2.2.2.1, C, t.2.2.2.1, C, t.2.2.1, R, t.2.1,
     t.2.1 - 1, t.2.2.2.2.1 - 1, H - (t.2.1 + 1), H + 2 - t.2.1,
-    pack R t.2.1 (pack R t.2.2.1 (pack R t.2.2.2.1 (pack R t.2.2.2.2.1 t.2.2.2.2.2)))]
+    pack R t.2.1 (pack C t.2.2.1 (pack C t.2.2.2.1 (pack R t.2.2.2.2.1 t.2.2.2.2.2)))]
 
 /-- The stack of the body for the location `L`, below the move records. -/
 def stkL (ρ : List ℕ) (H : ℕ) (L : Loc M H) : List ℕ :=
-  stkT ρ H (radix M H) L.tuple ++ [(Loc.code L).val]
+  stkT ρ H (radix M H) (cM M) L.tuple ++ [(Loc.code L).val]
 
 /-- The move records of `L`: the index of the move and the numbers of its command. -/
 def recsOf (b : ℕ) (HX RX : Xp) (x : List Bool) (ρ : List ℕ) (H : ℕ) (L : Loc M H) :
@@ -142,10 +143,10 @@ end Enum
 /-! ## Digits of location numbers -/
 
 lemma tuple_of_code {H : ℕ} {L : Loc M H} {t t1 t2 t3 t4 t5 : ℕ} (ht : t < 16)
-    (h1 : t1 < radix M H) (h2 : t2 < radix M H) (h3 : t3 < radix M H) (h4 : t4 < radix M H)
-    (h5 : t5 < radix M H)
-    (h : (Loc.code L).val = pack 16 t (pack (radix M H) t1 (pack (radix M H) t2
-      (pack (radix M H) t3 (pack (radix M H) t4 t5))))) :
+    (h1 : t1 < radix M H) (h2 : t2 < cM M) (h3 : t3 < cM M) (h4 : t4 < radix M H)
+    (h5 : t5 < cM M)
+    (h : (Loc.code L).val = pack 16 t (pack (radix M H) t1 (pack (cM M) t2
+      (pack (cM M) t3 (pack (radix M H) t4 t5))))) :
     L.tuple = (t, t1, t2, t3, t4, t5) := by
   obtain ⟨a0, a1, a2, a3, a4, a5⟩ := L.tuple_lt
   simp only [Loc.code] at h
@@ -163,15 +164,15 @@ lemma SKind.tag_sloc {H d u : ℕ} (dX uX : Xp) (K : SKind M) :
 lemma SKind.kind_loc {H d u : ℕ} (K : SKind M) : (K.loc H d u).kind = K := by
   cases K <;> rfl
 
-/-- Enumerating `16 R^5` numbers by five digits below `R` and a tag below `16`. -/
-lemma flatMap_range_digits {β : Type} (R : ℕ) (F : ℕ → List β) :
-    (List.range (16 * R ^ 5)).flatMap F =
-      (List.range R).flatMap fun t5 => (List.range R).flatMap fun t4 =>
-      (List.range R).flatMap fun t3 => (List.range R).flatMap fun t2 =>
+/-- Enumerating `16 R^2 C^3` numbers by digits below `C, R, C, C, R` and a tag below `16`. -/
+lemma flatMap_range_digits {β : Type} (R C : ℕ) (F : ℕ → List β) :
+    (List.range (16 * (R * (C * (C * (R * C)))))).flatMap F =
+      (List.range C).flatMap fun t5 => (List.range R).flatMap fun t4 =>
+      (List.range C).flatMap fun t3 => (List.range C).flatMap fun t2 =>
       (List.range R).flatMap fun t1 => (List.range 16).flatMap fun t =>
-        F (pack 16 t (pack R t1 (pack R t2 (pack R t3 (pack R t4 t5))))) := by
-  rw [Gn.flatMap_range_mul, show R ^ 5 = R * (R * (R * (R * R))) by ring,
-    Gn.flatMap_range_mul, Gn.flatMap_range_mul, Gn.flatMap_range_mul, Gn.flatMap_range_mul]
+        F (pack 16 t (pack R t1 (pack C t2 (pack C t3 (pack R t4 t5))))) := by
+  rw [Gn.flatMap_range_mul, Gn.flatMap_range_mul, Gn.flatMap_range_mul, Gn.flatMap_range_mul,
+    Gn.flatMap_range_mul]
   rfl
 
 end Lax119563Proofs.Reduction
@@ -250,13 +251,13 @@ lemma rvB_bnd (hHb : HX.Bnd b) : (rvB b HX).Bnd (b + 16) :=
     by show b + 12 < b + 16; omega, by show b + 13 < b + 16; omega,
     Xp.Bnd.mono (by omega) hHb⟩
 
-lemma rvB_ok (hρ : ρ.length = b) (hH : HX.eval ρ = H) (hHb : HX.Bnd b) (R : ℕ)
+lemma rvB_ok (hρ : ρ.length = b) (hH : HX.eval ρ = H) (hHb : HX.Bnd b) (R C : ℕ)
     (t : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) (l : List ℕ) :
-    (rvB b HX).Ok H (stkT ρ H R t ++ l) t.2.1 t.2.2.2.2.1 := by
-  have e : ∀ i, (stkT ρ H R t ++ l).getD (b + i) 0 =
-      ([R, t.2.2.2.2.2, R, t.2.2.2.2.1, R, t.2.2.2.1, R, t.2.2.1, R, t.2.1,
+    (rvB b HX).Ok H (stkT ρ H R C t ++ l) t.2.1 t.2.2.2.2.1 := by
+  have e : ∀ i, (stkT ρ H R C t ++ l).getD (b + i) 0 =
+      ([C, t.2.2.2.2.2, R, t.2.2.2.2.1, C, t.2.2.2.1, C, t.2.2.1, R, t.2.1,
       t.2.1 - 1, t.2.2.2.2.1 - 1, H - (t.2.1 + 1), H + 2 - t.2.1,
-      pack R t.2.1 (pack R t.2.2.1 (pack R t.2.2.2.1 (pack R t.2.2.2.2.1 t.2.2.2.2.2)))] ++
+      pack R t.2.1 (pack C t.2.2.1 (pack C t.2.2.2.1 (pack R t.2.2.2.2.1 t.2.2.2.2.2)))] ++
         l).getD i 0 := fun i => by
     rw [stkT, List.append_assoc, getD_stk hρ]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -309,24 +310,24 @@ lemma SKind.bnd_brs {n : ℕ} {V : RVals} (hV : V.Bnd n) (K : SKind M) :
 /-- The output for one tag and given digits. -/
 lemma out_tag (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b) (hH : HX.eval ρ = H)
     (hR : RX.eval ρ = radix M H) {t t1 t2 t3 t4 t5 : ℕ} (ht : t < 16)
-    (h1 : t1 < radix M H) (h2 : t2 < radix M H) (h3 : t3 < radix M H) (h4 : t4 < radix M H)
-    (h5 : t5 < radix M H) :
+    (h1 : t1 < radix M H) (h2 : t2 < cM M) (h3 : t3 < cM M) (h4 : t4 < radix M H)
+    (h5 : t5 < cM M) :
     (Gn.firstL (matchX M b HX RX) (kindGen M s b HX RX body) (kindsOfTag M t)).out x
-        (stkT ρ H (radix M H) (t, t1, t2, t3, t4, t5)) =
-      match decodeLoc M H (pack 16 t (pack (radix M H) t1 (pack (radix M H) t2
-          (pack (radix M H) t3 (pack (radix M H) t4 t5))))) with
+        (stkT ρ H (radix M H) (cM M) (t, t1, t2, t3, t4, t5)) =
+      match decodeLoc M H (pack 16 t (pack (radix M H) t1 (pack (cM M) t2
+          (pack (cM M) t3 (pack (radix M H) t4 t5))))) with
       | some L => (recsOf M s b HX RX x ρ H L).flatMap fun r => body.out x (stkL M ρ H L ++ r)
       | none => [] := by
-  set τ := stkT ρ H (radix M H) (t, t1, t2, t3, t4, t5) with hτ
+  set τ := stkT ρ H (radix M H) (cM M) (t, t1, t2, t3, t4, t5) with hτ
   have hlen : τ.length = b + 15 := by simp [hτ, stkT, hρ]
-  have g : ∀ i, τ.getD (b + i) 0 = ([radix M H, t5, radix M H, t4, radix M H, t3, radix M H,
+  have g : ∀ i, τ.getD (b + i) 0 = ([cM M, t5, radix M H, t4, cM M, t3, cM M,
       t2, radix M H, t1, t1 - 1, t4 - 1, H - (t1 + 1), H + 2 - t1,
-      pack (radix M H) t1 (pack (radix M H) t2 (pack (radix M H) t3
+      pack (radix M H) t1 (pack (cM M) t2 (pack (cM M) t3
         (pack (radix M H) t4 t5)))]).getD i 0 := fun i => by
     rw [hτ, stkT, getD_stk hρ]
   have g9 : τ.getD (b + 9) 0 = t1 := by rw [g]; rfl
   have g3 : τ.getD (b + 3) 0 = t4 := by rw [g]; rfl
-  have g14 : τ.getD (b + 14) 0 = pack (radix M H) t1 (pack (radix M H) t2 (pack (radix M H) t3
+  have g14 : τ.getD (b + 14) 0 = pack (radix M H) t1 (pack (cM M) t2 (pack (cM M) t3
       (pack (radix M H) t4 t5))) := by rw [g]; rfl
   have hHτ : HX.eval τ = H := by rw [hτ, stkT]; exact (Xp.eval_append hρ _ hHb).trans hH
   have hRτ : RX.eval τ = radix M H := by rw [hτ, stkT]; exact (Xp.eval_append hρ _ hRb).trans hR
@@ -339,8 +340,8 @@ lemma out_tag (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b) (hH : HX.e
     rw [eval_matchX hHτ hRτ, g9, g3, g14, tag_of_mem_kindsOfTag hK] at hm
     obtain ⟨hV, hc⟩ := hm
     set L := K.loc H t1 t4 with hL
-    have hcode : (Loc.code L).val = pack 16 t (pack (radix M H) t1 (pack (radix M H) t2
-        (pack (radix M H) t3 (pack (radix M H) t4 t5)))) := hc
+    have hcode : (Loc.code L).val = pack 16 t (pack (radix M H) t1 (pack (cM M) t2
+        (pack (cM M) t3 (pack (radix M H) t4 t5)))) := hc
     have htup := tuple_of_code ht h1 h2 h3 h4 h5 hcode
     rw [← hcode, decodeLoc_code]
     simp only
@@ -355,8 +356,8 @@ lemma out_tag (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b) (hH : HX.e
       (SKind.bnd_brs (rvB_bnd hHb) K)]
     rw [recsOf, List.flatMap_map, hstk, hkind]
   | none =>
-    cases hd : decodeLoc M H (pack 16 t (pack (radix M H) t1 (pack (radix M H) t2
-        (pack (radix M H) t3 (pack (radix M H) t4 t5))))) with
+    cases hd : decodeLoc M H (pack 16 t (pack (radix M H) t1 (pack (cM M) t2
+        (pack (cM M) t3 (pack (radix M H) t4 t5))))) with
     | none => rfl
     | some L =>
       exfalso
@@ -379,9 +380,11 @@ theorem out_cmdEnum (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b)
       | some L => (recsOf M s b HX RX x ρ H L).flatMap fun r => body.out x (stkL M ρ H L ++ r)
       | none => [] := by
   rw [numLoc, flatMap_range_digits]
+  have hCe : ∀ l, (const (cM M)).eval (ρ ++ l) = cM M := fun _ => rfl
   have hRe : ∀ l, RX.eval (ρ ++ l) = radix M H := fun l => (Xp.eval_append hρ l hRb).trans hR
   have hHe : ∀ l, HX.eval (ρ ++ l) = H := fun l => (Xp.eval_append hρ l hHb).trans hH
-  simp only [cmdEnum, Gn.out, List.append_assoc, List.cons_append, List.nil_append, hRe, hR]
+  simp only [cmdEnum, Gn.out, List.append_assoc, List.cons_append, List.nil_append, hRe, hR, hCe,
+    Xp.eval_const]
   refine List.flatMap_congr fun t5 ht5 => List.flatMap_congr fun t4 ht4 =>
     List.flatMap_congr fun t3 ht3 => List.flatMap_congr fun t2 ht2 =>
     List.flatMap_congr fun t1 ht1 => ?_
@@ -410,7 +413,7 @@ theorem out_cmdEnum (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b)
   have hg : ∀ (l : List ℕ) (i : ℕ), (ρ ++ l).getD (b + i) 0 = l.getD i 0 :=
     fun l i => getD_stk hρ i
   simp only [stkT, restX, List.append_assoc, List.cons_append, List.nil_append, Xp.eval_var,
-    Xp.eval_add, Xp.eval_mul, Xp.eval_const, hg, hHe, hRe, List.getD_cons_succ,
+    Xp.eval_add, Xp.eval_mul, Xp.eval_mulC, Xp.eval_const, hg, hHe, hRe, List.getD_cons_succ,
     List.getD_cons_zero]
   simp only [List.cons.injEq, List.append_cancel_left_eq, and_true, true_and, pack]
   ring
@@ -422,7 +425,7 @@ theorem desc_recsOf (hρ : ρ.length = b) (hHb : HX.Bnd b) (hRb : RX.Bnd b)
       List.Forall₂ (fun mv r => CmdDesc M x s ℓ H (Move.toACmd ℓ L mv) r)
         (moves M x s ℓ H L) rs := by
   set σ := stkL M ρ H L with hσ
-  have hV : (rvB b HX).Ok H σ L.tuple.2.1 L.tuple.2.2.2.2.1 := rvB_ok hρ hH hHb _ _ _
+  have hV : (rvB b HX).Ok H σ L.tuple.2.1 L.tuple.2.2.2.2.1 := rvB_ok hρ hH hHb _ _ _ _
   have hRσ : RX.eval σ = radix M H := by
     rw [hσ, stkL, stkT, List.append_assoc]; exact (Xp.eval_append hρ _ hRb).trans hR
   obtain ⟨-, hval, hloc⟩ := L.kind_spec

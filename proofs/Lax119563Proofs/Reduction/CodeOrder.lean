@@ -68,7 +68,7 @@ theorem timeProgram'_accepts_iff {s C₀ : ℕ} (hs : 2 ≤ s)
   have P := params_of (C₀ := C₀) hs hx
   have hmask : MasksBounded s (timeWidth C₀ x.length)
       (verifierCmds' M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length)) :=
-    progCmds_masks fun src _ => moves_wf P.hH src
+    progCmds_masks P.hH fun src _ => moves_wf src
   unfold timeProgram' timeQuery'
   rw [compile_accepts Loc.code_injective _ hmask, addr_zero]
   unfold verifierCmds'

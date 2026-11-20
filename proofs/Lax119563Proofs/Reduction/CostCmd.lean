@@ -6,7 +6,8 @@ import Lax119563Proofs.Reduction.CmdEnum
 
 * `LinX Γ a`: `a` is linear (`P 0 1`) and reads only the levels of `Γ`; `TyB Γ a τ` likewise for
   a class `τ`.
-* `SLoc.codeX_tyB`: location numbers are `P 0 5` (five digits of a linear radix), given linear
+* `SLoc.codeX_tyB`: location numbers are `P 0 5` (two digits of a linear radix and three
+  of a constant one, so in fact `P 0 3`), given linear
   runtime fields (`SLoc.Ok`); `SMv.recX_tyB`: the eight numbers of a move have the classes
   `recTys` (the mask is `big`); `SKind.brs_ok`: all branches of all kinds are typed.
 * **`hasCost_cmdEnum`**: if the body has `HasCost (τs ++ cmdTys) body e d`, then the command
@@ -76,6 +77,11 @@ lemma tyB_horner {a b R : Xp} {d : ℕ} (ha : LinX Γ a) (hb : TyB Γ b (P 0 d))
     simpa using hasTy_mul hb.1 hR.1 hR.1
   exact ⟨hasTy_add (ha.1.le ⟨le_rfl, by omega⟩) hm, ha.2, Xp.bnd_mul hb.2 hR.2⟩
 
+/-- `a + c b` with `a` linear, `b` of degree `d ≥ 1` and a constant `c`. -/
+lemma tyB_hornerC {a b : Xp} {d : ℕ} (ha : LinX Γ a) (hb : TyB Γ b (P 0 d)) (c : ℕ)
+    (hd : 1 ≤ d) : TyB Γ (add a (mulC c b)) (P 0 d) :=
+  ⟨hasTy_add (ha.1.le ⟨le_rfl, hd⟩) (tyB_mulC hb c).1, ha.2, (tyB_mulC hb c).2⟩
+
 lemma linX_minX {a h : Xp} (ha : LinX Γ a) (hh : LinX Γ h) : LinX Γ (minX a h) := by
   have hc : TyB Γ (Xp.lt a (add h (const 1))) (P 0 0) := tyB_lt ha (linX_add_const hh 1)
   have hc' : TyB Γ (Xp.not (Xp.lt a (add h (const 1)))) (P 0 0) := tyB_not hc
@@ -116,9 +122,9 @@ lemma codeX_tyB {R HX : Xp} (hR : LinX Γ R) (hH : LinX Γ HX) {L : SLoc M} (h :
     TyB Γ (L.codeX R HX) (P 0 5) := by
   obtain ⟨f1, f2, f3, f4, f5⟩ := flds_lin hH h
   have t4 := tyB_horner f4 f5 hR le_rfl
-  have t3 := tyB_horner f3 t4 hR (by omega)
-  have t2 := tyB_horner f2 t3 hR (by omega)
-  have t1 := tyB_horner f1 t2 hR (by omega)
+  have t3 := tyB_hornerC f3 t4 (cM M) (by omega)
+  have t2 := tyB_hornerC f2 t3 (cM M) (by omega)
+  have t1 := (tyB_horner f1 t2 hR (by omega)).le (show Ty.Le (P 0 3) (P 0 5) from ⟨le_rfl, by omega⟩)
   have := tyB_mulC t1 16
   exact ⟨hasTy_add ((hasTy_const _).le ⟨le_rfl, by omega⟩) this.1, trivial, this.2⟩
 
@@ -410,14 +416,14 @@ lemma hasCost_tupleGen {τs : List Ty} {HX RX : Xp} (hH : LinX τs HX) (hR : Lin
     (Gn.hasCost_brGen hR'' hH'' hb' _ (SKind.brs_ok hV K))
 
 lemma restX_ty {τs : List Ty} {RX : Xp} (hR : LinX τs RX) :
-    TyB (τs ++ digTys) (restX τs.length RX) (P 0 5) := by
+    TyB (τs ++ digTys) (restX (cM M) τs.length RX) (P 0 5) := by
   have hR' : LinX (τs ++ digTys) RX := hR.weaken _
   have v : ∀ j, j < 14 → LinX (τs ++ digTys) (var (τs.length + j)) := fun j hj =>
     tyB_var _ (by simp only [digTys]; interval_cases j <;> rfl) (by simp [digTys]; omega)
   have t4 := tyB_horner (v 3 (by omega)) (v 1 (by omega)) hR' le_rfl
-  have t3 := tyB_horner (v 5 (by omega)) t4 hR' (by omega)
-  have t2 := tyB_horner (v 7 (by omega)) t3 hR' (by omega)
-  exact tyB_horner (v 9 (by omega)) t2 hR' (by omega)
+  have t3 := tyB_hornerC (v 5 (by omega)) t4 (cM M) (by omega)
+  have t2 := tyB_hornerC (v 7 (by omega)) t3 (cM M) (by omega)
+  exact (tyB_horner (v 9 (by omega)) t2 hR' (by omega)).le ⟨le_rfl, by omega⟩
 
 lemma hasCost_loop' {τs l : List Ty} {lim : Xp} {g : Gn} {e₀ d₀ e d : ℕ}
     (hl : HasTy (τs ++ l) lim (P e₀ d₀)) (hg : HasCost (τs ++ (l ++ [P e₀ d₀, P e₀ d₀])) g e d) :
@@ -432,9 +438,9 @@ theorem hasCost_cmdEnum {τs : List Ty} {b : ℕ} (hb : τs.length = b) {HX RX :
   subst hb
   have hbody' : HasCost (τs ++ cmdTys) body e (d + 1) := hbody.mono le_rfl (by omega)
   have hT := hasCost_tupleGen (M := M) (s := s) hH hR hbody'
-  have h14 : HasCost (τs ++ digTys) (.bind (restX τs.length RX)
+  have h14 : HasCost (τs ++ digTys) (.bind (restX (cM M) τs.length RX)
       (tupleGen M s τs.length HX RX body)) e (d + 1) :=
-    hasCost_bind (restX_ty hR).1 (by simpa using hT)
+    hasCost_bind (restX_ty (M := M) hR).1 (by simpa using hT)
   have vr : ∀ {k j : ℕ}, j < k → LinX (τs ++ List.replicate k (P 0 1)) (var (τs.length + j)) :=
     fun {k j} hj => tyB_var _ (by simp [hj]) (by simp [hj])
   have bd : ∀ {k : ℕ} {a : Xp} {τ : Ty}, TyB (τs ++ List.replicate k (P 0 1)) a τ →
@@ -457,10 +463,12 @@ theorem hasCost_cmdEnum {τs : List Ty} {b : ℕ} (hb : τs.length = b) {HX RX :
   have R : ∀ l : List Ty, HasTy (τs ++ l) RX (P 0 1) := fun l => (hR.weaken l).1
   have g5 := hasCost_loop' (R [P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1])
     h10
-  have g4 := hasCost_loop' (R [P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1]) g5
-  have g3 := hasCost_loop' (R [P 0 1, P 0 1, P 0 1, P 0 1]) g4
+  have Cc : ∀ l : List Ty, HasTy (τs ++ l) (const (cM M)) (P 0 1) := fun l =>
+    (hasTy_const _).le ⟨le_rfl, by omega⟩
+  have g4 := hasCost_loop' (Cc [P 0 1, P 0 1, P 0 1, P 0 1, P 0 1, P 0 1]) g5
+  have g3 := hasCost_loop' (Cc [P 0 1, P 0 1, P 0 1, P 0 1]) g4
   have g2 := hasCost_loop' (R [P 0 1, P 0 1]) g3
-  have g1 := hasCost_loop' (R []) g2
+  have g1 := hasCost_loop' (Cc []) g2
   rw [List.append_nil] at g1
   exact g1.mono (by simp) (by omega)
 

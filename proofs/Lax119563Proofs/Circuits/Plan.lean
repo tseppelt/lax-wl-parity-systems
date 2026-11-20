@@ -50,4 +50,11 @@ XOR with a constant mask). No navigation chain of length `H` is needed.
 * `Windows`              — offsets, the middle-half invariant, truth of claims.
 * `Verifier`             — locations, commands, soundness and completeness.
 * `TimeSimulation`       — parameters, size bounds, the final statement.
+
+## Packed size (`Reduction/Packed.lean`)
+The proofs only need `H + 2 ≤ s ℓ` (`Params`); the claims use the low `H + 2` address bits.
+Location numbers use the mixed radix `16, R, C, C, R, C` (`R = H + 1 + cM M`, `C = cM M`), so
+`numLoc M H = O_M((H + 1)^2)`; each location has `O_M(1)` moves except the root cells, which
+have `s ≤ H + 2` more. Hence `O_M((H + 1)^2)` locations, commands and schemas, independent of
+`s` (`packed_bounds`, and `packed_bounds_h` in terms of the horizon exponent `h`).
 -/
