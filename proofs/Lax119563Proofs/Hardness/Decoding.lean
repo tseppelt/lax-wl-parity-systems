@@ -45,8 +45,6 @@ lemma encodeNat_append_inj {a b : ℕ} {r r' : List Bool}
   obtain ⟨h1, h2⟩ := codeL_append_inj h
   exact ⟨Machines.bits_injective h1, h2⟩
 
-lemma encodeNat_ne_nil (a : ℕ) : encodeNat a ≠ [] := by simp [encodeNat]
-
 /-- **`encodeNats` is injective.** -/
 theorem encodeNats_injective : Function.Injective encodeNats := by
   intro l
@@ -174,29 +172,5 @@ abbrev oneVertex : ColoredGraph := ⟨1, ⊥, fun _ => 0⟩
 
 /-- The empty graph. -/
 abbrev emptyGraph : ColoredGraph := ⟨0, ⊥, fun _ => 0⟩
-
-/-- `k`-WL (`k ≥ 1`) distinguishes the one-vertex graph from the empty graph. -/
-theorem distinguishes_one_empty {k : ℕ} (hk : 1 ≤ k) : Distinguishes k oneVertex emptyGraph := by
-  refine ⟨0, atp oneVertex (fun _ => (0 : Fin 1)), ?_⟩
-  have : IsEmpty (Fin k → Fin emptyGraph.n) := by
-    refine ⟨fun f => (f ⟨0, hk⟩).elim0⟩
-  have h0 : Nat.card {q : Fin k → Fin emptyGraph.n //
-      color emptyGraph 0 q = atp oneVertex (fun _ => (0 : Fin 1))} = 0 := by
-    rw [Nat.card_eq_zero]; left; exact ⟨fun q => isEmptyElim q.1⟩
-  have h1 : Nat.card {p : Fin k → Fin oneVertex.n //
-      color oneVertex 0 p = atp oneVertex (fun _ => (0 : Fin 1))} = 1 := by
-    rw [Nat.card_eq_one_iff_exists]
-    refine ⟨⟨fun _ => 0, rfl⟩, fun q => Subtype.ext (funext fun i => Subsingleton.elim _ _)⟩
-  rw [h0, h1]; omega
-
-/-- `k`-WL never distinguishes a graph from itself. -/
-theorem not_distinguishes_self (k : ℕ) (G : ColoredGraph) : ¬ Distinguishes k G G :=
-  fun ⟨_, _, h⟩ => h rfl
-
-theorem exists_distinguishes_three : ∃ G H : ColoredGraph, Distinguishes 3 G H :=
-  ⟨_, _, distinguishes_one_empty (by norm_num)⟩
-
-theorem exists_not_distinguishes_three : ∃ G H : ColoredGraph, ¬ Distinguishes 3 G H :=
-  ⟨emptyGraph, emptyGraph, not_distinguishes_self 3 _⟩
 
 end Lax119563Proofs.Hardness

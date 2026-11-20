@@ -46,12 +46,6 @@ theorem ucol_eq_of_succ {r : ℕ} {x y : Tup k G H} (h : ucol G H (r + 1) x = uc
     ucol G H r x = ucol G H r y := by
   rw [← fstC_ucol, h, fstC_ucol]
 
-theorem ucol_eq_of_le {r s : ℕ} (hrs : r ≤ s) {x y : Tup k G H}
-    (h : ucol G H s x = ucol G H s y) : ucol G H r x = ucol G H r y := by
-  induction s, hrs using Nat.le_induction with
-  | base => exact h
-  | succ s _ ih => exact ih (ucol_eq_of_succ G H h)
-
 /-- The number of color classes of the joint partition after round `r`. -/
 noncomputable def numClasses (r : ℕ) : ℕ := (Finset.univ.image (ucol (k := k) G H r)).card
 

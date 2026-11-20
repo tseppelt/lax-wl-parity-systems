@@ -32,19 +32,12 @@ lemma bp_apply_injective (P : BlockPerm k ℓ) : Function.Injective P.apply :=
 /-- The image `P y` of a vector, `(P y)(P c) = y c`. -/
 def permVec (P : BlockPerm k ℓ) (y : Vec k ℓ) : Vec k ℓ := fun c => y ((bpEquiv P).symm c)
 
-lemma permVec_apply_apply (P : BlockPerm k ℓ) (y : Vec k ℓ) (c : Coord k ℓ) :
-    permVec P y (P.apply c) = y c := by
-  simp [permVec, ← bpEquiv_apply]
-
 lemma dot_permVec (P : BlockPerm k ℓ) (y z : Vec k ℓ) :
     dot (permVec P y) z = ∑ c, y c * z (P.apply c) := by
   rw [dot, ← Equiv.sum_comp (bpEquiv P)]
   refine Finset.sum_congr rfl fun c _ => ?_
   simp only [permVec, bpEquiv_apply]
   rw [← bpEquiv_apply, Equiv.symm_apply_apply]
-
-lemma permVec_add (P : BlockPerm k ℓ) (y y' : Vec k ℓ) :
-    permVec P (y + y') = permVec P y + permVec P y' := rfl
 
 lemma blockSum_permVec (P : BlockPerm k ℓ) (y : Vec k ℓ) (i : Fin k) :
     blockSum (permVec P y) (P.perm i) = blockSum y i := by
@@ -127,10 +120,6 @@ def EvenKills (z : Vec k ℓ) (J : Finset (Coord k ℓ)) : Prop :=
 lemma EvenKills.mono {z : Vec k ℓ} {J J' : Finset (Coord k ℓ)} (h : EvenKills z J)
     (hJ : J' ⊆ J) : EvenKills z J' :=
   fun y hy he hs => h y hy he fun c hc => hs c fun h' => hc (hJ h')
-
-lemma EvenKills.congr {z z' : Vec k ℓ} {J : Finset (Coord k ℓ)} (h : EvenKills z J)
-    (hz : ∀ c ∈ J, z c = z' c) : EvenKills z' J :=
-  fun y hy he hs => (dot_congr_suppIn hs hz).symm.trans (h y hy he hs)
 
 lemma dot_update (y z : Vec k ℓ) (c : Coord k ℓ) (β : ZMod 2) :
     dot y (Function.update z c β) = dot y (Function.update z c 0) + y c * β := by

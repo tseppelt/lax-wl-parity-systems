@@ -147,33 +147,6 @@ noncomputable def compS (Mf Mg : Machine) : CStm (need Mf + need Mg + 3) (need M
     callS Mf _ 3 (by omega) (ρs Mg _ 3 (by omega) .out),
     .emit (.var (ρs Mf _ 3 (by omega) .out))]
 
-theorem MachineComputable.comp {f g : ℕ → ℕ} (hf : MachineComputable f)
-    (hg : MachineComputable g) : MachineComputable (f ∘ g) := by
-  obtain ⟨Mf, -, hMf⟩ := hf
-  obtain ⟨Mg, -, hMg⟩ := hg
-  refine machineComputable_of_stm (compS Mf Mg) _ fun k => ?_
-  obtain ⟨tg, htg⟩ := hMg k
-  obtain ⟨tf, htf⟩ := hMf (g k)
-  set w := k + haltTime Mg (encodeNat k) + g k + haltTime Mf (encodeNat (g k)) + f (g k) +
-    simB Mf + simB Mg + 2 with hwdef
-  have hw : 2 ≤ w := by omega
-  refine ⟨w, hw, ?_⟩
-  obtain ⟨st1, T1, g1, e1k, e1s, e1b, e1p, e1o⟩ := start_good (need Mf + need Mg) 3 le_rfl hw k
-    (by omega)
-  obtain ⟨st2, T2, g2, e2o, -, e2s, -, e2b, e2p, e2out⟩ := call_good (x := encodeNat k)
-    (by omega : need Mg ≤ need Mf + need Mg) hw (lt_two_pow_of_le (by omega)).le st1 e1b e1p e1s
-    (ex _ 3 0) e1k (lt_two_pow_of_le (by omega)) htg (lt_two_pow_of_le (by omega))
-    (by have := bits_length_le (g k); omega)
-  obtain ⟨st3, T3, g3, e3o, -, e3s, -, e3b, e3p, e3out⟩ := call_good (x := encodeNat k)
-    (by omega : need Mf ≤ need Mf + need Mg) hw (lt_two_pow_of_le (by omega)).le st2 e2b
-    (by omega) e2s _ e2o (lt_two_pow_of_le (by omega)) htf (lt_two_pow_of_le (by omega))
-    (by have := bits_length_le (f (g k)); omega)
-  have hf4 : (Ex.var (ρs Mf _ 3 (by omega) .out) : Ex (need Mf + need Mg + 3)).Fits w st3.env := by
-    simp only [Ex.Fits, e3o]; exact lt_two_pow_of_le (by omega)
-  have g4 := Good.emit (x := encodeNat k) (w := w) (st := st3) hf4
-  refine ⟨_, _, g1.seq (g2.seq (g3.seq (g4.seq Good.skip))), ?_⟩
-  simp [Ex.eval, e3o, e3out, e2out, e1o]
-
 /-! ## Pointwise arithmetic -/
 
 /-- The statement for `H (f k) (g k)`. -/
@@ -259,10 +232,6 @@ theorem MachineComputable.mul {f g : ℕ → ℕ} (hf : MachineComputable f)
     (hg : MachineComputable g) : MachineComputable fun k => f k * g k :=
   MachineComputable.arith mulOp hf hg
 
-theorem MachineComputable.max {f g : ℕ → ℕ} (hf : MachineComputable f)
-    (hg : MachineComputable g) : MachineComputable fun k => max (f k) (g k) :=
-  MachineComputable.arith maxOp hf hg
-
 theorem MachineComputable.pow {f g : ℕ → ℕ} (hf : MachineComputable f)
     (hg : MachineComputable g) : MachineComputable fun k => f k ^ g k :=
   MachineComputable.arith powOp hf hg
@@ -271,10 +240,6 @@ theorem MachineComputable.pow_const {f : ℕ → ℕ} (hf : MachineComputable f)
     MachineComputable fun k => f k ^ e :=
   MachineComputable.pow hf (MachineComputable.const e)
 
-theorem MachineComputable.two_pow {f : ℕ → ℕ} (hf : MachineComputable f) :
-    MachineComputable fun k => 2 ^ f k :=
-  MachineComputable.pow (MachineComputable.const 2) hf
-
 theorem MachineComputable.add_const {f : ℕ → ℕ} (hf : MachineComputable f) (b : ℕ) :
     MachineComputable fun k => f k + b :=
   MachineComputable.add hf (MachineComputable.const b)
@@ -282,8 +247,5 @@ theorem MachineComputable.add_const {f : ℕ → ℕ} (hf : MachineComputable f)
 theorem MachineComputable.mul_const {f : ℕ → ℕ} (hf : MachineComputable f) (a : ℕ) :
     MachineComputable fun k => a * f k :=
   MachineComputable.mul (MachineComputable.const a) hf
-
-theorem MachineComputable.affine (a b : ℕ) : MachineComputable fun k => a * k + b :=
-  MachineComputable.add_const (MachineComputable.mul_const MachineComputable.id' a) b
 
 end Lax119563Proofs.Computability

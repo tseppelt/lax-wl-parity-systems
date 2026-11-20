@@ -31,9 +31,6 @@ lemma syms_take_succ (l : List Bool) (j : ℕ) (hj : j < l.length) :
     List.map_nil]
   rfl
 
-lemma five_unitCost_le {w : ℕ} (hw : 2 ≤ w) : 5 * unitCost w ≤ Ex.nodeCost w := by
-  unfold Ex.nodeCost; nlinarith
-
 /-! ## Pushing the digits of a number -/
 
 /-- Push `2, symOf d` for the digits `d` of the value of `t` (least significant first). -/

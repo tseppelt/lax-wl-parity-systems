@@ -29,12 +29,6 @@ section Gadget
 
 variable {N : ℕ} {X A B Z Y : Fin N} {π : BlockPerm (s + 1) ℓ} {D : Finset (Coord (s + 1) ℓ)}
 
-theorem gadget_equations (x : Fin (s + 1) → BlockCoord ℓ) :
-    (gadget X π A B Z Y D).map (fun e => e.equation x) =
-      [{(X, π.act x), (A, x)}, {(X, π.act x), (B, x)}, {(A, x), (B, x), (Z, x)},
-        {(Z, x), (Y, x)}] := by
-  simp [gadget, Schema.equation]
-
 theorem gadget_domain : ∀ e ∈ gadget X π A B Z Y D, e.domain = D := by
   simp only [gadget, List.mem_cons, List.not_mem_nil, or_false]
   rintro e (rfl | rfl | rfl | rfl) <;> rfl

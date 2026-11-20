@@ -115,9 +115,6 @@ lemma encN_set (x : List Bool) (st : NSt R Q) (r : Fin R) (v : ℕ) :
       intro e; apply hi; ext; simp [nReg, ← e]; omega
     all_goals rfl
 
-lemma nStk_ne {q q' : Fin Q} (h : q ≠ q') : (nStk q : Fin (R + Q + 7)) ≠ nStk q' := by
-  intro e; apply h; ext; simp [nStk, Fin.ext_iff] at e; omega
-
 lemma encN_setS (x : List Bool) (st : NSt R Q) (q : Fin Q) (l : List ℕ) :
     update (encN x st) (nStk q) (bs (encodeNats l)) = encN x (st.setS q l) := by
   funext i
@@ -143,12 +140,6 @@ lemma encN_emit (x : List Bool) (st : NSt R Q) (v : ℕ) :
     unfold encN
     have : i.val ≠ 2 := fun e => hi (Fin.ext e)
     simp [this]
-
-lemma getD_eq_headD_dropN (x : List Bool) (pos : ℕ) :
-    (x.drop pos).headD false = x.getD pos false := by
-  induction x generalizing pos with
-  | nil => simp
-  | cons b x ih => cases pos <;> simp [ih]
 
 lemma encN_advance (x : List Bool) (st : NSt R Q) (hp : st.pos ≤ x.length) :
     update (update (encN x st) nIo (bs (x.drop st.pos).tail)) nXl

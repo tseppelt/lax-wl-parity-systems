@@ -35,9 +35,6 @@ def finalPN : Hierarchy.Prog (R + Q + 7) 0 :=
 noncomputable def NProg.machine (p : NProg R Q) : Machine :=
   Hierarchy.Prog.toMachine (K := R + Q + 6) (.seq (compileN p) finalPN) (fun _ => false)
 
-lemma NProg.machine_deterministic (p : NProg R Q) : Deterministic p.machine :=
-  Hierarchy.Prog.toMachine_deterministic _ _
-
 lemma countLoopN_runsH : ∀ (l : List Sym) (S : Stacks (R + Q + 7) 0) (hd : Fin (R + Q + 7) → ℤ),
     S nT0 = l →
     ∃ hd' : Fin (R + Q + 7) → ℤ, hd' nIo = hd nIo + l.length ∧

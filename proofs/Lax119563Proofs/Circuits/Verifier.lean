@@ -206,9 +206,6 @@ def allLocs : List (Loc M H) :=
   ((allRows M ×ˢ List.finRange _).map fun a => .baseState a.1 a.2) ++
   ((List.finRange _ ×ˢ (List.finRange 4 ×ˢ allCV M)).map fun a => .setJ a.1 a.2.1 a.2.2)
 
-lemma mem_allLocs (L : Loc M H) : L ∈ allLocs M H := by
-  cases L <;> simp [allLocs, List.mem_product]
-
 end Defs
 
 end Lax119563Proofs.Circuits

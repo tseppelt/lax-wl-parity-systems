@@ -264,13 +264,6 @@ variable {τs : List Ty}
 lemma two_pow_mono {K K' ℓ : ℕ} (h : K ≤ K') : 2 ^ (K * ((ℓ : ℕ) + 1)) ≤ 2 ^ (K' * ((ℓ : ℕ) + 1)) :=
   Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ h)
 
-/-- Enlarging the constant. -/
-lemma HasTy.of_le_K {e : Xp} {τ : Ty} {K K' : ℕ} {ℓ : Sc} {ρ : List ℕ} (h : K ≤ K')
-    (H : e.eval ρ ≤ τ.bnd K ℓ ∧ e.Fits (2 ^ (K * ((ℓ : ℕ) + 1))) ρ ∧ e.cost ρ ≤ K * ((ℓ : ℕ) + 1)) :
-    e.eval ρ ≤ τ.bnd K' ℓ ∧ e.Fits (2 ^ (K' * ((ℓ : ℕ) + 1))) ρ ∧ e.cost ρ ≤ K' * ((ℓ : ℕ) + 1) :=
-  ⟨le_trans H.1 (Ty.bnd_mono h ℓ τ), Fits.mono (two_pow_mono h) _ H.2.1,
-    le_trans H.2.2 (Nat.mul_le_mul_right _ h)⟩
-
 lemma HasTy.le {e : Xp} {τ τ' : Ty} (h : HasTy τs e τ) (hτ : Ty.Le τ τ') : HasTy τs e τ' := by
   intro K₀
   obtain ⟨K, hK⟩ := h K₀
@@ -280,12 +273,6 @@ lemma HasTy.le {e : Xp} {τ τ' : Ty} (h : HasTy τs e τ) (hτ : Ty.Le τ τ') 
     le_trans h3 (Nat.mul_le_mul_right _ (by omega))⟩
 
 lemma HasTy.big {e : Xp} {τ : Ty} (h : HasTy τs e τ) : HasTy τs e .big := h.le (Ty.le_big τ)
-
-lemma HasTy.ctx {τs' : List Ty} {e : Xp} {τ : Ty} (hle : TysLe τs τs') (h : HasTy τs' e τ) :
-    HasTy τs e τ := by
-  intro K₀
-  obtain ⟨K, hK⟩ := h (K₀ + liftL τs)
-  exact ⟨K, fun ℓ ρ hA => hK ℓ ρ (hA.of_le hle)⟩
 
 lemma HasTy.weaken {e : Xp} {τ : Ty} (h : HasTy τs e τ) (hb : e.Bnd τs.length)
     (ts : List Ty) : HasTy (τs ++ ts) e τ := by
@@ -369,15 +356,6 @@ lemma hasTy_lt {a b : Xp} {τa τb : Ty} (ha : HasTy τs a τa) (hb : HasTy τs 
   refine ⟨?_, ⟨Fits.mono (two_pow_mono (by omega)) _ a2, Fits.mono (two_pow_mono (by omega)) _ b2⟩,
     ?_⟩
   · rw [Ty.bnd_P00]; simp only [eval]; split_ifs <;> omega
-  · simp only [cost]; nlinarith
-
-lemma hasTy_half {a : Xp} {τ : Ty} (ha : HasTy τs a τ) : HasTy τs (half a) τ := by
-  intro K₀
-  obtain ⟨Ka, hKa⟩ := ha K₀
-  refine ⟨Ka + 1, fun ℓ ρ hA => ?_⟩
-  obtain ⟨a1, a2, a3⟩ := hKa ℓ ρ hA
-  refine ⟨?_, Fits.mono (two_pow_mono (by omega)) a a2, ?_⟩
-  · simp only [eval]; exact le_trans (Nat.div_le_self _ _) (le_trans a1 (Ty.bnd_mono (by omega) ℓ _))
   · simp only [cost]; nlinarith
 
 lemma hasTy_odd {a : Xp} {τ : Ty} (ha : HasTy τs a τ) : HasTy τs (odd a) (P 0 0) := by

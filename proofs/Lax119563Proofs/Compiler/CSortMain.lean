@@ -202,10 +202,6 @@ def pairBody (X T1 T2 Y tmp C1 C2 : Fin Q) (A dir c f1 f2 kc t1 t2 i t r N done 
   .seq (mvRecsB X T1 tmp A r done N k i t)
     (.seq (mvRecsB X T2 tmp A r done N k i t) (mrgS T1 T2 Y tmp C1 C2 A dir c f1 f2 kc t1 t2 i t))
 
-lemma update_self_eq {S : Fin Q → List ℕ} {q : Fin Q} {l : List ℕ} (h : S q = l) :
-    Function.update S q l = S := by
-  subst h; exact Function.update_eq_self _ _
-
 section Pass
 
 variable {X T1 T2 Y tmp C1 C2 : Fin Q} {A dir c f1 f2 kc t1 t2 i t r N done k lim2 : Fin R}

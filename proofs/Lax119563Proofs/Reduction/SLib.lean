@@ -62,29 +62,6 @@ lemma exec_frame : ∀ (c : Stm R) (env : Fin R → ℕ) (q : Fin R), wr c q = f
   | len r, env, q, h => by
     simp only [wr, decide_eq_false_iff_not] at h; simp [exec, Function.update_of_ne h]
 
-lemma exec_loop_counter (i lim : Fin R) (body : Stm R) (env : Fin R → ℕ) :
-    (exec x (loop i lim body) env).1 i = env lim := by simp [exec]
-
-lemma exec_loopX_counter (i lim xb : Fin R) (body : Stm R) (env : Fin R → ℕ) :
-    (exec x (loopX i lim xb body) env).1 i = env lim := by simp [exec]
-
-/-- Valuations at the start of an iteration of `loop i lim body`. -/
-lemma iter_agree (i : Fin R) (body : Stm R) (env : Fin R → ℕ) (k : ℕ) (q : Fin R)
-    (hqi : q ≠ i) (hq : wr body q = false) :
-    Function.update (runLoop (fun k e => exec x body (Function.update e i k)) k env).1 i k q =
-      env q := by
-  rw [Function.update_of_ne hqi]
-  exact runLoop_frame (fun k e => by rw [exec_frame body _ q hq, Function.update_of_ne hqi]) _ _
-
-lemma iterX_agree (i xb : Fin R) (body : Stm R) (env : Fin R → ℕ) (k : ℕ) (q : Fin R)
-    (hqi : q ≠ i) (hqx : q ≠ xb) (hq : wr body q = false) :
-    Function.update (Function.update (runLoop (fun k e => exec x body
-      (Function.update (Function.update e i k) xb (inBit x k))) k env).1 i k) xb (inBit x k) q =
-      env q := by
-  rw [Function.update_of_ne hqx, Function.update_of_ne hqi]
-  exact runLoop_frame (fun k e => by
-    rw [exec_frame body _ q hq, Function.update_of_ne hqx, Function.update_of_ne hqi]) _ _
-
 /-- An invariant of the valuations of a loop. -/
 lemma runLoop_inv {f : ℕ → (Fin R → ℕ) → (Fin R → ℕ) × List ℕ} (Inv : ℕ → (Fin R → ℕ) → Prop)
     {L : ℕ} {env : Fin R → ℕ} (h0 : Inv 0 env)
@@ -144,58 +121,6 @@ lemma len {r : Fin R} (h : x.length + 1 < 2 ^ w) :
     Good x w (Stm.len r) env []
       (3 * unitCost w + x.length * (4 * unitCost w + 1) + 1 + unitCost w * (x.length + 1)) :=
   ⟨h, rfl, le_rfl⟩
-
-/-- **Counting loops.** Iteration `k` is good from every valuation with counter `k` that
-agrees with `env` on the registers other than `i` not written by the body. -/
-lemma loop {i lim : Fin R} {body : Stm R} {g : ℕ → List ℕ} {Tb : ℕ}
-    (hL : env lim + 1 < 2 ^ w)
-    (hb : ∀ k < env lim, ∀ e : Fin R → ℕ, e i = k →
-      (∀ q, q ≠ i → wr body q = false → e q = env q) → Good x w body e (g k) Tb) :
-    Good x w (Stm.loop i lim body) env ((List.range (env lim)).flatMap g)
-      (env lim * (Tb + 4 * unitCost w + 1) + 2 * unitCost w + 1) := by
-  have H : ∀ k < env lim, Good x w body
-      (Function.update (runLoop (fun k e => exec x body (Function.update e i k)) k env).1 i k)
-      (g k) Tb := fun k hk => hb k hk _ (by simp) (fun q hqi hq => iter_agree i body env k q hqi hq)
-  refine ⟨⟨hL, fun k hk => (H k hk).fits⟩, ?_, ?_⟩
-  · simp only [exec]
-    rw [runLoop_out]
-    refine List.flatMap_congr fun k hk => ?_
-    exact (H k (List.mem_range.mp hk)).out_eq
-  · simp only [cost]
-    have : ∑ k ∈ Finset.range (env lim), (cost x w body (Function.update
-        (runLoop (fun k e => exec x body (Function.update e i k)) k env).1 i k) +
-          4 * unitCost w + 1) ≤ ∑ k ∈ Finset.range (env lim), (Tb + 4 * unitCost w + 1) :=
-      Finset.sum_le_sum fun k hk => by have := (H k (Finset.mem_range.mp hk)).cost_le; omega
-    simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at this
-    omega
-
-/-- **Counting loops reading the input.** -/
-lemma loopX {i lim xb : Fin R} {body : Stm R} {g : ℕ → List ℕ} {Tb : ℕ} (hxi : xb ≠ i)
-    (hL : env lim + 1 < 2 ^ w)
-    (hb : ∀ k < env lim, ∀ e : Fin R → ℕ, e i = k → e xb = inBit x k →
-      (∀ q, q ≠ i → q ≠ xb → wr body q = false → e q = env q) → Good x w body e (g k) Tb) :
-    Good x w (Stm.loopX i lim xb body) env ((List.range (env lim)).flatMap g)
-      (unitCost w + (env lim * (unitCost w + Tb + 4 * unitCost w + 1) + 2 * unitCost w + 1) +
-        unitCost w * (x.length + 1)) := by
-  have H : ∀ k < env lim, Good x w body
-      (Function.update (Function.update (runLoop (fun k e => exec x body
-        (Function.update (Function.update e i k) xb (inBit x k))) k env).1 i k) xb (inBit x k))
-      (g k) Tb := fun k hk => hb k hk _ (by rw [Function.update_of_ne hxi.symm]; simp) (by simp)
-      (fun q hqi hqx hq => iterX_agree i xb body env k q hqi hqx hq)
-  refine ⟨⟨hL, fun k hk => (H k hk).fits⟩, ?_, ?_⟩
-  · simp only [exec]
-    rw [runLoop_out]
-    refine List.flatMap_congr fun k hk => ?_
-    exact (H k (List.mem_range.mp hk)).out_eq
-  · simp only [cost]
-    have : ∑ k ∈ Finset.range (env lim), (unitCost w + cost x w body
-        (Function.update (Function.update (runLoop (fun k e => exec x body
-          (Function.update (Function.update e i k) xb (inBit x k))) k env).1 i k) xb
-            (inBit x k)) + 4 * unitCost w + 1) ≤
-        ∑ k ∈ Finset.range (env lim), (unitCost w + Tb + 4 * unitCost w + 1) :=
-      Finset.sum_le_sum fun k hk => by have := (H k (Finset.mem_range.mp hk)).cost_le; omega
-    simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at this
-    omega
 
 end Good
 

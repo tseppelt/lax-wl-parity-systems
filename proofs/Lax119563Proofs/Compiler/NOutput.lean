@@ -71,9 +71,6 @@ lemma drainP_runsH {K : ℕ} {i j : Fin K} (hij : i ≠ j) :
       simp only [update_apply, List.length_cons]
       split_ifs <;> simp_all <;> ring
 
-lemma avoids_drainP {K : ℕ} {i j k : Fin K} (hi : i ≠ k) (hj : j ≠ k) :
-    Avoids k (drainP i j) := ⟨hi, hj⟩
-
 /-! ## Moving the head of an empty stack -/
 
 lemma rep_moveL {K : ℕ} {s : Stacks K 0} {T : Tapes K (Fin (0 + 3))} (h : Rep s T) {i : Fin K}

@@ -86,14 +86,6 @@ lemma Cl.cmdEnum (M : Machine) (s b : ℕ) (HX RX : Xp) {body : Gn} (hb : P body
   obtain ⟨t, -, rfl⟩ := List.mem_map.mp hg
   exact hP.firstL _ (fun K => hP.bind _ (hP.brGen _ _ hb _)) _
 
-lemma Cl.schEnum (M : Machine) (s b : ℕ) (HX RX NX rX p0X EcX : Xp) {body : Gn}
-    (hb : P body) : P (schEnum M s b HX RX NX rX p0X EcX body) := by
-  unfold Lax119563Proofs.Reduction.schEnum cmdBody detGen
-  refine hP.seq (hP.cmdEnum _ _ _ _ _ (hP.count (hP.cmdEnum _ _ _ _ _ (hP.when _ (hP.emit _)))
-    (hP.count (hP.cmdEnum _ _ _ _ _ (hP.when _ (hP.ite _ (hP.emitN 9) (hP.emitN 4))))
-      (hP.ite _ (hP.blkGen _ _ hb _) (hP.blkGen _ _ hb _))))) ?_
-  exact hP.bindL (hP.blkGen _ _ hb _) _
-
 end Gn
 
 namespace Gn
@@ -110,15 +102,6 @@ lemma wfx_of_noX {g : Gn} (h : NoX g) : WFX g := by
   | len _ _ => exact h.elim
   | log _ _ ig => exact ig h
   | count _ _ ig ih => exact ⟨ig h.1, ih h.2⟩
-
-lemma noX_violGen (s d : ℕ) (iX vX xbX gkX g1X g2X g3X ℓX HX : Xp) :
-    NoX (violGen s d iX vX xbX gkX g1X g2X g3X ℓX HX) := by
-  unfold violGen
-  have e : NoX (.emit (const 0)) := trivial
-  exact cl_noX.when _ (cl_noX.ite _ (cl_noX.loop _ (cl_noX.when _ e))
-    (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.ite _ (cl_noX.when _ e) (cl_noX.when _ e))))
-
-lemma noX_violAt (s b d : ℕ) : NoX (violAt s b d) := noX_violGen ..
 
 end Gn
 

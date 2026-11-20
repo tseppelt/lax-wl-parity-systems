@@ -19,9 +19,6 @@ namespace Lax119563Proofs.Hierarchy
 
 open Prog
 
-lemma update_far {α : Type} {N : ℕ} {f : Fin N → α} {i j : Fin N} {v : α} (h : i.val ≠ j.val) :
-    update f j v i = f i := update_of_ne (Fin.ne_of_val_ne h) _ _
-
 /-! ## Words with a last `true` -/
 
 lemma split_last_true (y : List Bool) :

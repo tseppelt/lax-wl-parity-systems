@@ -87,11 +87,6 @@ lemma length_encN_scanned_le (r : List ℕ) : (encN (scannedOf r)).length ≤ (r
 lemma records_cons (r : List ℕ) (rs : List (List ℕ)) :
     records (r :: rs) = record r ++ records rs := by simp [records]
 
-lemma length_le_records (rs : List (List ℕ)) : rs.length ≤ (records rs).length := by
-  induction rs with
-  | nil => simp
-  | cons r rs ih => simp [records_cons]; omega
-
 /-- The loop of `buildKey`. -/
 def keyLoop : SProg := loop (nonempty RS) (seq copyScanned (moveThrough RS RS2 tR))
 

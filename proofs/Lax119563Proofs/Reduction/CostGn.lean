@@ -36,9 +36,6 @@ lemma two_pow_le_bnd {e : ℕ} (he : 1 ≤ e) (d : ℕ) (ℓ : Sc) : 2 ^ ℓ.l �
   have := bnd_P_mono he (Nat.zero_le d) 1 ℓ
   simpa [bnd] using this
 
-lemma bnd_mul' (e d e' d' K K' : ℕ) (ℓ : Sc) :
-    (P e d).bnd K ℓ * (P e' d').bnd K' ℓ = (P (e + e') (d + d')).bnd (K * K') ℓ := bnd_mul ..
-
 end Ty
 
 namespace Gn
@@ -72,12 +69,6 @@ lemma HasCost.mono {g : Gn} {e d e' d' : ℕ} (h : HasCost τs g e d) (he : e �
 
 lemma HasCost.ctx {τs' : List Ty} {g : Gn} {e d : ℕ} (hle : TysLe τs τs')
     (h : HasCost τs' g e d) : HasCost τs g e d := by
-  intro K₀
-  obtain ⟨K, hK⟩ := h (K₀ + liftL τs)
-  exact ⟨K, fun ℓ x ρ hx hA => hK ℓ x ρ hx (hA.of_le hle)⟩
-
-lemma HasLen.ctx {τs' : List Ty} {g : Gn} {τ : Ty} (hle : TysLe τs τs')
-    (h : HasLen τs' g τ) : HasLen τs g τ := by
   intro K₀
   obtain ⟨K, hK⟩ := h (K₀ + liftL τs)
   exact ⟨K, fun ℓ x ρ hx hA => hK ℓ x ρ hx (hA.of_le hle)⟩
@@ -240,28 +231,6 @@ lemma hasCost_loopX {lim : Xp} {g : Gn} {e₀ d₀ e d : ℕ} (hl : HasTy τs li
     (P (max 1 (e₀ + e)) (d₀ + d + 1))
   omega
 
-lemma hasCost_len {g : Gn} {e d : ℕ} (hg : HasCost (τs ++ [P 1 0]) g e d) :
-    HasCost τs (len g) (max 1 e) d := by
-  intro K₀
-  obtain ⟨Kg, hKg⟩ := hg (K₀ + 1)
-  refine ⟨Kg + 2, fun ℓ x ρ hx hA => ?_⟩
-  have hA' : Ag (K₀ + 1) ℓ (τs ++ [P 1 0]) (ρ ++ [x.length]) :=
-    (hA.mono (by omega)).push (le_trans hx (by
-      simp only [Ty.bnd, one_mul, pow_zero, mul_one]
-      exact Nat.le_mul_of_pos_left _ (by omega)))
-  obtain ⟨g1, g2⟩ := hKg ℓ x _ hx hA'
-  have hlL := ℓ.le
-  refine ⟨⟨lt_of_le_of_lt hx (Nat.pow_lt_pow_right (by norm_num) (by nlinarith)),
-    fits_up (by omega) g1⟩, ?_⟩
-  simp only [cost]
-  have k1 := Ty.bnd_P_mono (le_max_right 1 e) le_rfl Kg ℓ (d := d + 1)
-  have k2 := Ty.two_pow_le_bnd (le_max_left 1 e) (d + 1) ℓ
-  have k3 := Ty.one_le_bnd (le_refl 1) ℓ (P (max 1 e) (d + 1))
-  have k4 : (P (max 1 e) (d + 1)).bnd 1 ℓ + (P (max 1 e) (d + 1)).bnd 1 ℓ =
-      (P (max 1 e) (d + 1)).bnd 2 ℓ := Ty.bnd_add ..
-  have k5 := Ty.bnd_add (max 1 e) (d + 1) Kg 2 ℓ
-  omega
-
 lemma log_le_lin {v K : ℕ} {ℓ : Sc} {τ : Ty} (hv : v ≤ τ.bnd K ℓ) :
     Nat.log 2 v ≤ (P 0 1).bnd (K + τ.lift) ℓ := by
   have h := le_trans hv (Ty.bnd_le_big K ℓ τ)
@@ -315,8 +284,6 @@ lemma hasCost_count {g h : Gn} {τ : Ty} {e d : ℕ} (hg : HasCost (τs ++ [P 0 
 
 /-! ## Output lengths -/
 
-lemma hasLen_skip : HasLen τs skip (P 0 0) := fun _ => ⟨0, fun _ _ _ _ _ => by simp [out]⟩
-
 lemma hasLen_emit (a : Xp) : HasLen τs (emit a) (P 0 0) :=
   fun _ => ⟨1, fun _ _ _ _ _ => by simp [out, Ty.bnd]⟩
 
@@ -357,12 +324,6 @@ lemma hasCost_seqL {e d : ℕ} : ∀ {gs : List Gn}, (∀ g ∈ gs, HasCost τs 
 lemma hasCost_when {c : Xp} {τ : Ty} {g : Gn} {e d : ℕ} (hc : HasTy τs c τ)
     (hg : HasCost τs g e d) : HasCost τs (when c g) e d :=
   hasCost_ite hc hg (hasCost_skip.mono (Nat.zero_le _) (Nat.zero_le _))
-
-lemma hasCost_dispatch {v : Xp} {τ : Ty} {n : ℕ} {f : ℕ → Gn} {e d : ℕ} (hv : HasTy τs v τ)
-    (hf : ∀ i < n, HasCost τs (f i) e d) : HasCost τs (dispatch v n f) e d := by
-  refine hasCost_seqL fun g hg => ?_
-  obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hg
-  exact hasCost_when (hasTy_eq hv (hasTy_const i)) (hf i (List.mem_range.mp hi))
 
 /-- Classes of a list of expressions, each typed in the context extended by the previous
 ones. -/

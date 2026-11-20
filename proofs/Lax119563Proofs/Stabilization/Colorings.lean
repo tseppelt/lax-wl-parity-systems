@@ -117,14 +117,6 @@ def classSpace (χ : α → α → β) : Submodule ℂ (Matrix α α ℂ) where
     intro s M hM a b c d h
     simp [hM a b c d h]
 
-theorem mem_classSpace {χ : α → α → β} {M : Matrix α α ℂ} :
-    M ∈ classSpace χ ↔ ∀ a b c d, χ a b = χ c d → M a b = M c d := Iff.rfl
-
-/-- A finer coloring has a larger space. -/
-theorem classSpace_le {χ : α → α → β} {χ' : α → α → β'}
-    (h : ∀ a b c d, χ' a b = χ' c d → χ a b = χ c d) : classSpace χ ≤ classSpace χ' :=
-  fun _ hM a b c d hc => hM a b c d (h a b c d hc)
-
 /-- Lemma 4.7 (and Equation (5)): the space determines the partition. -/
 theorem eq_of_classSpace_le {χ : α → α → β} {χ' : α → α → β'}
     (h : classSpace χ' ≤ classSpace χ) {a b c d : α} (hc : χ a b = χ c d) :
@@ -252,10 +244,6 @@ theorem star_mem_classSpace_proj (r : ℕ) (v : Fin m → Fin G.n)
     {M : Matrix (Fin G.n) (Fin G.n) ℂ} (hM : M ∈ classSpace (proj G r v)) :
     star M ∈ classSpace (proj G r v) :=
   star_mem_classSpace (fun _ _ _ _ h => proj_swap h) hM
-
-theorem classSpace_proj_le_succ (r : ℕ) (v : Fin m → Fin G.n) :
-    classSpace (proj G r v) ≤ classSpace (proj G (r + 1) v) :=
-  classSpace_le fun _ _ _ _ h => proj_eq_of_succ h
 
 /-- **Lemma 6.2** (multiplicativity): entry `(u, u')` of a product of two matrices constant on
 the classes of `χ^v_r` is a sum over the multiset part of `χ_{r+1} (v, u, u')`. -/

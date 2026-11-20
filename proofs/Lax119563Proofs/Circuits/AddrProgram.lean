@@ -52,11 +52,6 @@ lemma testBit_addr (a : Fin s → Fin ℓ → ZMod 2) (p : ℕ) :
   unfold valBit
   split_ifs with h <;> simp [h]
 
-lemma addr_lt (a : Fin s → Fin ℓ → ZMod 2) : addr a < 2 ^ (s * ℓ) := by
-  apply Nat.lt_pow_two_of_testBit
-  intro i hi
-  rw [testBit_addr, valBit, dif_neg (by omega)]
-
 lemma field_addr (a : Fin s → Fin ℓ → ZMod 2) (i : Fin s) :
     field (addr a) (i * ℓ) ℓ = regVal (a i) := by
   apply Nat.eq_of_testBit_eq

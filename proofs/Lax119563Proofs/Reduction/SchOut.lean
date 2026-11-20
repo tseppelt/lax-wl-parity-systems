@@ -188,85 +188,6 @@ variable {x : List Bool} {ρ : List ℕ} {b H ℓ : ℕ} {HX RX NX rX p0X EcX : 
   (hR : RX.eval ρ = radix M H)
 include hρ hHb hRb hH hR
 
-lemma length_cmdStks_eq {b' : ℕ} {σ : List ℕ} (hσ : σ.length = b') (hσρ : σ.take b = ρ)
-    (hb' : b ≤ b') (ℓ : ℕ) :
-    (cmdStks M s b' HX RX x σ H).length = (cmdStks M s b HX RX x ρ H).length := by
-  have hσsplit : σ = ρ ++ σ.drop b := by rw [← hσρ, List.take_append_drop]
-  have hHσ : HX.eval σ = H := by rw [hσsplit]; exact (Xp.eval_append hρ _ hHb).trans hH
-  have hRσ : RX.eval σ = radix M H := by rw [hσsplit]; exact (Xp.eval_append hρ _ hRb).trans hR
-  rw [(cmdStks_forall₂ (x := x) hσ (Xp.Bnd.mono hb' hHb) (Xp.Bnd.mono hb' hRb) hHσ hRσ ℓ).length_eq,
-    (cmdStks_forall₂ (x := x) hρ hHb hRb hH hR ℓ).length_eq]
-
-/-- **The body of the command enumerator.** -/
-theorem out_cmdBody (hNb : NX.Bnd b) (ℓ : ℕ) (body : Gn) {j : ℕ}
-    (hj : j < (cmdStks M s b HX RX x ρ H).length) :
-    (cmdBody M s b HX RX NX body).out x (cmdStks M s b HX RX x ρ H)[j] =
-      (cmdSchStks NX b (cmdStks M s b HX RX x ρ H)[j] j
-        (e0Of (M := M) (s := s) x ℓ H j)).flatMap (body.out x) := by
-  set C := cmdStks M s b HX RX x ρ H with hC
-  set τ := C[j] with hτ
-  have hF := cmdStks_forall₂ (x := x) (s := s) hρ hHb hRb hH hR ℓ
-  have hrel : StkCmd x s ℓ H b ρ τ ((verifierCmds' M x s ℓ H)[j]'(hF.length_eq ▸ hj)) :=
-    List.forall₂_iff_get.mp hF |>.2 j hj _
-  obtain ⟨hτl, hτρ, -, -⟩ := hrel
-  -- the count of `j`
-  have h1 : ((cmdEnum M s (b + 26) HX RX (Gn.when (beforeX b (b + 26)) (.emit (const 0)))).out
-      x (τ ++ [0])).length = j := by
-    rw [length_out_before ℓ hρ hHb hRb hH hR (by omega) (by simp [hτl])
-      (by rw [List.take_append_of_le_length (by omega), hτρ]) hj
-      (by rw [List.take_append_of_le_length (by omega), List.take_of_length_le (by omega)])]
-    have hl := length_cmdStks_eq (x := x) (s := s) hρ hHb hRb hH hR (b' := b + 26)
-      (σ := τ ++ [0]) (by simp [hτl])
-      (by rw [List.take_append_of_le_length (by omega), hτρ]) (by omega) ℓ
-    simp only [Gn.out, List.length_singleton, List.map_const', List.sum_replicate, smul_eq_mul,
-      mul_one, List.length_take]
-    omega
-  -- the count of `e₀`
-  have h2 : ((cmdEnum M s (b + 27) HX RX (Gn.when (beforeX b (b + 27))
-      (.ite (var (b + 27 + 17)) (Gn.emitN 9) (Gn.emitN 4)))).out x (τ ++ [j, 0])).length =
-      e0Of (M := M) (s := s) x ℓ H j := by
-    have hσl : (τ ++ [j, 0]).length = b + 27 := by simp [hτl]
-    have hσρ : (τ ++ [j, 0]).take b = ρ := by
-      rw [List.take_append_of_le_length (by omega), hτρ]
-    rw [length_out_before ℓ hρ hHb hRb hH hR (by omega) hσl hσρ hj
-      (by rw [List.take_append_of_le_length (by omega), List.take_of_length_le (by omega)])]
-    have hσsplit : τ ++ [j, 0] = ρ ++ (τ ++ [j, 0]).drop b := by
-      rw [← hσρ, List.take_append_drop]
-    have hHσ : HX.eval (τ ++ [j, 0]) = H := by
-      rw [hσsplit]; exact (Xp.eval_append hρ _ hHb).trans hH
-    have hRσ : RX.eval (τ ++ [j, 0]) = radix M H := by
-      rw [hσsplit]; exact (Xp.eval_append hρ _ hRb).trans hR
-    have hF2 := cmdStks_forall₂ (x := x) (s := s) hσl (Xp.Bnd.mono (by omega) hHb)
-      (Xp.Bnd.mono (by omega) hRb) hHσ hRσ ℓ
-    rw [e0Of]
-    refine congrArg List.sum (forall₂_map_eq (R := StkCmd x s ℓ H (b + 27) (τ ++ [j, 0]))
-      (fun τ' cmd h => ?_) (List.forall₂_take j hF2))
-    have := szAt_of_stkCmd h
-    simp only [szAt] at this
-    simp only [Gn.out]
-    split_ifs with hc
-    · rw [Gn.length_out_emitN]; simp only [Xp.eval_var] at hc; rw [if_pos hc] at this; exact this
-    · rw [Gn.length_out_emitN]; simp only [Xp.eval_var] at hc
-      rw [if_neg (by simpa using hc)] at this; exact this
-  simp only [cmdBody, Gn.out]
-  rw [h1, show τ ++ [j] ++ [0] = τ ++ [j, 0] by simp, h2,
-    show τ ++ [j] ++ [e0Of (M := M) (s := s) x ℓ H j] = τ ++ [j, e0Of (M := M) (s := s) x ℓ H j]
-      by simp]
-  have hlen : (τ ++ [j, e0Of (M := M) (s := s) x ℓ H j]).length = b + 27 := by simp [hτl]
-  have e17 : (var (b + 17)).eval (τ ++ [j, e0Of (M := M) (s := s) x ℓ H j]) = τ.getD (b + 17) 0 := by
-    simp only [Xp.eval_var]; exact List.getD_append _ _ _ _ (by omega)
-  rw [e17, cmdSchStks]
-  have e26 : (var (b + 26)).eval (τ ++ [j, e0Of (M := M) (s := s) x ℓ H j]) =
-      e0Of (M := M) (s := s) x ℓ H j := by
-    simp only [Xp.eval_var]
-    rw [List.getD_append_right _ _ _ _ (by omega)]
-    simp [hτl]
-  split_ifs with hc
-  · rw [Gn.out_blkGen hlen _ _ _ _ (bnd_var (show b + 26 < b + 27 by omega)) (bnd_gdX (by omega))
-      (bnd_forkBlk hNb (by omega)), e26]
-  · rw [Gn.out_blkGen hlen _ _ _ _ (bnd_var (show b + 26 < b + 27 by omega)) (bnd_gdX (by omega))
-      (bnd_assignBlk hNb (by omega)), e26]
-
 omit hHb hRb hH hR in
 lemma out_detGen (hNb : NX.Bnd b) (hrb : rX.Bnd b) (hpb : p0X.Bnd b) (hEb : EcX.Bnd b)
     (body : Gn) : (detGen NX rX p0X EcX body).out x ρ =
@@ -299,21 +220,6 @@ lemma out_detGen (hNb : NX.Bnd b) (hrb : rX.Bnd b) (hpb : p0X.Bnd b) (hEb : EcX.
   simp only [hev EcX hEb, List.map_cons, List.map_nil, Xp.eval_const]
   congr 3
   exact List.map_congr_left fun e he => hev e (hb e he)
-
-/-- **The output of the schema enumerator, by stacks.** -/
-theorem out_schEnum_stks (hNb : NX.Bnd b) (hrb : rX.Bnd b) (hpb : p0X.Bnd b) (hEb : EcX.Bnd b)
-    (ℓ : ℕ) (body : Gn) :
-    (schEnum M s b HX RX NX rX p0X EcX body).out x ρ =
-      (schStks M s b HX RX NX rX p0X EcX x ρ ℓ H).flatMap (body.out x) := by
-  rw [schEnum, Gn.out, out_cmdEnum' hρ hHb hRb hH hR, out_detGen hρ hNb hrb hpb hEb,
-    schStks, List.flatMap_append, List.flatMap_assoc]
-  congr 1
-  conv_lhs => rw [← map_fst_zipIdx' (cmdStks M s b HX RX x ρ H) 0, List.flatMap_map]
-  refine List.flatMap_congr fun p hp => ?_
-  have h := List.mem_zipIdx_iff_getElem?.mp hp
-  obtain ⟨hj, hget⟩ := List.getElem?_eq_some_iff.mp h
-  rw [← hget]
-  exact out_cmdBody hρ hHb hRb hH hR hNb ℓ body hj
 
 end Out
 

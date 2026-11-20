@@ -95,14 +95,6 @@ lemma survivesFrom_sub : ∀ (r : ℕ) {S T : GameState m G H}, SurvivesFrom G H
     obtain ⟨f, hf⟩ := hT i
     refine ⟨f, fun p => ⟨isPartialIso_sub (hf p).1 (h.update i _), survivesFrom_sub r (hf p).2 (h.update i _)⟩⟩
 
-lemma survivesFrom_succ_le : ∀ (r : ℕ) {S : GameState m G H}, SurvivesFrom G H (r + 1) S →
-    SurvivesFrom G H r S
-  | 0, _, _ => trivial
-  | r + 1, S, hS => by
-    intro i
-    obtain ⟨f, hf⟩ := hS i
-    exact ⟨f, fun p => ⟨(hf p).1, survivesFrom_succ_le r (hf p).2⟩⟩
-
 lemma survivesFrom_of_isEmpty (hG : G.n = 0) (hH : H.n = 0) :
     ∀ (r : ℕ) (S : GameState m G H), SurvivesFrom G H r S
   | 0, _ => trivial
@@ -257,18 +249,6 @@ theorem survivesFrom_transfer :
           exact ⟨u.2, (hJ u).mp u.2, rfl⟩, fun h => (by simp at h)⟩
       exact ⟨hR'.isPartialIso C (hg u).1, survivesFrom_transfer r _ _ hR' (hg u).2⟩
 
-theorem duplicatorWins_of_corr (C : Corr P Q) (h : DuplicatorWins m P.G₀ P.G₁) :
-    DuplicatorWins m Q.G₀ Q.G₁ := by
-  intro r
-  refine ⟨rfl, survivesFrom_transfer C r _ _ ?_ (h r).2⟩
-  intro i
-  exact ⟨fun _ _ h => (by simp at h), fun _ => Or.inl rfl⟩
-
 end Transfer
-
-/-- **Transfer.** Duplicator wins on corresponding pairs simultaneously. -/
-theorem duplicatorWins_iff_of_corr {n n' m : ℕ} {P : JunkPair n} {Q : JunkPair n'}
-    (C : Corr P Q) : DuplicatorWins m P.G₀ P.G₁ ↔ DuplicatorWins m Q.G₀ Q.G₁ :=
-  ⟨duplicatorWins_of_corr C, duplicatorWins_of_corr C.symm⟩
 
 end Lax119563Proofs.Compiler

@@ -221,9 +221,6 @@ lemma isHub_trackAt (e : Fin I.schemas.length) (c : Coord k ℓ) (σ : ℕ) :
   · exact isHub_startCls I e c
   · rfl
 
-lemma isHub_endCls (e : Fin I.schemas.length) (c : Coord k ℓ) :
-    isHub I (endCls I e c) = false := rfl
-
 /-- Only hubs have neighbors through `hubB`, and these are not hubs. -/
 lemma hubB_hub {X Y : ICls I} {l m : Lab} (h : hubB I X l Y m = true) :
     isHub I X = true ∧ isHub I Y = false := by

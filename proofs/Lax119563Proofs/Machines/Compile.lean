@@ -265,15 +265,6 @@ theorem computesWithin {x y : List Bool} {t : ℕ} {T' : Tapes (k + 1) Γ}
   rw [hy]
   simp [inputTapes]
 
-/-- **Deciding.** If `M` halts within `t` transitions on the input tapes of `x` and the answer
-assigned to every halting situation is correct, the compiled machine decides `P`. -/
-theorem decidesWithin {x : List Bool} {t : ℕ} {T' : Tapes (k + 1) Γ} {P : Prop}
-    (h : M.RunsWithin (inputTapes k x) t T')
-    (hans : ∀ q, M.δ q (readAll T') = none → (ans q (readAll T') = true ↔ P)) :
-    Lax119563.DeterministicTime.DecidesExactlyWithin (M.compileWith ans) x P (t + 1) := by
-  obtain ⟨q', hq', hrun⟩ := M.runOn_compileWith ans h
-  exact ⟨_, by rw [hrun], hans q' hq'⟩
-
 end TM
 
 end Compile

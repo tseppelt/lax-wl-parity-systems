@@ -40,11 +40,6 @@ lemma SMv.recX_lift (R HX : Xp) (m : SMv M 0) : (m.lift (s := s)).recX R HX = m.
   | miss i _ => exact i.elim0
   | _ => rfl
 
-lemma SMv.bnd_lift {n : ℕ} (m : SMv M 0) (h : m.Bnd n) : (m.lift (s := s)).Bnd n := by
-  cases m with
-  | miss i _ => exact i.elim0
-  | _ => exact h
-
 /-- The kinds with tests `miss i` (in the branch `d = 0`): the root cells `(0, false)` of
 phase `0`. -/
 def SKind.missFam : SKind M → Bool
@@ -54,8 +49,6 @@ def SKind.missFam : SKind M → Bool
 /-- The tests `miss i`, `1 ≤ i < s`. -/
 def missL (M : Machine) (s : ℕ) : List (SMv M s) :=
   ((List.finRange s).filter fun i => decide (i.val ≠ 0)).map fun i => SMv.miss i .accept
-
-lemma map_lift_goto (dst : SLoc M) : (SMv.goto dst : SMv M 0).lift (s := s) = SMv.goto dst := rfl
 
 /-- The branches of `brs (s := s)` are those of `brs (s := 0)`, with the tests `miss i`
 appended in the branch `d = 0` of the root cells. -/

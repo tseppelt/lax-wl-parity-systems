@@ -107,8 +107,6 @@ abbrev ΓSP : List Ty := globTysP ++ schTysP
 
 lemma length_schTysP : schTysP.length = 37 := rfl
 
-lemma length_ΓSP : ΓSP.length = 56 := rfl
-
 /-- A variable of a concrete context with its class and bound. -/
 macro "tvbP" : tactic => `(tactic| exact ⟨hasTy_var' rfl, by
   show _ < List.length _; simp [length_globTysP, length_schTysP]⟩)

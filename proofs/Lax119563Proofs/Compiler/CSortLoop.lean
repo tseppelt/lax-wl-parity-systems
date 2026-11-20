@@ -128,9 +128,6 @@ lemma movedStk_other (S : Fin Q → List ℕ) {src dst q : Fin Q} (h₁ : q ≠ 
     (n : ℕ) : movedStk S src dst n q = S q := by
   simp [movedStk, Function.update_of_ne h₁, Function.update_of_ne h₂]
 
-lemma Ex.fits_lt {env : Fin R → ℕ} {a b : Ex R} : (Ex.lt a b).Fits w env ↔ a.Fits w env ∧ b.Fits w env :=
-  Iff.rfl
-
 lemma moveN_good {src dst : Fin Q} {cnt i t : Fin R} (hsd : src ≠ dst) (hci : cnt ≠ i)
     (hct : cnt ≠ t) (hit : i ≠ t) (st : NSt R Q) {n : ℕ} (hn : st.env cnt = n)
     (hlen : n ≤ (st.stk src).length) (hw : n + 1 < 2 ^ w)

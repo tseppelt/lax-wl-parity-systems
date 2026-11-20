@@ -26,8 +26,6 @@ def sym (b : Bool) : Sym := if b then 1 else 0
 @[simp] lemma sym_true : sym true = 1 := rfl
 @[simp] lemma sym_false : sym false = 0 := rfl
 
-lemma sym_eq_one (b : Bool) : (sym b == 1) = b := by cases b <;> rfl
-
 /-- A list of bits as stack symbols. -/
 def bs (l : List Bool) : List Sym := l.map sym
 

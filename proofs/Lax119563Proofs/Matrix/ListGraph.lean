@@ -31,14 +31,6 @@ variable (L : List α) (adj : α → α → Prop) [DecidableRel adj]
 
 @[simp] lemma listGraph_n : (listGraph L adj hsymm hirr cls).n = L.length := rfl
 
-lemma listGraph_adj (i j : Fin (listGraph L adj hsymm hirr cls).n) :
-    (listGraph L adj hsymm hirr cls).graph.Adj i j ↔
-      adj (L[(i : ℕ)]'i.2) (L[(j : ℕ)]'j.2) := Iff.rfl
-
-lemma listGraph_color_lt (i : Fin (listGraph L adj hsymm hirr cls).n) :
-    (listGraph L adj hsymm hirr cls).color i < L.length := by
-  exact List.findIdx_lt_length_of_exists ⟨L[(i : ℕ)]'i.2, List.getElem_mem _, by simp⟩
-
 lemma listGraph_color_eq_iff (i j : Fin (listGraph L adj hsymm hirr cls).n) :
     (listGraph L adj hsymm hirr cls).color i = (listGraph L adj hsymm hirr cls).color j ↔
       cls (L[(i : ℕ)]'i.2) = cls (L[(j : ℕ)]'j.2) := by

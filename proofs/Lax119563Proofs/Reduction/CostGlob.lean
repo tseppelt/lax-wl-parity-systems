@@ -21,8 +21,6 @@ def globTys : List Ty :=
   [P 1 0, P 0 1, P 0 1, P 0 1, P 0 1, P 0 5, P 0 7, P 0 7, P 0 0, P 0 0, P 0 20, P 0 20, P 0 7,
     P 1 0]
 
-lemma length_globTys : globTys.length = 14 := rfl
-
 namespace Xp
 
 /-- The minimum of `a` and `b`. -/

@@ -69,11 +69,6 @@ lemma nodup_allCoords : (allCoords k ℓ).Nodup := by
 lemma nodup_coordList (D : Finset (Coord k ℓ)) : (coordList D).Nodup :=
   nodup_allCoords.filter _
 
-lemma length_coordList (D : Finset (Coord k ℓ)) : (coordList D).length = D.card := by
-  rw [← List.toFinset_card_of_nodup (nodup_coordList D)]
-  congr 1
-  ext c; simp
-
 /-! ### Labels -/
 
 @[simp] lemma mem_bits1 (l : Lab) : l ∈ bits1 ↔ l.2 = 0 := by

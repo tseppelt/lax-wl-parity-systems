@@ -23,10 +23,6 @@ def rle : List ℕ → List ℕ → Bool
   | _ :: _, [] => false
   | a :: as, b :: bs => decide (a < b) || (decide (a = b) && rle as bs)
 
-lemma rle_refl : ∀ a : List ℕ, rle a a = true
-  | [] => rfl
-  | a :: as => by simp [rle, rle_refl as]
-
 lemma rle_total : ∀ a b : List ℕ, rle a b = true ∨ rle b a = true
   | [], _ => Or.inl rfl
   | _ :: _, [] => Or.inr rfl
@@ -150,16 +146,6 @@ lemma mrgStep_length (d : Bool) (u v acc : List (List ℕ)) (h : u ≠ [] ∨ v 
   · simp only [mrgStep]; split_ifs <;> simp <;> omega
 
 lemma mrg_nil (d : Bool) (acc : List (List ℕ)) : mrg d [] [] acc = acc := by simp [mrg]
-
-lemma mrg_acc (d : Bool) : ∀ (u v acc : List (List ℕ)), mrg d u v acc = mrg d u v [] ++ acc
-  | [], v, acc => by simp [mrg]
-  | a :: u, [], acc => by simp [mrg]
-  | a :: u, b :: v, acc => by
-    rw [mrg, mrg]
-    split_ifs
-    · rw [mrg_acc d u (b :: v) (a :: acc), mrg_acc d u (b :: v) [a]]; simp
-    · rw [mrg_acc d (a :: u) v (b :: acc), mrg_acc d (a :: u) v [b]]; simp
-termination_by u v => u.length + v.length
 
 lemma mrg_perm (d : Bool) : ∀ (u v acc : List (List ℕ)), (mrg d u v acc).Perm (u ++ v ++ acc)
   | [], v, acc => by simp only [mrg, List.nil_append]; exact (List.reverse_perm _).append_right _

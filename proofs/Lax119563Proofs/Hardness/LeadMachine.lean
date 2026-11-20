@@ -293,7 +293,4 @@ theorem withLead_computesWithin {m : ℕ} {v z : List Bool} {t : ℕ}
   simp only [List.length_append] at hz ⊢
   omega
 
-theorem withLead_deterministic : Deterministic (withLead D).compile :=
-  (withLead D).deterministic_compile
-
 end Lax119563Proofs.Hardness

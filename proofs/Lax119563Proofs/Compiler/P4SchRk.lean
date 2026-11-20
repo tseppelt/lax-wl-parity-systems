@@ -43,14 +43,6 @@ lemma EdgeEff.ee {st st' : NSt CR CQ} {Es : List (ℕ × ℕ)} (h : EdgeEff st s
 lemma EdgeEff.stk_ne {st st' : NSt CR CQ} {Es : List (ℕ × ℕ)} (h : EdgeEff st st' Es) {q : Fin CQ}
     (hq : q ≠ q4E) : st'.stk q = st.stk q := by rw [h.1, Function.update_of_ne hq]
 
-lemma EE.edgeEff {st st' : NSt CR CQ} {Es : List (ℕ × ℕ)} (h : EE st st' Es)
-    (hs : ∀ q, q ≠ q4E → st'.stk q = st.stk q) : EdgeEff st st' Es := by
-  refine ⟨?_, h.2.1, h.2.2.1, h.2.2.2⟩
-  funext q
-  by_cases hq : q = q4E
-  · subst hq; simp [h.1]
-  · rw [Function.update_of_ne hq, hs q hq]
-
 lemma length_updL (H PP TP cp : ℕ) : (updL H PP TP cp).length = 12 := by
   simp [updL, range4_flatMap, updE1]
 

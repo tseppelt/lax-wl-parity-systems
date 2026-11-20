@@ -26,14 +26,6 @@ inductive TreeLike {V : Type*} [DecidableEq V] : List (Finset V) → Prop
   | cons {h : Finset V} {hs : List (Finset V)} :
       (h ∩ unionAll hs).card ≤ 1 → TreeLike hs → TreeLike (h :: hs)
 
-/-- Size bounds of derivation trees are monotone. -/
-theorem HasDerivationWithin.mono {V : Type*} [DecidableEq V] {P : ParitySystem V}
-    {f : V × ZMod 2} {s s' : ℕ} (hd : HasDerivationWithin P f s) (hss : s ≤ s') :
-    HasDerivationWithin P f s' := by
-  cases hd with
-  | initial hf hs => exact .initial hf (hs.trans hss)
-  | infer b size hh hX children hs => exact .infer b size hh hX children (hs.trans hss)
-
 /-- Size bounds of contradiction trees are monotone. -/
 theorem HasContradictionWithin.mono {V : Type*} [DecidableEq V] {P : ParitySystem V}
     {s s' : ℕ} (h : HasContradictionWithin P s) (hss : s ≤ s') :

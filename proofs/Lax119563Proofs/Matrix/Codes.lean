@@ -46,18 +46,9 @@ lemma zmod2_ne_zero_iff (x : ZMod 2) : x ≠ 0 ↔ x = 1 := by
 lemma zmod2_add_self (x : ZMod 2) : x + x = 0 := by
   rcases zmod2_eq_zero_or_one x with h | h <;> subst h <;> decide
 
-lemma zmod2_neg (x : ZMod 2) : -x = x := by
-  rcases zmod2_eq_zero_or_one x with h | h <;> subst h <;> decide
-
-lemma zmod2_sub (x y : ZMod 2) : x - y = x + y := by
-  rw [sub_eq_add_neg, zmod2_neg]
-
 lemma zmod2_eq_of_add_eq_zero {x y : ZMod 2} (h : x + y = 0) : x = y := by
   have := congrArg (· + y) h
   simpa [add_assoc, zmod2_add_self] using this
-
-lemma zmod2_add_eq_zero_iff {x y : ZMod 2} : x + y = 0 ↔ x = y :=
-  ⟨zmod2_eq_of_add_eq_zero, fun h => h ▸ zmod2_add_self x⟩
 
 lemma mem_supp_iff {a : Fin k → BlockCoord ℓ} {c : Coord k ℓ} : c ∈ supp a ↔ a c.1 = c.2 := by
   constructor
@@ -114,14 +105,8 @@ lemma dot_ind_eq_sum_supp (a : Fin k → BlockCoord ℓ) (z : Vec k ℓ) :
     dot (ind a) z = ∑ c ∈ supp a, z c := by
   rw [dot_ind_left, supp, Finset.sum_image (fun i _ j _ h => congrArg Prod.fst h)]
 
-lemma dot_comm (y z : Vec k ℓ) : dot y z = dot z y := by
-  simp [dot, mul_comm]
-
 lemma dot_add_left (y y' z : Vec k ℓ) : dot (y + y') z = dot y z + dot y' z := by
   simp [dot, add_mul, Finset.sum_add_distrib]
-
-lemma dot_add_right (y z z' : Vec k ℓ) : dot y (z + z') = dot y z + dot y z' := by
-  simp [dot, mul_add, Finset.sum_add_distrib]
 
 lemma dot_congr_suppIn {y z z' : Vec k ℓ} {J : Finset (Coord k ℓ)} (hy : SuppIn y J)
     (h : ∀ c ∈ J, z c = z' c) : dot y z = dot y z' := by

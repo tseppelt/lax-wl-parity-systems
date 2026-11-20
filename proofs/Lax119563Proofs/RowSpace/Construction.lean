@@ -110,9 +110,6 @@ lemma trackCls_zero (e : Fin I.schemas.length) (c : Coord k ℓ) :
 lemma trackCls_last (e : Fin I.schemas.length) (c : Coord k ℓ) :
     trackCls I e c (k + 2) = endCls I e c := by simp [trackCls]
 
-lemma trackCls_mid (e : Fin I.schemas.length) (c : Coord k ℓ) {h : ℕ} (h0 : h ≠ 0)
-    (h1 : h ≠ k + 2) : trackCls I e c h = .track e h c := by simp [trackCls, h0, h1]
-
 /-! ### Classes and labels -/
 
 /-- The coordinate classes. -/

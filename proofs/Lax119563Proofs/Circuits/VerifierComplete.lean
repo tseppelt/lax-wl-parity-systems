@@ -18,8 +18,6 @@ lemma rk_lt_time {t t' a b K : ℕ} (h : t < t') (ha : a < K) : t * K + a < t' *
   have : (t + 1) * K ≤ t' * K := Nat.mul_le_mul_right _ h
   nlinarith
 
-lemma wK_eq : wK M H = wG M * (H + 2) + 2 * (H + 1) * (H + 4) := rfl
-
 lemma lvl0_lt {d : ℕ} (hd : d ≤ H) : wP M H + 2 * d * wQ H + H + 2 < wK M H := by
   simp only [wK, wP, wQ]
   nlinarith

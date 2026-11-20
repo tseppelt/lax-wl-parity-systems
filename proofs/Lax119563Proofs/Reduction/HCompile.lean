@@ -102,12 +102,6 @@ lemma enc_emit (x : List Bool) (st : HSt R) (v : ℕ) :
     have : i.val ≠ 2 := fun e => hi (Fin.ext e)
     simp [this]
 
-lemma getD_eq_headD_drop (x : List Bool) (pos : ℕ) :
-    (x.drop pos).headD false = x.getD pos false := by
-  induction x generalizing pos with
-  | nil => simp
-  | cons b x ih => cases pos <;> simp [ih]
-
 lemma enc_advance (x : List Bool) (st : HSt R) (hp : st.pos ≤ x.length) :
     update (update (enc x st) sIo (bs (x.drop st.pos).tail)) sXl
         (bs ((x.drop st.pos).take 1) ++ enc x st sXl) =

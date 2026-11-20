@@ -120,11 +120,6 @@ lemma eq_of_decomp {A k m X v u : ℕ} (hv : v < 2 ^ m) (hu : u < 2 ^ k)
       Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hv]
   · rw [hA, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hu]
 
-lemma setBits_eq {A k m v : ℕ} (hv : v < 2 ^ m) :
-    setBits A k m v = A / 2 ^ (k + m) * 2 ^ (k + m) + v * 2 ^ k + A % 2 ^ k := by
-  conv_lhs => rw [decomp (setBits A k m v) k m]
-  rw [setBits_div hv, field_setBits hv, setBits_mod hv]
-
 lemma setBits_lt {A k m v N : ℕ} (hv : v < 2 ^ m) (hA : A < 2 ^ N) (hkm : k + m ≤ N) :
     setBits A k m v < 2 ^ N := by
   apply Nat.lt_pow_two_of_testBit
@@ -153,15 +148,6 @@ lemma setBits_div_of_le {A k m v N : ℕ} (hv : v < 2 ^ m) (h : k + m ≤ N) :
   intro t
   simp only [Nat.testBit_div_two_pow, testBit_setBits hv]
   rw [if_neg (by omega)]
-
-lemma setBits_mod_of_le {A k m v N : ℕ} (hv : v < 2 ^ m) (h : N ≤ k) :
-    setBits A k m v % 2 ^ N = A % 2 ^ N := by
-  apply Nat.eq_of_testBit_eq
-  intro t
-  simp only [Nat.testBit_mod_two_pow, testBit_setBits hv]
-  by_cases ht : t < N
-  · simp [ht, show ¬ (k ≤ t) by omega]
-  · simp [ht]
 
 /-- Splitting off the top bit of a three-bit field. -/
 lemma split_field3 (A k : ℕ) :

@@ -80,23 +80,12 @@ end HLe
 
 namespace HSt
 
-lemma view_zero {st : HSt R} {r : Fin R} (h : st.env r = 0) : st.view r = none := by
-  simp [view, h]
-
-lemma view_ne_zero {st : HSt R} {r : Fin R} (h : st.env r ≠ 0) : (st.view r).isSome := by
-  simp [view, h]
-
 lemma view_isSome_iff (st : HSt R) (r : Fin R) : (st.view r).isSome = true ↔ st.env r ≠ 0 := by
   unfold view; split_ifs with h <;> simp [h]
 
 @[simp] lemma set_set_same (st : HSt R) (r : Fin R) (u v : ℕ) :
     (st.set r u).set r v = st.set r v := by
   ext <;> simp [set]
-
-lemma set_comm (st : HSt R) {r s : Fin R} (h : r ≠ s) (u v : ℕ) :
-    (st.set r u).set s v = (st.set s v).set r u := by
-  ext i <;> simp only [set, Function.update_apply]
-  split_ifs <;> simp_all
 
 @[simp] lemma set_self (st : HSt R) (r : Fin R) : st.set r (st.env r) = st := by
   ext <;> simp [set]
@@ -127,8 +116,6 @@ lemma inc_spec {r t : Fin R} (hrt : r ≠ t) {st : HSt R} (ht : st.env t < 2 ^ w
 /-- The instruction doing nothing (cost `1`). -/
 def HProg.skip : HProg R := .loop (fun _ => false) .rst
 
-lemma skip_spec (st : HSt R) : HLe x w HProg.skip st st 1 := HLe.loopF rfl
-
 /-- Append the digits `ds` (most significant first) to `r`: `r := 2 r + d` for each `d`. -/
 def HProg.pushDigits (r : Fin R) : List Bool → HProg R
   | [] => HProg.skip
@@ -139,50 +126,9 @@ def digitsVal (v : ℕ) : List Bool → ℕ
   | [] => v
   | d :: ds => digitsVal (2 * v + d.toNat) ds
 
-lemma le_digitsVal (v : ℕ) : ∀ ds : List Bool, v ≤ digitsVal v ds
-  | [] => le_rfl
-  | d :: ds => le_trans (by omega) (le_digitsVal (2 * v + d.toNat) ds)
-
-lemma digitsVal_append_singleton (d : Bool) : ∀ (v : ℕ) (ds : List Bool),
-    digitsVal v (ds ++ [d]) = 2 * digitsVal v ds + d.toNat
-  | v, [] => rfl
-  | v, e :: ds => digitsVal_append_singleton d (2 * v + e.toNat) ds
-
-lemma digitsVal_reverse (v : ℕ) : ∀ l : List Bool,
-    digitsVal v l.reverse = v * 2 ^ l.length + Machines.valBits l
-  | [] => by simp [digitsVal, Machines.valBits]
-  | d :: l => by
-    rw [List.reverse_cons, digitsVal_append_singleton, digitsVal_reverse v l]
-    simp [Machines.valBits, pow_succ]; ring
-
-lemma pushDigits_spec {r : Fin R} : ∀ (ds : List Bool) (st : HSt R),
-    digitsVal (st.env r) ds < 2 ^ w →
-    HLe x w (HProg.pushDigits r ds) st (st.set r (digitsVal (st.env r) ds))
-      (ds.length * unitCost w + 1)
-  | [], st, _ => (skip_spec st).of_eq (by simp [digitsVal]) (by simp)
-  | d :: ds, st, h => by
-    have h' : digitsVal (2 * st.env r + d.toNat) ds < 2 ^ w := h
-    have hle := le_digitsVal (2 * st.env r + d.toNat) ds
-    have h1 : HLe x w (if d then .one r else .dbl r) st (st.set r (2 * st.env r + d.toNat))
-        (unitCost w) := by
-      cases d
-      · exact (HLe.of_runs (HRuns.dbl (by simp at hle h'; omega))).of_eq (by simp) le_rfl
-      · exact (HLe.of_runs (HRuns.one (by simp at hle h'; omega))).of_eq (by simp) le_rfl
-    have h2 := pushDigits_spec ds (st.set r (2 * st.env r + d.toNat))
-      (by rw [HSt.set_env_self]; exact h')
-    refine (h1.seq h2).of_eq (by simp [digitsVal]) (by simp; ring_nf; omega)
-
 /-- `r := c`. -/
 def HProg.setC (r : Fin R) (c : ℕ) : HProg R :=
   .seq (.clr r) (HProg.pushDigits r (Nat.bits c).reverse)
-
-lemma setC_spec {r : Fin R} {c : ℕ} (hc : c < 2 ^ w) {st : HSt R} (hr : st.env r < 2 ^ w) :
-    HLe x w (HProg.setC r c) st (st.set r c) ((Nat.bits c).length * unitCost w + unitCost w + 1) := by
-  have e : digitsVal 0 (Nat.bits c).reverse = c := by
-    rw [digitsVal_reverse, Machines.valBits_bits]; simp
-  have h2 := pushDigits_spec (x := x) (r := r) (Nat.bits c).reverse (st.set r 0)
-    (by simpa [e] using hc)
-  refine ((HLe.of_runs (HRuns.clr hr)).seq h2).of_eq (by simp [e]) (by simp; omega)
 
 /-! ## Counting loops -/
 
@@ -193,52 +139,5 @@ def HProg.forUp (i lim f t : Fin R) (body : HProg R) : HProg R :=
 
 /-- The flag value `[a < b]`. -/
 def ltFlag (a b : ℕ) : ℕ := if a < b then 1 else 0
-
-/-- **Counting loops.** `S k` is the state at the start of iteration `k` (with `i = k` and the
-flag set), `B k` the state after the body. -/
-lemma forUp_spec {i lim f t : Fin R} {body : HProg R} (hil : i ≠ lim) (hif : i ≠ f)
-    (hit : i ≠ t) (hlf : lim ≠ f) (hlt : lim ≠ t) (hft : f ≠ t) (L : ℕ) (hL : L + 1 < 2 ^ w)
-    (st₀ : HSt R) (hi₀ : st₀.env i < 2 ^ w) (hf₀ : st₀.env f < 2 ^ w)
-    (hl₀ : st₀.env lim = L)
-    (S B : ℕ → HSt R) (T : ℕ)
-    (hS0 : S 0 = (st₀.set i 0).set f (ltFlag 0 L))
-    (hbody : ∀ k < L, HLe x w body (S k) (B k) T)
-    (hB : ∀ k < L, (B k).env i = k ∧ (B k).env lim = L ∧ (B k).env f < 2 ^ w ∧
-      (B k).env t < 2 ^ w)
-    (hS : ∀ k < L, S (k + 1) = (((B k).set t 1).set i (k + 1)).set f (ltFlag (k + 1) L)) :
-    HLe x w (HProg.forUp i lim f t body) st₀ (S L)
-      (L * (T + 4 * unitCost w + 1) + 2 * unitCost w + 1) := by
-  have h2 : (1 : ℕ) < 2 ^ w := by omega
-  have hc1 : HLe x w (.clr i) st₀ (st₀.set i 0) (unitCost w) := HLe.of_runs (HRuns.clr hi₀)
-  have hc2 : HLe x w (.lt f i lim) (st₀.set i 0) (S 0) (unitCost w) := by
-    refine (HLe.of_runs (HRuns.lt hif.symm hlf.symm hil (by simp [HSt.set_env_ne _ hif.symm]; omega)
-      (by simp) (by simp [HSt.set_env_ne _ hil.symm]; omega))).of_eq ?_ le_rfl
-    rw [hS0]; simp [HSt.set_env_ne _ hil.symm, hl₀, ltFlag]
-  have hview : ∀ k ≤ L, ((S k).view f).isSome = decide (k < L) := by
-    intro k hk
-    have : (S k).env f = ltFlag k L := by
-      rcases Nat.eq_zero_or_pos k with rfl | hk0
-      · rw [hS0]; simp
-      · obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
-        rw [hS j (by omega)]; simp
-    rw [HSt.view]
-    unfold ltFlag at this
-    split_ifs at this with h1 <;> simp [this, h1]
-  have hloop := HLe.loop_seq_const (p := .seq body (.seq (HProg.inc i t) (.lt f i lim)))
-    (c := fun v => (v f).isSome) L S (T + 4 * unitCost w) (fun k hk => by
-      simpa [hk] using hview k hk.le) (by simpa using hview L le_rfl) (fun k hk => by
-      obtain ⟨hBi, hBl, hBf, hBt⟩ := hB k hk
-      have hinc := inc_spec (x := x) hit (st := B k) hBt (by omega)
-      have hlt' : HLe x w (.lt f i lim) (((B k).set t 1).set i ((B k).env i + 1)) (S (k + 1))
-          (unitCost w) := by
-        refine (HLe.of_runs (HRuns.lt hif.symm hlf.symm hil ?_ ?_ ?_)).of_eq ?_ le_rfl
-        · simp [HSt.set_env_ne _ hif.symm, HSt.set_env_ne _ hft]; omega
-        · simp; omega
-        · simp [HSt.set_env_ne _ hil.symm, HSt.set_env_ne _ hlt]; omega
-        · rw [hS k hk, hBi]
-          simp [HSt.set_env_ne _ hil.symm, HSt.set_env_ne _ hlt, hBl, ltFlag]
-      exact ((hbody k hk).seq (hinc.seq hlt')).mono (by omega))
-  refine (hc1.seq (hc2.seq hloop)).mono ?_
-  nlinarith
 
 end Lax119563Proofs.Reduction

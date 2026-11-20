@@ -44,10 +44,6 @@ def qInv (w : ℕ) (x : List Bool) (T Hc TPc SP QB R2 LB oU mU : ℕ) (cs rest :
     s.env r4V < 2 ^ w ∧ s.Bdd w ∧ s.pos ≤ x.length ∧
     ∀ r, r ∉ qW → s.env r = s0.env r
 
-lemma length_rksE_le' (T t0 Hc TPc SP QR LB oU mU : ℕ) (cs : List ℕ) :
-    (rksE T t0 Hc TPc SP QR LB oU mU cs).length ≤ 12 * cs.length :=
-  length_rksE_le T t0 Hc TPc SP QR LB oU mU cs
-
 lemma length_qE_le (T Hc TPc SP QB R2 LB oU mU : ℕ) (cs : List ℕ) (q : ℕ) :
     ((List.range q).flatMap fun q' =>
       rksE T (q' * cs.length) Hc TPc SP (QB + q' * R2) LB oU mU cs).length ≤

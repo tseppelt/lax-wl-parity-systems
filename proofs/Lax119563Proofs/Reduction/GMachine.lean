@@ -156,9 +156,6 @@ lemma depth_comp (g : Gn) : ∀ (m : Option ℕ) (A : List ℕ) (d : ℕ),
 noncomputable def machine (R : ℕ) (g : Gn) : Machine :=
   ((comp R none [] 0 g).code (R + 1) 3).machine
 
-lemma machine_deterministic (R : ℕ) (g : Gn) : Deterministic (machine R g) :=
-  HProg.machine_deterministic _
-
 /-- **Machines of generators.** -/
 theorem computesWithin {g : Gn} {B : ℕ} (hw : 2 ≤ w) (hB : 2 * B ≤ 2 ^ w) (hR : g.need ≤ R)
     (hwf : g.WFX) (hf : g.Fits x B [])

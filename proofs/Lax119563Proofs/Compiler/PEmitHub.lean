@@ -92,9 +92,6 @@ lemma slotPos_coord_ans {v : Fin I.numLocations} {c' : Coord k ℓ} (hc : c' ∈
 noncomputable def hubE (X : ICls I) (ls : List Lab) (h : ℕ) : List (ℕ × ℕ) :=
   (ls.zipIdx h).flatMap fun q => (hubNbrs I ε X q.1).map fun v => (q.2, v)
 
-lemma gEdges_eq_hubE : gEdges I ε = (List.finRange I.schemas.length).flatMap fun e =>
-    (hubsCls I e).flatMap fun p => hubE I ε p.1 p.2 (hubStart I p.1) := rfl
-
 lemma hubE_bits2 (X : ICls I) (h : ℕ) : hubE I ε X bits2 h =
     (List.range 4).flatMap fun i => (hubNbrs I ε X (lab2 i)).map fun v => (h + i, v) := by
   simp only [hubE, bits2, List.zipIdx_cons, List.zipIdx_nil, List.flatMap_cons,

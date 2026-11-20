@@ -62,8 +62,6 @@ lemma sBase_succ {j : ℕ} (hj : j < I.schemas.length) :
   rw [sBase, List.take_add_one, List.getElem?_eq_getElem (by simpa using hj)]
   simp [sBase]
 
-lemma schBase_eq_sBase (e : Fin I.schemas.length) : schBase I e = sBase I e := rfl
-
 lemma flatten_flatMap' {α β : Type*} (l : List α) (f : α → List (List β)) :
     (l.flatMap f).flatten = l.flatMap fun a => (f a).flatten := by
   induction l with

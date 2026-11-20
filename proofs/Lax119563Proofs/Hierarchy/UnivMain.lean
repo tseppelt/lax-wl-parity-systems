@@ -56,8 +56,6 @@ theorem mainLoop_runs {M : Machine} {b : Bool} :
 /-- The simulator as a machine of the model. -/
 noncomputable def simMachine : Machine := Prog.toMachine sim simAns
 
-lemma simMachine_deterministic : Deterministic simMachine := Prog.toMachine_deterministic _ _
-
 /-- The running time bound of the simulator. -/
 def simTime (n T t : ℕ) : ℕ := 1000 * (n + 1) + (t * (stepCost (5 * (n + 1) + (t + 1) * T) + 1) + 2) + 1
 

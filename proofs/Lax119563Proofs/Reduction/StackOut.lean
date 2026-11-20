@@ -40,19 +40,6 @@ inductive RunsH : Hierarchy.Prog K m → SH K m → SH K m → ℕ → Prop
   | loopT {c p x₁ x₂ x₃ t₁ t₂} : c (tops x₁.1) = true → RunsH p x₁ x₂ t₁ →
       RunsH (.loop c p) x₂ x₃ t₂ → RunsH (.loop c p) x₁ x₃ (t₁ + t₂ + 1)
 
-/-- Forgetting the heads. -/
-theorem RunsH.runs {p : Hierarchy.Prog K m} {x x' : SH K m} {t : ℕ} (h : RunsH p x x' t) :
-    p.Runs x.1 x'.1 t := by
-  induction h with
-  | skip => exact .skip
-  | push => exact .push
-  | pop => exact .pop
-  | seq _ _ ih₁ ih₂ => exact .seq ih₁ ih₂
-  | iteT hc _ ih => exact .iteT hc ih
-  | iteF hc _ ih => exact .iteF hc ih
-  | loopF hc => exact .loopF hc
-  | loopT hc _ _ ih₁ ih₂ => exact .loopT hc ih₁ ih₂
-
 /-- Every run can be equipped with head positions. -/
 theorem Runs.runsH {p : Hierarchy.Prog K m} {s s' : Stacks K m} {t : ℕ} (h : p.Runs s s' t)
     (hd : Fin K → ℤ) : ∃ hd', RunsH p (s, hd) (s', hd') t := by

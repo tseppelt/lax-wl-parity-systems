@@ -34,10 +34,6 @@ lemma getD_lt_of_mem {l : List ℕ} {v B : ℕ} (hv : v ∈ l) (h : ∀ i, l.get
   have := h i
   rwa [List.getD_eq_getElem _ _ hi] at this
 
-lemma RepT.lt_R {c : Config M} {j : Fin (M.tapes + 1)} {L R : List ℕ} (h : RepT M c j L R)
-    {v : ℕ} (hv : v ∈ R) : v < M.symbols + 3 :=
-  getD_lt_of_mem hv fun i => by rw [← h.1 i]; exact Fin.isLt _
-
 lemma RepT.lt_L {c : Config M} {j : Fin (M.tapes + 1)} {L R : List ℕ} (h : RepT M c j L R)
     {v : ℕ} (hv : v ∈ L) : v < M.symbols + 3 :=
   getD_lt_of_mem hv fun i => by rw [← h.2 i]; exact Fin.isLt _

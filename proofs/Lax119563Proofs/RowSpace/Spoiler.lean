@@ -63,9 +63,6 @@ theorem rwalk (hk : 0 < k) :
 `(4k + 1)(k + 2) + 6k`. -/
 def spoilerConst (k : ℕ) : ℕ := stepCostR k + 2 * k
 
-lemma spoilerConst_eq (k : ℕ) : spoilerConst k = (4 * k + 1) * (k + 2) + 6 * k := by
-  simp only [spoilerConst, stepCostR, stripCostR]; ring
-
 /-- **Part (1) of the row-space compiler.** -/
 theorem spoilerWins (hk : 3 ≤ k) {τ : ℕ} (hτ : I.conflictRound = τ) :
     SpoilerWinsWithin (k + 1) (spoilerConst k * (τ + 1)) (rsGraph I 0) (rsGraph I 1) := by

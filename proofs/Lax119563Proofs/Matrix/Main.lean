@@ -18,24 +18,6 @@ open Lax489179.TuringMachine (Machine Deterministic)
 
 namespace Lax119563Proofs.Matrix
 
-/-- **The matrix compiler for the explicit construction.** For `k ≥ 3`, the graphs
-`matrixGraph I 0` and `matrixGraph I 1` satisfy: (I) Spoiler wins within
-`(2k + stepConst k) · Λ · (τ + 1)` rounds if the conflict round is `τ`; (II) Duplicator survives
-`r` rounds whenever `r + 1 ≤ τ`; both graphs have `nV I ≤ 16 S` vertices and at most
-`3 · nV I` edges. -/
-theorem matrixGraph_spec {k ℓ : ℕ} (hk : 3 ≤ k) (I : ImplicitParitySystem k ℓ) :
-    (∀ τ : ℕ, I.conflictRound = τ →
-      SpoilerWinsWithin (k + 1) ((2 * k + stepConst k) * Λ I * (τ + 1))
-        (matrixGraph I 0) (matrixGraph I 1)) ∧
-    (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
-      DuplicatorSurvives (k + 1) r (matrixGraph I 0) (matrixGraph I 1)) ∧
-    (∀ ε, (matrixGraph I ε).n = nV I) ∧
-    nV I ≤ 16 * matrixSize I ∧
-    (∀ ε, (matrixGraph I ε).numEdges ≤ 3 * nV I) :=
-  ⟨fun _ hτ => spoilerWins (by omega) hτ,
-    fun _ hr => duplicatorSurvives (by omega) (not_hasConflict_of_lt I hr),
-    fun _ => rfl, card_vertexList_le (by omega), numEdges_le⟩
-
 /--
 ---
 conclusion: Lax119563.MatrixCompiler.matrix_compiler

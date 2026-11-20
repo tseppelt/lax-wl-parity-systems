@@ -50,15 +50,6 @@ lemma chkRk_take_succ (os bs : List ℕ) (p : ℕ) {j : ℕ} (hj : j < bs.length
     List.getElem?_eq_getElem (by omega), Option.toList_some, Option.toList_some,
     chkRk_snoc _ _ _ _ _ (by simp; omega)]
 
-lemma chkRk_le : ∀ (os bs : List ℕ) (p : ℕ), ∀ v ∈ chkRk os bs p, v ≤ p + os.sum
-  | o :: os, b :: bs, p, v, hv => by
-    simp only [chkRk, List.mem_append] at hv
-    rcases hv with hv | hv
-    · split_ifs at hv <;> simp at hv; subst hv; simp
-    · have := chkRk_le os bs (p + o) v hv; simp only [List.sum_cons]; omega
-  | [], _, _, v, hv => by simp [chkRk] at hv
-  | _ :: _, [], _, v, hv => by simp [chkRk] at hv
-
 lemma length_chkRk_le : ∀ (os bs : List ℕ) (p : ℕ), (chkRk os bs p).length ≤ bs.length
   | o :: os, b :: bs, p => by
     simp only [chkRk, List.length_append, List.length_cons]

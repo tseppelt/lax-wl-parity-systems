@@ -23,11 +23,6 @@ namespace Lax119563Proofs.Compiler
 
 open CStm
 
-/-- `SchSpec` is monotone in the cost. -/
-lemma SchSpec.mono {k ℓ : ℕ} {I : ImplicitParitySystem k ℓ} {w : ℕ} {SCH : CStm CR CQ}
-    {C C' : ℕ} (h : SchSpec I w SCH C) (hC : C ≤ C') : SchSpec I w SCH C' :=
-  fun ε hε st hst => (h ε hε st hst).imp fun _ ⟨g, e, k⟩ => ⟨g.mono hC, e, k⟩
-
 /-- Emit a zero. -/
 def emit0 : CStm CR CQ := .emit (.const 0)
 
@@ -122,28 +117,5 @@ theorem machine_clause_of_schSpec {SCH : CStm CR CQ} {K : ℕ}
           (C * (bitLength I + matrixSize I) *
             Nat.log 2 (bitLength I + matrixSize I + 2) ^ c) :=
   machine_of_program (prog SCH) le_rfl 8 _ 3 (by norm_num) (by norm_num) (prog_good hSCH)
-
-/-- **The matrix compiler**, from a schema edge part with a uniform `SchSpec`: the statement
-of `Lax119563.MatrixCompiler.matrix_compiler`. -/
-theorem matrix_compiler_of_schSpec {SCH : CStm CR CQ} {K : ℕ}
-    (hSCH : ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ → ∀ I : ImplicitParitySystem k ℓ,
-      SchSpec I (wordOf (H I) (matrixSize I)) SCH
-        (K * (H I + matrixSize I + 1) * Ex.nodeCost (wordOf (H I) (matrixSize I)))) :
-    ∃ compile : ∀ {k ℓ : ℕ}, ImplicitParitySystem k ℓ → ColoredGraph × ColoredGraph,
-      (∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, ∀ ℓ : ℕ, 1 ≤ ℓ →
-        ∀ I : ImplicitParitySystem k ℓ,
-          (∀ τ : ℕ, I.conflictRound = τ →
-            SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
-          (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
-            DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
-          (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
-          (compile I).1.numEdges + (compile I).2.numEdges ≤
-            3 * ((compile I).1.n + (compile I).2.n)) ∧
-      (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
-        ∀ I : ImplicitParitySystem k ℓ,
-          ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
-            (C * (bitLength I + matrixSize I) *
-              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) :=
-  matrix_compiler_of_machine (machine_clause_of_schSpec hSCH)
 
 end Lax119563Proofs.Compiler

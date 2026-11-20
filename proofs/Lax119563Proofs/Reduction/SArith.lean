@@ -19,78 +19,14 @@ namespace Stm
 def accum (i lim acc : Fin R) (e : Ex R) : Stm R :=
   loop i lim (set acc (Ex.add (Ex.var acc) e))
 
-lemma exec_accum {i lim acc : Fin R} {e : Ex R} (hia : i ≠ acc) (env : Fin R → ℕ)
-    (f : ℕ → ℕ) (hf : ∀ k < env lim, ∀ e' : Fin R → ℕ, e' i = k →
-      (∀ q, q ≠ i → q ≠ acc → e' q = env q) → e.eval e' = f k) :
-    (exec x (accum i lim acc e) env).1 acc = env acc + ∑ k ∈ Finset.range (env lim), f k ∧
-    ∀ q, q ≠ i → q ≠ acc → (exec x (accum i lim acc e) env).1 q = env q := by
-  set F : ℕ → (Fin R → ℕ) → (Fin R → ℕ) × List ℕ :=
-    fun k e' => exec x (set acc (Ex.add (Ex.var acc) e)) (Function.update e' i k)
-  have H := runLoop_inv (f := F) (L := env lim) (env := env)
-    (fun k e' => e' acc = env acc + ∑ j ∈ Finset.range k, f j ∧
-      ∀ q, q ≠ i → q ≠ acc → e' q = env q)
-    ⟨by simp, fun _ _ _ => rfl⟩
-    (by
-      intro k hk e' ⟨h1, h2⟩
-      have hv : e.eval (Function.update e' i k) = f k := hf k hk _ (by simp) (fun q hqi hqa => by
-        rw [Function.update_of_ne hqi]; exact h2 q hqi hqa)
-      refine ⟨?_, fun q hqi hqa => ?_⟩
-      · simp only [F, exec, Function.update_self, Ex.eval, hv,
-          Function.update_of_ne (Ne.symm hia)]
-        rw [h1, Finset.sum_range_succ]; ring
-      · simp only [F, exec, Function.update_of_ne hqa, Function.update_of_ne hqi]
-        exact h2 q hqi hqa)
-    (env lim) le_rfl
-  refine ⟨?_, fun q hqi hqa => ?_⟩
-  · simp only [accum, exec, Function.update_of_ne (Ne.symm hia)]; exact H.1
-  · simp only [accum, exec, Function.update_of_ne hqi]; exact H.2 q hqi hqa
-
-lemma wr_accum (i lim acc : Fin R) (e : Ex R) (q : Fin R) :
-    wr (accum i lim acc e) q = (decide (q = i) || decide (q = acc)) := by
-  simp [accum, wr]
-
 /-- `acc := a * b` (by `b` additions; `i` is a counter). -/
 def mulS (a b acc i : Fin R) : Stm R :=
   seq (set acc (Ex.const 0)) (accum i b acc (Ex.var a))
-
-lemma exec_mulS {a b acc i : Fin R} (hia : i ≠ acc) (hai : a ≠ i) (haa : a ≠ acc)
-    (hba : b ≠ acc) (env : Fin R → ℕ) :
-    (exec x (mulS a b acc i) env).1 acc = env a * env b ∧
-    ∀ q, q ≠ i → q ≠ acc → (exec x (mulS a b acc i) env).1 q = env q := by
-  have h := exec_accum (x := x) (lim := b) (e := Ex.var a) hia
-    (Function.update env acc 0) (fun _ => env a) (fun k _ e' _ he' => by
-      simp only [Ex.eval]; rw [he' a hai haa, Function.update_of_ne haa])
-  simp only [mulS, exec, Ex.eval]
-  refine ⟨?_, fun q hqi hqa => ?_⟩
-  · rw [h.1]; simp [Function.update_of_ne hba, Ex.eval, Finset.sum_const, Nat.mul_comm]
-  · rw [h.2 q hqi hqa, Function.update_of_ne hqa]
 
 /-- `acc := a - b` (truncated; by counting `t < a` with `b ≤ t`). -/
 def subS (a b acc i : Fin R) : Stm R :=
   seq (set acc (Ex.const 0))
     (accum i a acc (Ex.lt (Ex.var b) (Ex.add (Ex.var i) (Ex.const 1))))
-
-lemma sum_ge_count (a b : ℕ) :
-    ∑ k ∈ Finset.range a, (if b < k + 1 then 1 else 0) = a - b := by
-  induction a with
-  | zero => simp
-  | succ a ih =>
-    rw [Finset.sum_range_succ, ih]
-    split_ifs <;> omega
-
-lemma exec_subS {a b acc i : Fin R} (hia : i ≠ acc) (hbi : b ≠ i) (hba : b ≠ acc)
-    (haa : a ≠ acc) (env : Fin R → ℕ) :
-    (exec x (subS a b acc i) env).1 acc = env a - env b ∧
-    ∀ q, q ≠ i → q ≠ acc → (exec x (subS a b acc i) env).1 q = env q := by
-  have h := exec_accum (x := x) (lim := a) (e := Ex.lt (Ex.var b) (Ex.add (Ex.var i)
-    (Ex.const 1))) hia (Function.update env acc 0)
-    (fun k => if env b < k + 1 then 1 else 0) (fun k _ e' hi he' => by
-      simp only [Ex.eval, he' b hbi hba, hi, Function.update_of_ne hba])
-  simp only [subS, exec, Ex.eval]
-  refine ⟨?_, fun q hqi hqa => ?_⟩
-  · rw [h.1]; simp only [Function.update_self, Function.update_of_ne haa, zero_add]
-    exact sum_ge_count _ _
-  · rw [h.2 q hqi hqa, Function.update_of_ne hqa]
 
 /-- `acc := acc * 2 ^ k` (by `k` doublings). -/
 def shlS (k acc i : Fin R) : Stm R := loop i k (set acc (Ex.add (Ex.var acc) (Ex.var acc)))

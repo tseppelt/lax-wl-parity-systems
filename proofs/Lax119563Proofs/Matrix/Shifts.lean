@@ -18,9 +18,6 @@ variable {k ℓ : ℕ}
 
 /-! ### Steps -/
 
-lemma ent_eq_zero_or_one (σ : ℕ) (c : Coord k ℓ) : ent σ c = 0 ∨ ent σ c = 1 :=
-  zmod2_eq_zero_or_one _
-
 lemma ent_eq_one {σ : ℕ} {c : Coord k ℓ} (h : ent σ c ≠ 0) : ent σ c = 1 :=
   (zmod2_ne_zero_iff _).mp h
 
@@ -192,9 +189,6 @@ lemma and_decide_congr {Y A : ICls I} {P Q : Prop} [Decidable P] [Decidable Q]
   by_cases hY : Y = A
   · simp [hY, h hY]
   · simp [hY]
-
-lemma shift_coord_fst (D : Desc I) (v : Fin I.numLocations) (c : Coord k ℓ) :
-    (shift D (.coord v c)).1 = D.z v c := rfl
 
 /-- The hub relation is invariant under the translation, provided the mask-sum condition holds
 at links and updates are valid. -/

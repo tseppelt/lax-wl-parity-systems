@@ -61,60 +61,6 @@ def timeQuery' (M : Machine) (s C₀ : ℕ) (x : List Bool) :
     Fin (timeProgram' M s C₀ x).numLocations :=
   (Loc.query : Loc M (timeHorizon s C₀ x.length)).code
 
-theorem timeProgram'_accepts_iff {s C₀ : ℕ} (hs : 2 ≤ s)
-    (hC₀ : ∀ x : List Bool, (runOn M x (C₀ * x.length ^ s + C₀)).answer.isSome)
-    {x : List Bool} (hx : 2 ≤ x.length) :
-    (timeProgram' M s C₀ x).Accepts (timeQuery' M s C₀ x) (fun _ _ => 0) ↔ Accepts M x := by
-  have P := params_of (C₀ := C₀) hs hx
-  have hmask : MasksBounded s (timeWidth C₀ x.length)
-      (verifierCmds' M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length)) :=
-    progCmds_masks P.hH fun src _ => moves_wf src
-  unfold timeProgram' timeQuery'
-  rw [compile_accepts Loc.code_injective _ hmask, addr_zero]
-  unfold verifierCmds'
-  rw [verifier_accepts_iff P mem_locsByCode _ (by positivity)]
-  rw [accepts_iff_answer (halts_by_horizon hs hC₀ hx)]
-  rfl
-
-lemma timeProgram'_numLocations (s C₀ : ℕ) (x : List Bool) :
-    (timeProgram' M s C₀ x).numLocations = numLoc M (timeHorizon s C₀ x.length) := rfl
-
-lemma timeProgram'_commands_le (s C₀ : ℕ) (x : List Bool) :
-    (timeProgram' M s C₀ x).commands.length ≤
-      numLoc M (timeHorizon s C₀ x.length) * movBound M s := by
-  simp only [timeProgram', compile, List.length_map, verifierCmds', progCmds]
-  calc _ ≤ (locsByCode M (timeHorizon s C₀ x.length)).length * movBound M s :=
-        length_flatMap_le fun L _ => by rw [List.length_map]; exact moves_length_le _ _ _ L
-    _ ≤ _ := Nat.mul_le_mul_right _ length_locsByCode_le
-
-/-- **Time simulation in code order** (as `Circuits.time_simulation`). -/
-theorem time_simulation' (M : Machine) (s : ℕ) (hs : 2 ≤ s) (C₀ : ℕ)
-    (hC₀ : ∀ x : List Bool, (runOn M x (C₀ * x.length ^ s + C₀)).answer.isSome) :
-    ∃ C : ℕ, ∀ x : List Bool, 2 ≤ x.length →
-      1 ≤ timeWidth C₀ x.length ∧
-      ((timeProgram' M s C₀ x).Accepts (timeQuery' M s C₀ x) (fun _ _ => 0) ↔ Accepts M x) ∧
-      x.length ≤ C * 2 ^ timeWidth C₀ x.length ∧
-      2 ^ timeWidth C₀ x.length ≤ C * x.length ∧
-      (timeProgram' M s C₀ x).numLocations ≤ C * Nat.log 2 x.length ^ 5 ∧
-      (timeProgram' M s C₀ x).commands.length ≤ C * Nat.log 2 x.length ^ 5 := by
-  obtain ⟨C, hC⟩ := time_simulation M s hs C₀ hC₀
-  refine ⟨C + 16 * (s * (C₀ + 5) + cM M) ^ 5 * (movBound M s + 1), fun x hx => ?_⟩
-  obtain ⟨h1, -, h3, h4, h5, -⟩ := hC x hx
-  have hNL := numLoc_le (M := M) (s := s) (C₀ := C₀) (by omega) hx
-  generalize hK : 16 * (s * (C₀ + 5) + cM M) ^ 5 = K at hNL ⊢
-  refine ⟨h1, timeProgram'_accepts_iff hs hC₀ hx, ?_, ?_, ?_, ?_⟩
-  · exact h3.trans (Nat.mul_le_mul_right _ (by omega))
-  · exact h4.trans (Nat.mul_le_mul_right _ (by omega))
-  · rw [timeProgram'_numLocations]
-    exact hNL.trans (Nat.mul_le_mul_right _ (le_trans (Nat.le_mul_of_pos_right K (Nat.succ_pos _))
-      (Nat.le_add_left _ _)))
-  · calc _ ≤ numLoc M (timeHorizon s C₀ x.length) * movBound M s := timeProgram'_commands_le _ _ _
-      _ ≤ K * Nat.log 2 x.length ^ 5 * movBound M s := Nat.mul_le_mul_right _ hNL
-      _ = K * movBound M s * Nat.log 2 x.length ^ 5 := by ring
-      _ ≤ (C + K * (movBound M s + 1)) * Nat.log 2 x.length ^ 5 :=
-        Nat.mul_le_mul_right _ (le_trans (Nat.mul_le_mul_left K (Nat.le_succ _))
-          (Nat.le_add_left _ _))
-
 /-- The commands in code order: for each number `c`, the moves of the decoded location. -/
 lemma verifierCmds'_eq (x : List Bool) (s ℓ : ℕ) :
     verifierCmds' M x s ℓ H = (List.range (numLoc M H)).flatMap fun c =>

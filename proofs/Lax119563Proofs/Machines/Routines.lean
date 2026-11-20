@@ -101,10 +101,6 @@ def scanR (i : Fin k) (p : Γ → Bool) : TM k Γ := loop (fun s => p (s i)) (mo
 /-- Move left on tape `i` while the scanned symbol satisfies `p`. -/
 def scanL (i : Fin k) (p : Γ → Bool) : TM k Γ := loop (fun s => p (s i)) (moveL i)
 
-lemma update_self_tape (T : Tapes k Γ) (i : Fin k) :
-    update T i ⟨(T i).head, (T i).cells⟩ = T := by
-  simp
-
 theorem scanR_raw (i : Fin k) (p : Γ → Bool) (d : ℕ) (T : Tapes k Γ)
     (hd : ∀ j < d, p ((T i).cells ((T i).head + j)) = true)
     (hend : p ((T i).cells ((T i).head + d)) = false) :

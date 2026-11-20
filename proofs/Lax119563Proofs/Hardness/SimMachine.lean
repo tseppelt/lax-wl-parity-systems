@@ -35,15 +35,11 @@ instance finAlphabet (m : ℕ) : TapeAlphabet (Fin (m + 3)) where
     intro b
     cases b <;> simp [Fin.ext_iff, Nat.mod_eq_of_lt (show 2 < m + 3 by omega)]
 
-lemma blank_fin (m : ℕ) : (blank : Fin (m + 3)) = 0 := rfl
-
 lemma one_ne_zero_fin (m : ℕ) : (1 : Fin (m + 3)) ≠ 0 :=
   TapeAlphabet.bit_ne_blank (Γ := Fin (m + 3)) false
 
 lemma two_ne_zero_fin (m : ℕ) : (2 : Fin (m + 3)) ≠ 0 :=
   TapeAlphabet.bit_ne_blank (Γ := Fin (m + 3)) true
-
-lemma bit_fin (m : ℕ) (b : Bool) : (bit b : Fin (m + 3)) = if b then 2 else 1 := rfl
 
 /-! ## Output length -/
 

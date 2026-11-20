@@ -48,9 +48,6 @@ lemma eval_eq_const (a : Xp) (c : ℕ) :
   show (if (if a.eval ρ < c then 1 else 0) + (if c < a.eval ρ then 1 else 0) < 1 then 1 else 0)
     = _
   split_ifs <;> omega
-lemma cost_eq_const (a : Xp) (c : ℕ) : (eq a (const c)).cost ρ = 2 * a.cost ρ + 7 := by
-  simp only [eq, cost]; ring
-
 lemma eval_and {a b : Xp} (ha : a.eval ρ ≤ 1) (hb : b.eval ρ ≤ 1) :
     (and a b).eval ρ = if a.eval ρ = 1 ∧ b.eval ρ = 1 then 1 else 0 := by
   show (if (1 : ℕ) < a.eval ρ + b.eval ρ then 1 else 0) = _
@@ -86,70 +83,6 @@ def Small (W : ℕ) (ρ : List ℕ) : Xp → Prop
   | shl a k => a.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W ∧ a.eval ρ * 2 ^ k.eval ρ < 2 ^ W
   | shr a k => a.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W
   | xorM a b k => a.Small W ρ ∧ b.Small W ρ ∧ k.Small W ρ ∧ k.eval ρ ≤ W
-
-lemma Small.val_lt {W : ℕ} : ∀ {e : Xp}, e.Small W ρ → e.eval ρ < 2 ^ W
-  | var _, h => h
-  | const _, h => h
-  | add _ _, h => h.2.2
-  | lt a b, h => by
-    have := Small.val_lt (e := a) h.1; have := Small.val_lt (e := b) h.2
-    simp only [eval]; split_ifs <;> omega
-  | half a, h => by have := Small.val_lt (e := a) h; simp only [eval]; omega
-  | odd a, h => by
-    have := Small.val_lt (e := a) h; simp only [eval]; have := Nat.mod_le (a.eval ρ) 2; omega
-  | mulB _ _ _, h => h.2.2.2.2
-  | shl _ _, h => h.2.2.2
-  | shr a _, h => lt_of_le_of_lt (Nat.div_le_self _ _) (Small.val_lt h.1)
-  | xorM _ _ k, h => lt_of_lt_of_le (Nat.mod_lt _ (by positivity))
-      (Nat.pow_le_pow_right (by norm_num) h.2.2.2)
-
-lemma Small.fits {W : ℕ} (hW : 1 ≤ W) : ∀ {e : Xp}, e.Small W ρ → e.Fits (2 ^ (2 * W)) ρ
-  | var _, h => lt_of_lt_of_le h (Nat.pow_le_pow_right (by norm_num) (by omega))
-  | const _, h => lt_of_lt_of_le h (Nat.pow_le_pow_right (by norm_num) (by omega))
-  | add a b, h => ⟨Small.fits hW h.1, Small.fits hW h.2.1,
-      lt_of_lt_of_le h.2.2 (Nat.pow_le_pow_right (by norm_num) (by omega))⟩
-  | lt a b, h => ⟨Small.fits hW h.1, Small.fits hW h.2⟩
-  | half a, h => Small.fits (e := a) hW h
-  | odd a, h => Small.fits (e := a) hW h
-  | mulB a b k, h => by
-    refine ⟨Small.fits hW h.1, Small.fits hW h.2.1, Small.fits hW h.2.2.1, ?_⟩
-    have ha := Small.val_lt h.1
-    have hk : 2 ^ k.eval ρ ≤ 2 ^ W := Nat.pow_le_pow_right (by norm_num) h.2.2.2.1
-    calc a.eval ρ * 2 ^ k.eval ρ < 2 ^ W * 2 ^ W :=
-          Nat.mul_lt_mul_of_lt_of_le ha hk (by positivity)
-      _ = 2 ^ (2 * W) := by rw [← pow_add]; ring_nf
-  | shl a k, h => ⟨Small.fits hW h.1, Small.fits hW h.2.1,
-      lt_of_lt_of_le h.2.2.2 (Nat.pow_le_pow_right (by norm_num) (by omega))⟩
-  | shr a k, h => ⟨Small.fits hW h.1, Small.fits hW h.2.1⟩
-  | xorM a b k, h => ⟨Small.fits hW h.1, Small.fits hW h.2.1, Small.fits hW h.2.2.1,
-      lt_of_le_of_lt (Nat.pow_le_pow_right (by norm_num) h.2.2.2)
-        (Nat.pow_lt_pow_right (by norm_num) (by omega))⟩
-
-lemma Small.cost_le {W : ℕ} : ∀ {e : Xp}, e.Small W ρ → e.cost ρ ≤ e.size * (W + 3)
-  | var _, _ => by simp [cost, size]
-  | const _, _ => by simp [cost, size]
-  | add a b, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2.1
-    simp only [cost, size]; nlinarith
-  | lt a b, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2
-    simp only [cost, size]; nlinarith
-  | half a, h => by have := Small.cost_le (e := a) h; simp only [cost, size]; nlinarith
-  | odd a, h => by have := Small.cost_le (e := a) h; simp only [cost, size]; nlinarith
-  | mulB a b k, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2.1; have := Small.cost_le h.2.2.1
-    have := h.2.2.2.1
-    simp only [cost, size]; nlinarith
-  | shl a k, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2.1; have := h.2.2.1
-    simp only [cost, size]; nlinarith
-  | shr a k, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2.1; have := h.2.2
-    simp only [cost, size]; nlinarith
-  | xorM a b k, h => by
-    have := Small.cost_le h.1; have := Small.cost_le h.2.1; have := Small.cost_le h.2.2.1
-    have := h.2.2.2
-    simp only [cost, size]; nlinarith
 
 end Xp
 
@@ -191,107 +124,9 @@ lemma flatMap_range_ite {β : Type} (n v : ℕ) (F : ℕ → List β) :
       · subst h2; simp
       · simp [h2, show ¬ v < n + 1 by omega]
 
-lemma out_dispatch (v : Xp) (n : ℕ) (f : ℕ → Gn) :
-    (dispatch v n f).out x ρ = if v.eval ρ < n then (f (v.eval ρ)).out x ρ else [] := by
-  rw [dispatch, out_seqL, List.flatMap_map, ← flatMap_range_ite n (v.eval ρ)
-    (fun i => (f i).out x ρ)]
-  refine List.flatMap_congr fun i _ => ?_
-  simp only [out_when, Xp.eval_eq, Xp.eval]
-  split_ifs <;> simp_all
-
 /-! ### Fits and costs of derived generators -/
 
 variable {B : ℕ}
-
-lemma fits_seqL (gs : List Gn) (h : ∀ g ∈ gs, g.Fits x B ρ) : (seqL gs).Fits x B ρ := by
-  induction gs with
-  | nil => trivial
-  | cons g gs ih =>
-    exact ⟨h g (by simp), ih fun g' hg' => h g' (by simp [hg'])⟩
-
-lemma cost_seqL (gs : List Gn) :
-    (seqL gs).cost x ρ = (gs.map fun g => g.cost x ρ).sum + 1 := by
-  induction gs with
-  | nil => rfl
-  | cons g gs ih => simp only [seqL, cost, ih, List.map_cons, List.sum_cons]; ring
-
-lemma fits_when {c : Xp} {g : Gn} (hc : c.Fits B ρ) (hg : c.eval ρ ≠ 0 → g.Fits x B ρ) :
-    (when c g).Fits x B ρ := by
-  refine ⟨hc, ?_⟩
-  split_ifs with h
-  · exact hg h
-  · trivial
-
-lemma cost_when_le {c : Xp} {g : Gn} {T : ℕ} (hg : c.eval ρ ≠ 0 → g.cost x ρ ≤ T) :
-    (when c g).cost x ρ ≤ c.cost ρ + 2 + T := by
-  simp only [when, cost]
-  split_ifs with h
-  · have := hg h; omega
-  · omega
-
-lemma fits_dispatch {v : Xp} {n : ℕ} {f : ℕ → Gn} (hv : v.Fits B ρ) (hn : n < B)
-    (hf : v.eval ρ < n → (f (v.eval ρ)).Fits x B ρ) : (dispatch v n f).Fits x B ρ := by
-  have hvB := Xp.eval_lt hv
-  refine fits_seqL _ fun g hg => ?_
-  obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hg
-  rw [List.mem_range] at hi
-  refine fits_when ⟨⟨⟨hv, (by show i < B; omega)⟩, ⟨(by show i < B; omega), hv⟩, ?_⟩,
-    (by show 1 < B; omega)⟩ fun h => ?_
-  · show (if v.eval ρ < i then 1 else 0) + (if i < v.eval ρ then 1 else 0) < B
-    split_ifs <;> omega
-  · have : v.eval ρ = i := by
-      by_contra hne; simp [Xp.eval_eq, Xp.eval, hne] at h
-    subst this; exact hf hi
-
-lemma sum_range_ite (n v T : ℕ) :
-    ((List.range n).map fun i => if v = i then T else 0).sum = if v < n then T else 0 := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih]
-    by_cases h1 : v < n
-    · simp [h1, show v < n + 1 by omega, show v ≠ n by omega]
-    · by_cases h2 : v = n
-      · subst h2; simp
-      · simp [h1, h2, show ¬ v < n + 1 by omega]
-
-lemma cost_dispatch_le {v : Xp} {n : ℕ} {f : ℕ → Gn} {T : ℕ}
-    (hf : v.eval ρ < n → (f (v.eval ρ)).cost x ρ ≤ T) :
-    (dispatch v n f).cost x ρ ≤ n * (2 * v.cost ρ + 9) + T + 1 := by
-  rw [dispatch, cost_seqL, List.map_map]
-  have key : ∀ i ∈ List.range n, ((fun g : Gn => g.cost x ρ) ∘
-      (fun i => when (Xp.eq v (.const i)) (f i))) i ≤
-      (2 * v.cost ρ + 9) + (if v.eval ρ = i then T else 0) := by
-    intro i hi
-    simp only [Function.comp, when, cost, Xp.cost_eq_const, Xp.eval_eq_const]
-    by_cases h : v.eval ρ = i
-    · subst h; have := hf (List.mem_range.mp hi); simp; omega
-    · simp [h]
-  have hsum := List.sum_le_sum key
-  rw [List.sum_map_add, List.map_const', List.sum_replicate, List.length_range,
-    smul_eq_mul, sum_range_ite] at hsum
-  have : (if v.eval ρ < n then T else 0) ≤ T := by split_ifs <;> omega
-  omega
-
-lemma cost_loop_le {lim : Xp} {g : Gn} {T : ℕ}
-    (hb : ∀ k < lim.eval ρ, g.cost x (ρ ++ [lim.eval ρ, k]) ≤ T) :
-    (loop lim g).cost x ρ ≤ lim.cost ρ + 1 + lim.eval ρ * (T + 1) := by
-  simp only [cost]
-  have : ∑ k ∈ Finset.range (lim.eval ρ), (g.cost x (ρ ++ [lim.eval ρ, k]) + 1) ≤
-      ∑ k ∈ Finset.range (lim.eval ρ), (T + 1) :=
-    Finset.sum_le_sum fun k hk => by have := hb k (Finset.mem_range.mp hk); omega
-  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at this
-  omega
-
-lemma cost_loopX_le {lim : Xp} {g : Gn} {T : ℕ}
-    (hb : ∀ k < lim.eval ρ, g.cost x (ρ ++ [lim.eval ρ, k, inBit x k]) ≤ T) :
-    (loopX lim g).cost x ρ ≤ lim.cost ρ + 2 + x.length + lim.eval ρ * (T + 1) := by
-  simp only [cost]
-  have : ∑ k ∈ Finset.range (lim.eval ρ), (g.cost x (ρ ++ [lim.eval ρ, k, inBit x k]) + 1) ≤
-      ∑ k ∈ Finset.range (lim.eval ρ), (T + 1) :=
-    Finset.sum_le_sum fun k hk => by have := hb k (Finset.mem_range.mp hk); omega
-  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul] at this
-  omega
 
 end Gn
 

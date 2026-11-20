@@ -29,11 +29,6 @@ def argsReqs (locs : List ℕ) (perms : List (BlockPerm k ℓ)) (cs : List (Coor
 /-- The argument loop. -/
 def p3Args : CStm CR CQ := .seq (.set rAi (.const 0)) (.loop (.lt (rv rAi) (rv rA)) p3Arg)
 
-lemma zipIdx_getElem_zip {locs : List ℕ} {perms : List (BlockPerm k ℓ)}
-    (hl : locs.length = perms.length) {a : ℕ} (ha : a < locs.length) :
-    ((locs.zip perms).zipIdx)[a]'(by simp; omega) = ((locs[a], perms[a]'(by omega)), a) := by
-  simp [List.getElem_zipIdx]
-
 lemma argsReqs_succ (locs : List ℕ) (perms : List (BlockPerm k ℓ)) (cs : List (Coord k ℓ))
     (base : ℕ) (tern : Bool) {a : ℕ} (hl : a < locs.length) (hp : a < perms.length) :
     argsReqs locs perms cs base tern (a + 1) = argsReqs locs perms cs base tern a ++

@@ -79,16 +79,6 @@ inductive Accepts (R : RegisterProgram s ℓ) :
       Command.fork p g q r ∈ R.commands → p ≠ R.accept → p ≠ R.reject → g.Holds a →
       Accepts R q a → Accepts R r a → Accepts R p a
 
-/-- The rejecting location accepts no valuation. -/
-theorem not_accepts_reject (R : RegisterProgram s ℓ) (a : Fin s → Fin ℓ → ZMod 2) :
-    ¬ R.Accepts R.reject a := by
-  intro h
-  generalize hp : R.reject = p at h
-  induction h with
-  | accept => exact R.accept_ne_reject hp.symm
-  | assign _ _ hrej => exact hrej hp.symm
-  | fork _ _ hrej => exact hrej hp.symm
-
 end RegisterProgram
 
 end Lax119563Proofs.Programs

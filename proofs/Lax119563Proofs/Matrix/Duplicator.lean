@@ -45,11 +45,6 @@ lemma nm_injective : Function.Injective (nm (I := I)) := by
   rw [← idx_nm i, ← idx_nm j]
   simp only [idx, h]
 
-lemma matrixGraph_n (ε : ZMod 2) : (matrixGraph I ε).n = nV I := rfl
-
-lemma matrixGraph_adj (ε : ZMod 2) (i j : Fin (nV I)) :
-    (matrixGraph I ε).graph.Adj i j ↔ adjN I ε (nm i) (nm j) := Iff.rfl
-
 lemma matrixGraph_color (ε ε' : ZMod 2) (i j : Fin (nV I)) :
     (matrixGraph I ε).color i = (matrixGraph I ε').color j ↔ (nm i).1 = (nm j).1 :=
   listGraph_color_eq_iff (vertexList I) (adjN I ε) (adjN_symm I ε) (adjN_irrefl I ε) Prod.fst i j

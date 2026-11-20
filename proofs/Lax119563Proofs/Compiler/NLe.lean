@@ -51,9 +51,6 @@ lemma loopT {c} (hc : c st₁.view = true) (h₁ : NLe x w p st₁ st₂ T₁)
   obtain ⟨t₁, ht₁, h₁⟩ := h₁; obtain ⟨t₂, ht₂, h₂⟩ := h₂
   exact ⟨t₁ + t₂ + 1, by omega, .loopT hc h₁ h₂⟩
 
-lemma of_eq (h : NLe x w p st st₁ T) (hs : st₁ = st₂) (hT : T ≤ T') : NLe x w p st st₂ T' :=
-  hs ▸ h.mono hT
-
 end NLe
 
 /-! ## Bounded states -/
@@ -131,9 +128,6 @@ lemma NLe.bounded {p : NProg R Q} {st st' : NSt R Q} {T : ℕ} (h : NLe x w p st
     (hw : 2 ≤ w) (hb : st.Bdd w) : st'.Bdd w := by
   obtain ⟨t, -, h⟩ := h; exact h.bounded hw hb
 
-lemma NRuns.pos_le' {p : NProg R Q} {st st' : NSt R Q} {t : ℕ} (h : NRuns x w p st st' t)
-    (hp : st.pos ≤ x.length) : st'.pos ≤ x.length := h.pos_le hp
-
 lemma NLe.pos_le {p : NProg R Q} {st st' : NSt R Q} {T : ℕ} (h : NLe x w p st st' T)
     (hp : st.pos ≤ x.length) : st'.pos ≤ x.length := by
   obtain ⟨t, -, h⟩ := h; exact h.pos_le hp
@@ -195,7 +189,5 @@ lemma _root_.Lax119563Proofs.Reduction.HLe.toN {p : HProg R} {st : NSt R Q} {st'
   obtain ⟨t, ht, h⟩ := h; exact ⟨t, ht, h.toN st.stk⟩
 
 lemma NSt.Bdd.toH {st : NSt R Q} (h : st.Bdd w) : st.toH.Bdd w := h.1
-
-lemma NSt.view_fst (st : NSt R Q) : st.view.1 = st.toH.view := rfl
 
 end Lax119563Proofs.Compiler

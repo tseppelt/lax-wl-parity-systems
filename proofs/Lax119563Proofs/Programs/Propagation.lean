@@ -123,9 +123,6 @@ theorem conflictRound_lt_top_iff : P.conflictRound < ⊤ ↔ ∃ r, P.HasConflic
   · rintro ⟨r, hr⟩
     exact ⟨r, hr, ENat.natCast_lt_top r⟩
 
-theorem conflictRound_le {r : ℕ} (h : P.HasConflict r) : P.conflictRound ≤ r :=
-  iInf₂_le r h
-
 end ParitySystem
 
 end Lax119563Proofs.Programs

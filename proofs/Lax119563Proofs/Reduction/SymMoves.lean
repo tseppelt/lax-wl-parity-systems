@@ -180,11 +180,6 @@ lemma SKind.eval_sloc {H : ℕ} {ρ : List ℕ} (dX uX : Xp) (K : SKind M) :
     (K.sloc dX uX).eval H ρ = K.loc H (dX.eval ρ) (uX.eval ρ) := by
   cases K <;> rfl
 
-lemma SKind.bnd_sloc {n : ℕ} {dX uX : Xp} (hd : dX.Bnd n) (hu : uX.Bnd n) (K : SKind M) :
-    (K.sloc dX uX).Bnd n := by
-  cases K
-  all_goals first | trivial | exact hd | exact ⟨hd, hu⟩
-
 /-- The kinds with tag `t`. -/
 def kindsOfTag (M : Machine) : ℕ → List (SKind M)
   | 0 => [.accept]

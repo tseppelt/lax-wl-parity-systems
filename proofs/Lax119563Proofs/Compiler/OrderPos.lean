@@ -684,46 +684,4 @@ lemma schBase_add_le (e : Fin I.schemas.length) :
     rw [List.drop_eq_getElem_cons (by simp)]; simp
   rw [hd]; simp
 
-/-- Coordinate classes come after all schema names. -/
-lemma locBase_le_clsStart_coord {v : Fin I.numLocations} {c : Coord k ℓ}
-    (hc : c ∈ I.domain v) : locBase I ≤ clsStart I (Cls.coord v c) := by
-  rw [clsStart_coord I hc, locStart]; omega
-
-/-- Names of schema `e` lie below `schBase e + schSize e`. -/
-lemma clsStart_add_le_sch {e : Fin I.schemas.length} {p : ICls I × List Lab}
-    (hp : p ∈ hubsCls I e ++ nonhubsCls I e) :
-    clsStart I p.1 + p.2.length ≤ schBase I e + schSize I e := by
-  rw [clsStart_sch I (List.mem_map.mpr ⟨p, hp, rfl⟩), schSize]
-  have nd : ((hubsCls I e ++ nonhubsCls I e).map Prod.fst).Nodup := by
-    have := nodup_ordCls_fst I
-    unfold ordCls at this
-    rw [List.map_append, List.map_flatMap] at this
-    have h1 := (List.nodup_append.mp this).1
-    exact (List.nodup_flatMap.mp h1).1 e (List.mem_finRange e)
-  suffices H : ∀ P : List (ICls I × List Lab), (P.map Prod.fst).Nodup → p ∈ P →
-      startIn P p.1 + p.2.length ≤ sizeOf' P by have := H _ nd hp; omega
-  intro P
-  induction P with
-  | nil => intro _ h; simp at h
-  | cons q P ih =>
-    intro hnd hm
-    simp only [List.map_cons, List.nodup_cons] at hnd
-    rcases List.mem_cons.mp hm with rfl | hm
-    · have : startIn (p :: P) p.1 = 0 := by
-        obtain ⟨X, ls⟩ := p; exact startIn_cons_self X ls P
-      rw [this, sizeOf'_cons]; omega
-    · have hq : q.1 ≠ p.1 := fun h => hnd.1 (h ▸ List.mem_map.mpr ⟨p, hm, rfl⟩)
-      have := ih hnd.2 hm
-      have e1 : startIn (q :: P) p.1 = q.2.length + startIn P p.1 := by
-        have := startIn_append_right (P := [q]) (P' := P) (X := p.1)
-          (by simpa using Ne.symm hq)
-        simpa using this
-      rw [e1, sizeOf'_cons]; omega
-
-/-- Sorted slot positions are kept by `nbrPos`. -/
-lemma nbrPos_of_pairwise (ε : ZMod 2) (x : VName I)
-    (h : ((slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2).Pairwise (· ≤ ·)) :
-    nbrPos I ε x = (slotsOf I x.1 (eff I ε x)).filterMap fun s => posOpt I ε s.1 s.2 :=
-  List.mergeSort_of_pairwise (by simpa using h)
-
 end Lax119563Proofs.Compiler

@@ -96,11 +96,4 @@ theorem MachineComputable.exists_time {f : ℕ → ℕ} (hf : MachineComputable 
   obtain ⟨t, ht⟩ := hc k
   exact (ComputesWithin.haltTime ht).1
 
-/-- **Computable running-time bounds.** -/
-theorem MachineComputable.exists_time_bound {f : ℕ → ℕ} (hf : MachineComputable f) :
-    ∃ M : Machine, Deterministic M ∧ ∃ T : ℕ → ℕ, MachineComputable T ∧
-      ∀ k, ComputesWithin M (encodeNat k) (encodeNat (f k)) (T k) := by
-  obtain ⟨M, hM, h1, h2⟩ := MachineComputable.exists_time hf
-  exact ⟨M, hM, _, h2, h1⟩
-
 end Lax119563Proofs.Computability

@@ -201,18 +201,6 @@ theorem singleTape_simulation_succ (M₀ : SingleTape) :
   rw [runOn, TM.init_eq_toConfig]
   exact key
 
-/-- **`EXPTIME` in the multitape model.** Every language in the archive's `EXPTIME` is decided
-by a deterministic machine of the archive model within `2 ^ p(|w|) + 1` steps. -/
-theorem exptime_decidesWithin {L : Set (List Bool)} (hL : L ∈ Lax434930.ExponentialTime.EXPTIME) :
-    ∃ M : Machine, Deterministic M ∧ ∃ p : Polynomial ℕ, ∀ w : List Bool,
-      DecidesExactlyWithin M w (w ∈ L) (2 ^ p.eval w.length + 1) := by
-  obtain ⟨M₀, p, hM₀⟩ := hL
-  obtain ⟨M, hM, h⟩ := singleTape_simulation_succ M₀
-  refine ⟨M, hM, p, fun w => ?_⟩
-  obtain ⟨c, ⟨hev⟩, hc, hacc⟩ := hM₀ w
-  obtain ⟨b, hb, hbP⟩ := h w c _ hev hc
-  exact ⟨b, hb, hbP.trans hacc⟩
-
 end Lax119563Proofs.Bridges.SingleTapeSim
 
 namespace Lax119563Proofs.Bridges

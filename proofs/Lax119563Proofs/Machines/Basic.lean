@@ -120,20 +120,6 @@ def RunsWithin (M : TM k Γ) (T : Tapes k Γ) (t : ℕ) (T' : Tapes k Γ) : Prop
 
 variable {M N : TM k Γ}
 
-theorem HaltsFrom.deterministic {q : M.Q} {T T₁ T₂ : Tapes k Γ} {t₁ t₂ : ℕ}
-    (h₁ : M.HaltsFrom q T t₁ T₁) (h₂ : M.HaltsFrom q T t₂ T₂) : t₁ = t₂ ∧ T₁ = T₂ := by
-  induction h₁ generalizing t₂ with
-  | halt h => cases h₂ with
-    | halt _ => exact ⟨rfl, rfl⟩
-    | step h' _ => simp [h] at h'
-  | step h _ ih => cases h₂ with
-    | halt h' => simp [h] at h'
-    | step h' hr =>
-      rw [h] at h'
-      cases h'
-      obtain ⟨rfl, rfl⟩ := ih hr
-      exact ⟨rfl, rfl⟩
-
 theorem HaltsIn.runsWithin {T T' : Tapes k Γ} {t : ℕ} (h : M.HaltsIn T t T') :
     M.RunsWithin T t T' := ⟨t, le_rfl, h⟩
 
@@ -143,11 +129,6 @@ theorem RunsWithin.mono {T T' : Tapes k Γ} {t t' : ℕ} (h : M.RunsWithin T t T
 
 theorem RunsWithin.congr_right {T T' T'' : Tapes k Γ} {t : ℕ} (h : M.RunsWithin T t T')
     (e : T' = T'') : M.RunsWithin T t T'' := e ▸ h
-
-theorem RunsWithin.unique {T T₁ T₂ : Tapes k Γ} {t₁ t₂ : ℕ} (h₁ : M.RunsWithin T t₁ T₁)
-    (h₂ : M.RunsWithin T t₂ T₂) : T₁ = T₂ := by
-  obtain ⟨_, _, h₁⟩ := h₁; obtain ⟨_, _, h₂⟩ := h₂
-  exact (h₁.deterministic h₂).2
 
 /-- Two states with the same transition on the scanned symbols behave identically. -/
 theorem HaltsFrom.congr_state {q₁ q₂ : M.Q} {T : Tapes k Γ}
@@ -230,33 +211,9 @@ def branch {ι : Type} [Fintype ι] [DecidableEq ι] (g : (Fin k → Γ) → ι)
     | none, s => ((M (g s)).δ (M (g s)).start s).map fun p => (some ⟨g s, p.1⟩, p.2)
     | some ⟨i, q⟩, s => ((M i).δ q s).map fun p => (some ⟨i, p.1⟩, p.2)
 
-theorem branch_haltsIn {ι : Type} [Fintype ι] [DecidableEq ι] (g : (Fin k → Γ) → ι)
-    (M : ι → TM k Γ) {T T' : Tapes k Γ} {t : ℕ}
-    (h : (M (g (readAll T))).HaltsIn T t T') : (branch g M).HaltsIn T t T' := by
-  have := h.map (N := branch g M) (fun q => some ⟨g (readAll T), q⟩)
-    (fun q s q' a hq => by simp [branch, hq]) (t₂ := 0) (T₂ := T')
-    (fun q' hq => .halt (by simp [branch, hq]))
-  simp only [add_zero] at this
-  exact this.congr_state (by simp [branch])
-
-theorem branch_runsWithin {ι : Type} [Fintype ι] [DecidableEq ι] (g : (Fin k → Γ) → ι)
-    (M : ι → TM k Γ) {T T' : Tapes k Γ} {t : ℕ}
-    (h : (M (g (readAll T))).RunsWithin T t T') : (branch g M).RunsWithin T t T' := by
-  obtain ⟨s, hs, h⟩ := h; exact ⟨s, hs, branch_haltsIn g M h⟩
-
 /-- Conditional on a predicate of the scanned symbols, at no cost. -/
 def ite (c : (Fin k → Γ) → Bool) (M₁ M₂ : TM k Γ) : TM k Γ :=
   branch c fun b => bif b then M₁ else M₂
-
-theorem ite_runsWithin_true {c : (Fin k → Γ) → Bool} {M₁ M₂ : TM k Γ} {T T' : Tapes k Γ}
-    {t : ℕ} (hc : c (readAll T) = true) (h : M₁.RunsWithin T t T') :
-    (ite c M₁ M₂).RunsWithin T t T' :=
-  branch_runsWithin _ _ (by simpa [hc] using h)
-
-theorem ite_runsWithin_false {c : (Fin k → Γ) → Bool} {M₁ M₂ : TM k Γ} {T T' : Tapes k Γ}
-    {t : ℕ} (hc : c (readAll T) = false) (h : M₂.RunsWithin T t T') :
-    (ite c M₁ M₂).RunsWithin T t T' :=
-  branch_runsWithin _ _ (by simpa [hc] using h)
 
 /-- `while c do B`: test `c` on the scanned symbols; if it holds, run `B` (one extra
 transition per iteration) and repeat. -/
@@ -291,49 +248,6 @@ theorem loop_runsWithin_iter {c : (Fin k → Γ) → Bool} {B : TM k Γ} {T T₁
     (h₂ : (loop c B).RunsWithin T₁ t₂ T₂) : (loop c B).RunsWithin T (t₁ + t₂ + 1) T₂ := by
   obtain ⟨s₁, hs₁, h₁⟩ := h₁; obtain ⟨s₂, hs₂, h₂⟩ := h₂
   exact ⟨s₁ + s₂ + 1, by omega, loop_haltsIn_iter hc h₁ h₂⟩
-
-/-- A loop running through a sequence of tape families `f 0, …, f n`: the condition holds
-exactly before the `n` iterations, and iteration `i` takes `f i` to `f (i+1)` within
-`t i` transitions. -/
-theorem loop_runsWithin {c : (Fin k → Γ) → Bool} {B : TM k Γ} (n : ℕ)
-    (f : ℕ → Tapes k Γ) (t : ℕ → ℕ)
-    (hc : ∀ i < n, c (readAll (f i)) = true) (hn : c (readAll (f n)) = false)
-    (hB : ∀ i < n, B.RunsWithin (f i) (t i) (f (i + 1))) :
-    (loop c B).RunsWithin (f 0) (∑ i ∈ Finset.range n, (t i + 1)) (f n) := by
-  induction n generalizing f t with
-  | zero => simpa using loop_runsWithin_exit hn
-  | succ n ih =>
-    have := ih (fun i => f (i + 1)) (fun i => t (i + 1)) (fun i hi => hc _ (by omega)) hn
-      (fun i hi => hB _ (by omega))
-    rw [Finset.sum_range_succ']
-    have h := loop_runsWithin_iter (hc 0 (by omega)) (hB 0 (by omega)) this
-    exact h.mono (by omega)
-
-/-- A loop with a uniform time bound `t` per iteration. -/
-theorem loop_runsWithin_const {c : (Fin k → Γ) → Bool} {B : TM k Γ} (n : ℕ)
-    (f : ℕ → Tapes k Γ) (t : ℕ)
-    (hc : ∀ i < n, c (readAll (f i)) = true) (hn : c (readAll (f n)) = false)
-    (hB : ∀ i < n, B.RunsWithin (f i) t (f (i + 1))) :
-    (loop c B).RunsWithin (f 0) (n * (t + 1)) (f n) := by
-  simpa using loop_runsWithin n f (fun _ => t) hc hn hB
-
-/-- Loop rule with an invariant and a potential: every iteration preserves `Inv` and pays
-for its transitions (plus the one extra loop transition) out of the potential. -/
-theorem loop_runsWithin_inv {c : (Fin k → Γ) → Bool} {B : TM k Γ}
-    (Inv Post : Tapes k Γ → Prop) (pot : Tapes k Γ → ℕ)
-    (hexit : ∀ T, Inv T → c (readAll T) = false → Post T)
-    (hbody : ∀ T, Inv T → c (readAll T) = true →
-      ∃ t T', B.RunsWithin T t T' ∧ Inv T' ∧ pot T' + t + 1 ≤ pot T) :
-    ∀ T, Inv T → ∃ T', (loop c B).RunsWithin T (pot T) T' ∧ Post T' := by
-  intro T hT
-  induction hn : pot T using Nat.strong_induction_on generalizing T with
-  | _ n ih =>
-    cases hc : c (readAll T) with
-    | false => exact ⟨T, (loop_runsWithin_exit hc).mono (Nat.zero_le _), hexit T hT hc⟩
-    | true =>
-      obtain ⟨t, T₁, h₁, hT₁, hpot⟩ := hbody T hT hc
-      obtain ⟨T₂, h₂, hpost⟩ := ih (pot T₁) (by omega) T₁ hT₁ rfl
-      exact ⟨T₂, (loop_runsWithin_iter hc h₁ h₂).mono (by omega), hpost⟩
 
 /-! ## Running a machine on a subset of the tapes -/
 

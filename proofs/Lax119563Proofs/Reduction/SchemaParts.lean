@@ -87,10 +87,6 @@ open Lax119563Proofs.Programs
 
 variable {s : ℕ} (R : RegisterProgram s ℓ)
 
-lemma loc_slot_val (j : Fin R.commands.length) (t : Slot) :
-    (R.loc (.slot j t)).val = R.numLocations + (t.toFin.val + 8 * j.val) := by
-  simp [RegisterProgram.loc, Role.equivFin, Role.toSum, finProdFinEquiv, finSumFinEquiv]
-
 lemma loc_det_val (t : DetSlot) :
     (R.loc (.det t)).val = R.numLocations + R.commands.length * 8 + t.toFin.val := by
   simp [RegisterProgram.loc, Role.equivFin, Role.toSum, finSumFinEquiv]

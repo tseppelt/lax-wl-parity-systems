@@ -55,10 +55,6 @@ lemma RunsLeH.of_eq {p : Hierarchy.Prog K m} {x x₁ x₂ : SH K m} {T T' : ℕ}
     (h : RunsLeH p x x₁ T) (hx : x₁ = x₂) (hT : T ≤ T') : RunsLeH p x x₂ T' :=
   hx ▸ h.mono hT
 
-lemma RunsLeH.runsLe {p : Hierarchy.Prog K m} {x x' : SH K m} {T : ℕ} (h : RunsLeH p x x' T) :
-    p.RunsLe x.1 x'.1 T := by
-  obtain ⟨t, ht, h⟩ := h; exact ⟨t, ht, h.runs⟩
-
 /-- `p` never pushes or pops stack `i`. -/
 def Avoids (i : Fin K) : Hierarchy.Prog K m → Prop
   | .skip => True

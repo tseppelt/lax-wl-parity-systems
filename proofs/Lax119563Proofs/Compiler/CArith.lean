@@ -18,10 +18,6 @@ variable {R Q : ℕ} {x : List Bool} {w : ℕ}
 
 namespace CStm
 
-lemma set_set_comm (st : NSt R Q) {r r' : Fin R} (h : r ≠ r') (u v : ℕ) :
-    (st.set r u).set r' v = (st.set r' v).set r u := by
-  simp only [NSt.set, Function.update_comm h]
-
 lemma set_set_same (st : NSt R Q) (r : Fin R) (u v : ℕ) :
     (st.set r u).set r v = st.set r v := by
   simp only [NSt.set, Function.update_idem]

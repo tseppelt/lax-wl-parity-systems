@@ -584,11 +584,6 @@ theorem lt_of_mem_union (hE : I.schemas ≠ []) {w : ℕ} (hw : 4 * (H I + 1) �
   · have := le_of_mem_locRecs I hE h x hx; omega
   · have := le_of_mem_reqs I hE h x hx; omega
 
-/-- The number of records of the union. -/
-lemma length_union :
-    (union I).length = (locRecs I).length + ansBase I I.schemas.length := by
-  rw [union, List.length_append, length_reqs]
-
 /-- **Word bounds** of the answers (systems with a schema). -/
 theorem lt_of_mem_ansAll (hE : I.schemas ≠ []) {w : ℕ} (hw : 4 * (H I + 1) ≤ 2 ^ w)
     {a : List ℕ} (ha : a ∈ ansAll I) : ∀ x ∈ a, x < 2 ^ w := by

@@ -58,14 +58,6 @@ lemma Forces.weaken {c : ℕ} {S : GameState m G H} {P Q : GameState m G H → P
     (h : Forces c S P) (hPQ : ∀ S', P S' → Q S') : Forces c S Q :=
   fun r hr => h r fun S' hS' => hr S' (hPQ S' hS')
 
-/-- If every state satisfying `P` is impossible, forcing `P` is a win. -/
-lemma Forces.wins {c : ℕ} {S : GameState m G H} (h : Forces c S fun _ => False) : SWins c S := by
-  simpa using h 0 fun _ h => h.elim
-
-/-- From a state where the conclusion holds outright, nothing needs to be forced. -/
-lemma Forces.of_false {c : ℕ} {S : GameState m G H} {P : GameState m G H → Prop}
-    (h : False) : Forces c S P := h.elim
-
 /-- Spoiler lifts pebble `i` and places it on `p`; Duplicator answers with some `q`, and
 unless the result is not a partial isomorphism (a win), the game continues from there. -/
 lemma Forces.place (S : GameState m G H) (i : Fin m) (p : Fin G.n) :
@@ -75,13 +67,5 @@ lemma Forces.place (S : GameState m G H) (i : Fin m) (p : Fin G.n) :
   by_cases hpi : IsPartialIso G H (Function.update S i (some (p, f p)))
   · exact hr _ ⟨f p, rfl, hpi⟩ (hf p).2
   · exact hpi (hf p).1
-
-/-- A partial isomorphism restricted to fewer pebbles is a partial isomorphism. -/
-lemma IsPartialIso.of_subset {S S' : GameState m G H} (h : IsPartialIso G H S)
-    (hS : ∀ i x, S' i = some x → ∃ j, S j = some x) : IsPartialIso G H S' := by
-  intro i j p q p' q' hi hj
-  obtain ⟨i', hi'⟩ := hS i _ hi
-  obtain ⟨j', hj'⟩ := hS j _ hj
-  exact h i' j' p q p' q' hi' hj'
 
 end Lax119563Proofs.Matrix

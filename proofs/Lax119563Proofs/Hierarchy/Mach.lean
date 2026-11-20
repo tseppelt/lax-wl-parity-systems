@@ -71,10 +71,6 @@ inductive Ends (M : Mach k Γ Λ) : Λ → Tapes k Γ → Option Bool → Tapes 
       M.trans q T.read = .act (some q') w mv → M.Ends q' (T.apply w mv) o T' t →
         M.Ends q T o T' (t + 1)
 
-lemma Ends.pos {M : Mach k Γ Λ} {q : Λ} {T T' : Tapes k Γ} {o : Option Bool} {t : ℕ}
-    (h : M.Ends q T o T' t) : 0 < t := by
-  cases h <;> omega
-
 /-! ## Primitive machines -/
 
 /-- One action depending on the scanned symbols, then exit. -/
@@ -111,15 +107,6 @@ lemma seq_right {M₁ : Mach k Γ Λ₁} {M₂ : Mach k Γ Λ₂} {s₂ : Λ₂}
   | halt h => exact .halt (by simp [seq, h, Act.map])
   | exit h => exact .exit (by simp [seq, h, Act.map])
   | next h _ ih => exact .next (by simp [seq, h, Act.map]) ih
-
-lemma seq_left_halt {M₁ : Mach k Γ Λ₁} {M₂ : Mach k Γ Λ₂} {s₂ : Λ₂} {q : Λ₁}
-    {T T' : Tapes k Γ} {b : Bool} {t : ℕ} (h : M₁.Ends q T (some b) T' t) :
-    (seq M₁ M₂ s₂).Ends (.inl q) T (some b) T' t := by
-  generalize ho : (some b : Option Bool) = o at h
-  induction h with
-  | halt h => exact .halt (by simp [seq, h])
-  | exit h => cases ho
-  | next h _ ih => exact .next (by simp [seq, h]) (ih ho)
 
 lemma seq_left_exit {M₁ : Mach k Γ Λ₁} {M₂ : Mach k Γ Λ₂} {s₂ : Λ₂} {q : Λ₁}
     {T T₁ T₂ : Tapes k Γ} {o : Option Bool} {t₁ t₂ : ℕ} (h₁ : M₁.Ends q T none T₁ t₁)
@@ -204,15 +191,6 @@ lemma loop_body_exit {c : (Fin k → Γ) → Bool} {M : Mach k Γ Λ} {s : Λ} {
   | next h _ ih =>
     rw [Nat.add_right_comm]
     exact .next (by simp [loop, h]) (ih h₂ ho)
-
-lemma loop_body_halt {c : (Fin k → Γ) → Bool} {M : Mach k Γ Λ} {s : Λ} {q : Λ}
-    {T T' : Tapes k Γ} {b : Bool} {t : ℕ} (h : M.Ends q T (some b) T' t) :
-    (loop c M s).Ends (some q) T (some b) T' t := by
-  generalize ho : (some b : Option Bool) = o' at h
-  induction h with
-  | halt h => exact .halt (by simp [loop, h])
-  | exit h => cases ho
-  | next h _ ih => exact .next (by simp [loop, h]) (ih ho)
 
 lemma loop_true {c : (Fin k → Γ) → Bool} {M : Mach k Γ Λ} {s : Λ} {T T₁ T₂ : Tapes k Γ}
     {o : Option Bool} {t₁ t₂ : ℕ} (hc : c T.read = true) (h₁ : M.Ends s T none T₁ t₁)

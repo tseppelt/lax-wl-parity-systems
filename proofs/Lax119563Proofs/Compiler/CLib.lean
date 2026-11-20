@@ -152,8 +152,6 @@ lemma Good.bdd (hw : 2 ≤ w) {c : CStm R Q} {σ σ' : NSt R Q} {T : ℕ} (h : G
 /-- `[a ≠ 0]`-tests and register expressions. -/
 abbrev rv (r : Fin R) : Ex R := .var r
 
-lemma fits_var {env : Fin R → ℕ} {r : Fin R} : (Ex.var r).Fits w env ↔ env r < 2 ^ w := Iff.rfl
-
 end CStm
 
 end Lax119563Proofs.Compiler

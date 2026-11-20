@@ -254,12 +254,6 @@ def algStar (V : Submodule ℂ A) (h1 : (1 : A) ∈ V) (hV : StarClosed V) :
     rw [Algebra.algebraMap_eq_smul_one]; exact Submodule.smul_mem _ c (one_mem_alg V h1)
   star_mem' {a} ha := hV.alg h1 a ha
 
-theorem mem_algStar {V : Submodule ℂ A} {h1 : (1 : A) ∈ V} {hV : StarClosed V} {x : A} :
-    x ∈ algStar V h1 hV ↔ x ∈ alg V := Iff.rfl
-
-theorem algStar_toSubmodule (V : Submodule ℂ A) (h1 : (1 : A) ∈ V) (hV : StarClosed V) :
-    Subalgebra.toSubmodule (algStar V h1 hV).toSubalgebra = alg V := rfl
-
 end FinDim
 
 /-! ### Transfer of chain bounds -/
