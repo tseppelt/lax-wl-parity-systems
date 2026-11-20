@@ -16,14 +16,14 @@ section Structure
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] [FiniteDimensional ℂ E]
 
-/-- **Corner lemma** (track Structure). If `W` is `S`-simple and `2 dim W > dim E`, then `S`
+/-- **Corner lemma**. If `W` is `S`-simple and `2 dim W > dim E`, then `S`
 contains every operator with range in `W` vanishing on `Wᗮ`. -/
 theorem mem_of_corner (S : StarSubalgebra ℂ (E →ₗ[ℂ] E)) (W : Submodule ℂ E)
     (hW : IsSimpleFor S W) (h2 : finrank ℂ E < 2 * finrank ℂ W) (T : E →ₗ[ℂ] E)
     (hT : LinearMap.range T ≤ W) (hT' : Wᗮ ≤ LinearMap.ker T) : T ∈ S :=
   mem_of_corner' S W hW h2 T hT hT'
 
-/-- **Decomposition** (track Structure). `E` splits into `S`-simple subspaces, and restriction
+/-- **Decomposition**. `E` splits into `S`-simple subspaces, and restriction
 to them is an injective unital `⋆`-algebra homomorphism. -/
 theorem exists_decomposition (S : StarSubalgebra ℂ (E →ₗ[ℂ] E)) :
     ∃ (m : ℕ) (W : Fin m → Submodule ℂ E), (∀ j, IsSimpleFor S (W j)) ∧

@@ -4,7 +4,7 @@ import Mathlib
 # Stabilization bound: shared definitions
 
 Weak chains (the `A`-sequences of Döring–Neuen, without strictness), and invariant / simple
-subspaces for a `⋆`-subalgebra of `End(E)`. Shared by all tracks (see `Plan.lean`).
+subspaces for a `⋆`-subalgebra of `End(E)`.
 -/
 
 open Module

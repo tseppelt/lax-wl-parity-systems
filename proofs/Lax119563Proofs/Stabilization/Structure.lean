@@ -1,7 +1,7 @@
 import Lax119563Proofs.Stabilization.Defs
 
 /-!
-# Stabilization bound: structure of `⋆`-subalgebras of `End(E)` (track Structure)
+# Stabilization bound: structure of `⋆`-subalgebras of `End(E)`
 
 `E` is a finite dimensional complex inner product space, `S` a `⋆`-subalgebra of `End(E)`
 (star = adjoint). We show
