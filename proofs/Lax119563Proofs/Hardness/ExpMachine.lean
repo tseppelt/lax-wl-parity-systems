@@ -191,11 +191,11 @@ theorem drop_computesWithin (x : List Bool) :
     (T := update T0 0 (Tape.ofWord [bit true, bit true] X)) (pre := [bit true, bit true])
     (u := X) (rest := []) (dpre := []) (drest := []) (by simp)
     (fun a ha => by simpa using bit_ne_blank_of_mem_bitsWord ha) (by simp)
-    (by simp [update_of_ne (show (1 : Fin 2) ≠ 0 by decide), h01])
+    (by simp [h01])
   have h := seq_runsWithin (seq_runsWithin h₁ h₂) h₃
   have hc := TM.computesWithin_finish dropTM (o := 1) (by decide) (x := true :: true :: x) (y := x)
     h (pre := [bit true, bit true] ++ X) (rest := []) (opre := X) (orest := [])
-    (by simp [update_of_ne (show (0 : Fin 2) ≠ 1 by decide)])
+    (by simp)
     (fun a ha => by
       simp only [List.append_nil, List.mem_append, List.mem_cons, List.mem_nil_iff,
         or_false] at ha
@@ -251,19 +251,19 @@ lemma St_other {i : Fin (D.tapes + 4)} (h0 : i ≠ 0) (hP : i ≠ iP D) (hB : i 
 @[simp] lemma update_St_zero : update (St a b c e) 0 a' = St a' b c e := by
   funext i; by_cases h : i = 0
   · subst h; simp
-  · simp [update_of_ne h, St, h]
+  · simp [St, h]
 @[simp] lemma update_St_iP : update (St a b c e) (iP D) a' = St a a' c e := by
   funext i; by_cases h : i = iP D
   · subst h; simp
-  · simp [update_of_ne h, St, h]
+  · simp [St, h]
 @[simp] lemma update_St_iB : update (St a b c e) (iB D) a' = St a b a' e := by
   funext i; by_cases h : i = iB D
   · subst h; simp
-  · simp [update_of_ne h, St, h]
+  · simp [St, h]
 @[simp] lemma update_St_iM : update (St a b c e) (iM D) a' = St a b c a' := by
   funext i; by_cases h : i = iM D
   · subst h; simp
-  · simp [update_of_ne h, St, h]
+  · simp [St, h]
 
 end StLemmas
 
@@ -366,7 +366,7 @@ theorem redTM_runsWithin (d : ℕ) {x z : List Bool} {t : ℕ}
   -- 11. rewind tape 0
   have h11 := rewind_ofWord 0 (T := St (.ofWord Y []) (.ofWord [] U) (.ofWord Y []) e₀)
     (pre := Y) (rest := []) (by simp) hYb
-  simp only [update_St_zero, List.append_nil, List.nil_append] at h11
+  simp only [update_St_zero, List.append_nil] at h11
   -- 12. the mark
   have h12 := write_runsWithin (iM D) (mark D) (St (.ofWord [] Y) (.ofWord [] U) (.ofWord Y []) e₀)
   simp only [St_iM, he₀, Tape.act_ofWord_stay, List.tail_nil, update_St_iM] at h12
@@ -395,7 +395,7 @@ theorem redTM_runsWithin (d : ℕ) {x z : List Bool} {t : ℕ}
   refine ⟨_, h.mono ?_, by rw [← σL_zero, updateTapes_apply_self, hT'0]⟩
   have hYl : Y.length = (redInput d x).length := by simp [hY, bitsWord]
   rw [hUl] at *
-  simp only [List.length_nil, List.append_nil, List.nil_append, hYl, hXl]
+  simp only [List.length_nil, List.append_nil, hYl, hXl]
   omega
 
 end Red
