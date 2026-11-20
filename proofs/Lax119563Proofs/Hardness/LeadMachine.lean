@@ -165,7 +165,7 @@ lemma σL_ne_iP (i : Fin (D.tapes + 2)) : σL D i ≠ iP D := by
   simp [σL, iP, Fin.ext_iff]; omega
 lemma σL_ne_iB (i : Fin (D.tapes + 2)) : σL D i ≠ iB D := by
   simp [σL, iB, Fin.ext_iff]; omega
-lemma σL_zero : σL D 0 = 0 := by simp [σL, Fin.ext_iff]
+lemma σL_zero : σL D 0 = 0 := by simp [σL]
 lemma σL_mkI : σL D (mkI D) = iM D := by simp [σL, mkI, iM, Fin.ext_iff]
 lemma σL_castSucc_ne_iM (j : Fin (D.tapes + 1)) : σL D j.castSucc ≠ iM D := by
   simp [σL, iM, Fin.ext_iff]; omega
@@ -173,10 +173,10 @@ lemma σL_castSucc_ne_iM (j : Fin (D.tapes + 1)) : σL D j.castSucc ≠ iM D := 
 end Indices
 
 lemma nb_bitsWord (l : List Bool) : ∀ a ∈ (bitsWord l : List (Fin (D.symbols + 3))), nb D a = true :=
-  fun a ha => by simpa [nb] using bit_ne_blank_of_mem_bitsWord ha
+  fun _ ha => by simpa [nb] using bit_ne_blank_of_mem_bitsWord ha
 
 lemma ne_blank_bitsWord (l : List Bool) : ∀ a ∈ (bitsWord l : List (Fin (D.symbols + 3))), a ≠ blank :=
-  fun a ha => bit_ne_blank_of_mem_bitsWord ha
+  fun _ ha => bit_ne_blank_of_mem_bitsWord ha
 
 /-- **Specification of `withLead`** on structured tapes. -/
 theorem withLead_runsWithin {m : ℕ} {v z : List Bool} {t : ℕ}

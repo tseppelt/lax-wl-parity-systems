@@ -302,3 +302,8 @@ import Lax119563Proofs.Compiler.P4SchB5
 import Lax119563Proofs.Compiler.P4SchK
 import Lax119563Proofs.Compiler.P4SchSpec
 import Lax119563Proofs.Compiler.P4SchSpec2
+import Lax119563Proofs.Hardness.SimMachine
+import Lax119563Proofs.Hardness.LeadMachine
+import Lax119563Proofs.Hardness.SizeBound
+import Lax119563Proofs.Hardness.Decoding
+import Lax119563Proofs.Hardness.Pipeline

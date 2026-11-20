@@ -3,6 +3,7 @@ import Lax119563.WLProblems
 import Lax119563Proofs.Hardness.LeadMachine
 import Lax119563Proofs.Hardness.SizeBound
 import Lax119563Proofs.Game.Characterization
+import Lax119563Proofs.Hardness.Decoding
 
 /-!
 # From deterministic machine runs to WL instances
@@ -240,5 +241,27 @@ theorem pipeline : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
     rw [← hKt] at ht
     refine le_trans ?_ (ht.trans (Nat.mul_le_mul_right _ (by omega)))
     exact le_rfl
+
+/-- **The pipeline, stated with the language `WLDistinguishing`.** The produced instance has
+dimension `s + 1` as its leading number. -/
+theorem pipeline_language : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
+    ∃ R : Machine, Deterministic R ∧ ∃ C : ℕ,
+      ∀ (x : List Bool) (h s : ℕ), 2 ≤ x.length → 2 ≤ h → x.length ≤ 2 ^ h → 2 ≤ s →
+        s ≤ h + 2 →
+        ∃ G₀ G₁ : ColoredGraph,
+          ((runOn M x (2 ^ h)).answer.isSome →
+            (Accepts M x ↔ encodeWLInstance (s + 1) G₀ G₁ ∈ WLDistinguishing)) ∧
+          leadingNat (encodeWLInstance (s + 1) G₀ G₁) = s + 1 ∧
+          G₀.n + G₁.n ≤ C * (s + 1) ^ 2 * 2 ^ packedWidth x.length h s *
+            (packedWidth x.length h s + 1) * (h + 1) ^ 2 ∧
+          ComputesWithin R (encodeNats [h, s] ++ x) (encodeWLInstance (s + 1) G₀ G₁)
+            (C * (s * 2 ^ packedWidth x.length h s * (h + 1)) ^ c) := by
+  obtain ⟨c, hc⟩ := pipeline
+  refine ⟨c, fun M hM => ?_⟩
+  obtain ⟨R, hR, C, hC⟩ := hc M hM
+  refine ⟨R, hR, C, fun x h s hx hh hxh hs hsh => ?_⟩
+  obtain ⟨G₀, G₁, h1, h2, h3⟩ := hC x h s hx hh hxh hs hsh
+  exact ⟨G₀, G₁, fun hh => (h1 hh).trans (encodeWLInstance_mem_iff _ _ _).symm,
+    leadingNat_encodeWLInstance _ _ _, h2, h3⟩
 
 end Lax119563Proofs.Hardness
