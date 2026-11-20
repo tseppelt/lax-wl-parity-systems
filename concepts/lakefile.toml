@@ -27,5 +27,41 @@ git = "https://github.com/tseppelt/lax-preservation-closure"
 rev = "1ec649072b019e5780d65f0868fc99b769865a84"
 subDir = "concepts"
 
+[[require]]
+name = "Lax434930"
+git = "https://github.com/EdouardBonnet/classical-complexity"
+rev = "0c0840319318215fd7b36a9a822b81ce55cf6941"
+subDir = "concepts"
+
+[[require]]
+name = "Lax429075"
+git = "https://github.com/EdouardBonnet/cook-levin"
+rev = "905f2da2698d5b38002676f74632aa716e731389"
+subDir = "concepts"
+
+[[require]]
+name = "Lax808846"
+git = "https://github.com/lax-archive/lax-submissions"
+rev = "9394e531cc51cb67a0214bca3f9264dfe97ba5c7"
+subDir = "word-ram/concepts"
+
+[[require]]
+name = "Lax759944"
+git = "https://github.com/szymtor/RAM-TM"
+rev = "134e398cef46599371df99f10c9007bc34ba3868"
+subDir = "concepts"
+
+[[require]]
+name = "Lax888481"
+git = "https://github.com/yuvalyitz/isem-lax"
+rev = "3cdde85ce7b7eed2938def9b9be0b5434f615c0f"
+subDir = "concepts"
+
+[[require]]
+name = "Lax496464"
+git = "https://github.com/yuvalyitz/jitflowshop-lax"
+rev = "605f30b327a2385b4617a6e7123975faadca7ebd"
+subDir = "concepts"
+
 [[lean_lib]]
 name = "Lax119563"
