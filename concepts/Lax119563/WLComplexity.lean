@@ -24,11 +24,12 @@ fpt-reductions.
 * $\mathsf{EXPTIME}$ is the archive's `Lax434930.ExponentialTime.EXPTIME` (single-tape
   machines), and polynomial-time many-one reductions are `Lax429075.Reductions.ManyOne`
   (multi-stack machines in polynomial time).
-* $\mathsf{XP}$, fpt-reductions, hardness and completeness are those of
-  `Lax119563.ParameterizedComplexity`, with deterministic multitape machines.
+* $\mathsf{XP}$ and fpt-reductions are those of `Lax119563.ParameterizedComplexity`, with
+  deterministic multitape machines.
 * The language and the parameterized problem are those of `Lax119563.WLProblems`.
-* Membership and hardness are stated separately: membership is cited, hardness is proved, and
-  completeness is their conjunction.
+* Both results are stated in the same way: membership, hardness (every member of the class
+  reduces to the problem), and completeness as their conjunction. Membership is cited,
+  hardness is proved.
 -/
 
 open Lax434930.ExponentialTime Lax429075.Reductions
@@ -40,7 +41,7 @@ namespace Lax119563.WLComplexity
 axiom wl_mem_exptime : WLDistinguishing ∈ EXPTIME
 
 /-- **Membership in XP** (Immerman and Lander, cited). -/
-axiom wl_mem_xp : wlProblem ∈ XP
+axiom wl_mem_xp : paramWLProblem ∈ XP
 
 /-- **EXPTIME-hardness.** Every language in EXPTIME reduces in polynomial time to WL
 Distinguishing. -/
@@ -48,13 +49,14 @@ axiom wl_exptime_hard : ∀ L ∈ EXPTIME, ManyOne L WLDistinguishing
 
 /-- **XP-hardness.** Every problem in XP fpt-reduces to WL Distinguishing parameterized by the
 dimension. -/
-axiom wl_xp_hard : Hard XP wlProblem
+axiom wl_xp_hard : ∀ P ∈ XP, FptReduces P paramWLProblem
 
 /-- **WL Distinguishing is EXPTIME-complete.** -/
 axiom wl_exptime_complete :
     WLDistinguishing ∈ EXPTIME ∧ ∀ L ∈ EXPTIME, ManyOne L WLDistinguishing
 
 /-- **WL Distinguishing parameterized by the dimension is XP-complete.** -/
-axiom wl_xp_complete : Complete XP wlProblem
+axiom wl_xp_complete :
+    paramWLProblem ∈ XP ∧ ∀ P ∈ XP, FptReduces P paramWLProblem
 
 end Lax119563.WLComplexity
