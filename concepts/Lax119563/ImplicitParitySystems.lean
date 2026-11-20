@@ -58,7 +58,7 @@ namespace Lax119563.ImplicitParitySystems
 /-- Block coordinates `𝔽₂^ℓ`. -/
 abbrev BlockCoord (ℓ : ℕ) := Fin ℓ → ZMod 2
 
-/-- Coordinates `𝔠 = [k] × 𝔽₂^ℓ`. -/
+/-- Coordinates `ℭ = [k] × 𝔽₂^ℓ`. -/
 abbrev Coord (k ℓ : ℕ) := Fin k × BlockCoord ℓ
 
 variable {k ℓ w : ℕ}
@@ -71,7 +71,7 @@ def IsAddress (a : Fin k → BlockCoord ℓ) : Prop :=
 def supp (a : Fin k → BlockCoord ℓ) : Finset (Coord k ℓ) :=
   Finset.univ.image fun i => (i, a i)
 
-/-- A *block-induced* permutation `(i, b) ↦ (f(i), b + δ_i)` of `𝔠`, where `∑ δ_i = 0`. -/
+/-- A *block-induced* permutation `(i, b) ↦ (f(i), b + δ_i)` of `ℭ`, where `∑ δ_i = 0`. -/
 structure BlockPerm (k ℓ : ℕ) where
   /-- The permutation `f` of the blocks. -/
   perm : Equiv.Perm (Fin k)
@@ -89,14 +89,14 @@ def BlockPerm.act (π : BlockPerm k ℓ) (a : Fin k → BlockCoord ℓ) : Fin k 
 
 /-- A binary or ternary *equation schema* over the locations `{0, …, w-1}`. -/
 inductive Schema (k ℓ w : ℕ)
-  /-- The binary schema `(u, v, 𝔠_e, σ, τ)`. -/
+  /-- The binary schema `(u, v, ℭ_e, σ, τ)`. -/
   | binary (u v : Fin w) (domain : Finset (Coord k ℓ)) (σ τ : BlockPerm k ℓ)
-  /-- The ternary schema `(u, v, w, 𝔠_e, σ, τ, π)`. -/
+  /-- The ternary schema `(u, v, w, ℭ_e, σ, τ, π)`. -/
   | ternary (u v w' : Fin w) (domain : Finset (Coord k ℓ)) (σ τ π : BlockPerm k ℓ)
 
 namespace Schema
 
-/-- The coordinate domain `𝔠_e` of a schema. -/
+/-- The coordinate domain `ℭ_e` of a schema. -/
 def domain : Schema k ℓ w → Finset (Coord k ℓ)
   | binary _ _ D _ _ => D
   | ternary _ _ _ D _ _ _ => D
@@ -125,7 +125,7 @@ end Schema
 structure ImplicitParitySystem (k ℓ : ℕ) where
   /-- The number of locations; the locations are `0, …, numLocations - 1`. -/
   numLocations : ℕ
-  /-- The coordinate domain `𝔠_v` of each location. -/
+  /-- The coordinate domain `ℭ_v` of each location. -/
   domain : Fin numLocations → Finset (Coord k ℓ)
   /-- The equation schemas. -/
   schemas : List (Schema k ℓ numLocations)

@@ -56,7 +56,7 @@ axiom packed_representation : ∃ c : ℕ, ∀ M : Machine, Deterministic M →
       ∃ C : ℕ,
         (∀ (x : List Bool) (h s : ℕ), 2 ≤ x.length → 2 ≤ h → x.length ≤ 2 ^ h → 2 ≤ s →
           s ≤ h + 2 →
-            ((runOn M x (2 ^ h)).answer.isSome →
+            (HaltsWithin M x (2 ^ h) →
               ((sys x h s).conflictRound < ⊤ ↔ Accepts M x)) ∧
             (sys x h s).numLocations ≤ C * (h + 1) ^ 2 ∧
             (sys x h s).schemas.length ≤ C * (h + 1) ^ 2) ∧

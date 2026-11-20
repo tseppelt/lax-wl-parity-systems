@@ -20,8 +20,9 @@ $G$ and $H$, whether $k$-WL distinguishes $G$ and $H$. Here $k$ is part of the i
   whose code begins the input string.
 
 # Implementation notes
-* The language is a `Lax434930.PolynomialTime.Language` (a set of `List Bool`), as used by the
-  archive's class `EXPTIME` and its many-one reductions.
+* The language is a set of `List Bool`, i.e. a `Lax434930.PolynomialTime.Language`, as used
+  by the archive's class `EXPTIME` and its many-one reductions, and as in
+  `Lax119563.DeterministicTime`.
 * The parameterization must be defined on all bit strings. It reads the leading number code:
   pairs of bits `1 d` give the binary digits `d`, least significant first, until the first
   pair that does not begin with `1`. On encoded instances, this is `k`.
@@ -43,7 +44,7 @@ noncomputable def encodeWLInstance (k : ℕ) (G H : ColoredGraph) : List Bool :=
 
 /-- **WL Distinguishing** as a language: the encodings of instances `(k, G, H)` such that
 `k`-WL distinguishes `G` and `H`. -/
-def WLDistinguishing : Lax434930.PolynomialTime.Language :=
+def WLDistinguishing : Set (List Bool) :=
   {w | ∃ (k : ℕ) (G H : ColoredGraph), w = encodeWLInstance k G H ∧ Distinguishes k G H}
 
 /-- The number whose code `encodeNat` begins a bit string. -/

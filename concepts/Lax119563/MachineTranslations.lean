@@ -39,12 +39,12 @@ axiom singleTape_simulation (M₀ : SingleTape) :
       Nonempty (StateTransition.EvalsToInTime (TM0.step M₀.transition)
         (TM0.init (w.map M₀.input)) (some c) T) →
       TM0.step M₀.transition c = none →
-      DecidesWithin M w (M₀.accept c.q = true) (C * (T + w.length + 1))
+      DecidesExactlyWithin M w (M₀.accept c.q = true) (C * (T + w.length + 1))
 
 /-- **Multi-stack machines.** A function on bit strings computed by a deterministic multitape
 machine in polynomial time is computable in polynomial time by a multi-stack machine. -/
 axiom tm2_of_polyTime {f : List Bool → List Bool} (R : Machine) (hR : Deterministic R)
-    (C d : ℕ) (hf : ∀ x, ComputesWithin R x (f x) (C * x.length ^ d + C)) :
+    (C d : ℕ) (hf : ∀ x, ComputesWithin R x (f x) (C * (x.length + 1) ^ d)) :
     Nonempty (TM2ComputableInPolyTime id id f)
 
 end Lax119563.MachineTranslations

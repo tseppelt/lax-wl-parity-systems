@@ -68,7 +68,7 @@ def checkMatrix (k ℓ : ℕ) : Matrix (Fin (k - 1) ⊕ Fin ℓ) (Coord k ℓ) (
     | .inr t => c.2 t
 
 open Classical in
-/-- The number `m_e` of rows of `B_e`: rows of `B` that are nonzero on `𝔠_e`. -/
+/-- The number `m_e` of rows of `B_e`: rows of `B` that are nonzero on `ℭ_e`. -/
 noncomputable def numRows {w : ℕ} (e : Schema k ℓ w) : ℕ :=
   (Finset.univ.filter fun row => ∃ c ∈ e.domain, checkMatrix k ℓ row c ≠ 0).card
 
@@ -81,8 +81,8 @@ noncomputable def nnz {w : ℕ} (e : Schema k ℓ w) : ℕ :=
 noncomputable def Λ (I : ImplicitParitySystem k ℓ) : ℕ :=
   1 + (I.schemas.map numRows).foldr max 0
 
-/-- The size parameter `S = ∑_v |𝔠_v| + (k+1) ∑_e nnz(B_e)`. -/
-noncomputable def sizeParameter (I : ImplicitParitySystem k ℓ) : ℕ :=
+/-- The size parameter `S = ∑_v |ℭ_v| + (k+1) ∑_e nnz(B_e)`. -/
+noncomputable def matrixSize (I : ImplicitParitySystem k ℓ) : ℕ :=
   ∑ v, (I.domain v).card + (k + 1) * (I.schemas.map nnz).sum
 
 /-- **The matrix compiler.** There is a construction `compile` of graph pairs from implicit
@@ -99,13 +99,13 @@ axiom matrix_compiler :
             SpoilerWinsWithin (k + 1) (Cₖ * Λ I * (τ + 1)) (compile I).1 (compile I).2) ∧
           (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound →
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
-          (compile I).1.n + (compile I).2.n ≤ C * sizeParameter I ∧
+          (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
             3 * ((compile I).1.n + (compile I).2.n)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
-            (C * (bitLength I + sizeParameter I) *
-              Nat.log 2 (bitLength I + sizeParameter I + 2) ^ c))
+            (C * (bitLength I + matrixSize I) *
+              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c))
 
 end Lax119563.MatrixCompiler

@@ -37,7 +37,7 @@ Turing machine decides `k`-WL distinguishability of colored graph pairs with `n`
 total within `O(n^{k-1-ε})` steps. -/
 axiom runtime_lower_bound (k : ℕ) (hk : 3 ≤ k) (ε : ℝ) (hε : 0 < ε) :
     ¬ ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ, ∀ G H : ColoredGraph,
-      DecidesWithin M (encodeGraphPair G H) (Distinguishes k G H)
+      DecidesExactlyWithin M (encodeGraphPair G H) (Distinguishes k G H)
         ⌊C * ((G.n + H.n : ℕ) : ℝ) ^ ((k : ℝ) - 1 - ε) + C⌋₊
 
 end Lax119563.RuntimeLowerBound
