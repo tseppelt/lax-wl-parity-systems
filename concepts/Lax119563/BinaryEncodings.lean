@@ -4,7 +4,7 @@ import Lax119563.ColoredGraphs
 
 /-!
 ---
-title: Binary encodings of graph pairs
+title: Binary encodings of numbers and graph pairs
 type: definition
 ---
 Inputs of Turing machines are bit strings. We encode a natural number $m$ by its binary
@@ -34,10 +34,10 @@ def encodeNat (m : ℕ) : List Bool :=
 def encodeNats (l : List ℕ) : List Bool :=
   l.flatMap encodeNat
 
+open Classical in
 /-- The edges `(u, v)` with `u < v` of a colored graph, in lexicographic order. -/
-noncomputable def edgeList (G : ColoredGraph) : List (ℕ × ℕ) := by
-  classical
-  exact (List.finRange G.n).flatMap fun u =>
+noncomputable def edgeList (G : ColoredGraph) : List (ℕ × ℕ) :=
+  (List.finRange G.n).flatMap fun u =>
     ((List.finRange G.n).filter fun v => u < v ∧ G.graph.Adj u v).map fun v => ((u : ℕ), (v : ℕ))
 
 /-- The description `n, χ(0), …, χ(n-1), m, u₁, v₁, …, u_m, v_m` of a colored graph. -/

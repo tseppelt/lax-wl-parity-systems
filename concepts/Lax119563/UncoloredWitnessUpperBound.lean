@@ -18,7 +18,10 @@ vertices have the same color, and phrased in terms of homomorphism indistinguish
 # Implementation notes
 
 Homomorphism counts and homomorphism indistinguishability $G \equiv_{\mathcal F} H$ are those
-of `Lax871432`. As there, witnesses are graphs on vertex sets $\{0, \dots, m - 1\}$. The
+of `Lax871432`. As there, witnesses are graphs on vertex sets $\{0, \dots, m - 1\}$. On graphs
+all of whose vertices have the same color, these homomorphism counts and the class
+`Lax119563.TreewidthClasses.treewidthClass` agree with the colored notions of
+`Lax119563.ColoredHomomorphisms`. The
 constant hidden in $O_k$ is made explicit as in the colored statement.
 -/
 

@@ -25,9 +25,9 @@ We follow Flum and Grohe, with deterministic multitape Turing machines as the ma
 # Implementation notes
 * Machines are the deterministic machines of `Lax119563.DeterministicTime`, numbers are
   given to them in the code `encodeNat` of the binary encodings of graph pairs, and deciding
-  and computing within a number of steps are `DecidesWithin` and `ComputesWithin`.
+  and computing within a number of steps are `DecidesExactlyWithin` and `ComputesWithin`.
 * Computability is defined with the same machines, as in Flum and Grohe, rather than with
-  mathlib's `Computable`; the two notions agree by the Church–Turing thesis, which is not
+  mathlib's `Computable`; the two notions agree by a standard simulation, which is not
   needed here.
 * Being parameterized (polynomial-time computable parameter) is part of membership in
   $\mathsf{XP}$, not of the type of parameterized problems, as in the archive's
@@ -53,13 +53,13 @@ def MachineComputable (f : ℕ → ℕ) : Prop :=
 /-- The parameterization of `P` is computable in polynomial time. -/
 def IsParameterized (P : ParameterizedProblem) : Prop :=
   ∃ M : Machine, Deterministic M ∧ ∃ C d : ℕ,
-    ∀ x : List Bool, ComputesWithin M x (encodeNat (P.κ x)) (C * x.length ^ d + C)
+    ∀ x : List Bool, ComputesWithin M x (encodeNat (P.κ x)) (C * (x.length + 1) ^ d)
 
 /-- **XP**: the parameterized problems decided in time `f(κ x) · (|x| + 1)^{f(κ x)}` for a
 computable `f`. -/
 def XP : Set ParameterizedProblem :=
   {P | IsParameterized P ∧ ∃ M : Machine, Deterministic M ∧ ∃ f : ℕ → ℕ, MachineComputable f ∧
-    ∀ x : List Bool, DecidesWithin M x (x ∈ P.L) (f (P.κ x) * (x.length + 1) ^ f (P.κ x))}
+    ∀ x : List Bool, DecidesExactlyWithin M x (x ∈ P.L) (f (P.κ x) * (x.length + 1) ^ f (P.κ x))}
 
 /-- `R` is an **fpt-reduction** from `P` to `Q`. -/
 structure IsFptReduction (P Q : ParameterizedProblem) (R : List Bool → List Bool) : Prop where

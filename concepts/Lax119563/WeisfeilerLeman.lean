@@ -20,8 +20,8 @@ The *$k$-dimensional Weisfeiler–Leman algorithm* ($k$-WL) computes colorings
 $\chi^{(r)}_k[G]$ of $V(G)^k$ for $r \geq 0$, starting from
 $\chi^{(0)}_k[G](\bar p) = \operatorname{atp}_G(\bar p)$ and setting
 $$\chi^{(r+1)}_k[G](\bar p) = \Bigl(\chi^{(r)}_k[G](\bar p),\;
-\{\!\{ (\chi^{(r)}_k[G](\bar p[q/1]), \dots, \chi^{(r)}_k[G](\bar p[q/k])) : q \in V(G) \}\!\}\Bigr),$$
-where $\{\!\{\cdot\}\!\}$ denotes a multiset. Colors are defined syntactically, so colors of
+\{\{ (\chi^{(r)}_k[G](\bar p[q/1]), \dots, \chi^{(r)}_k[G](\bar p[q/k])) : q \in V(G) \}\}\Bigr),$$
+where $\{\{\cdot\}\}$ denotes a multiset. Colors are defined syntactically, so colors of
 tuples in different graphs can be compared.
 
 For colored graphs $G, H$ and $r \geq 0$, $k$-WL *distinguishes $G$ and $H$ after $r$ rounds*
@@ -30,9 +30,17 @@ $$\bigl|\{\bar p \in V(G)^k : \chi^{(r)}_k[G](\bar p) = c\}\bigr| \neq
 \bigl|\{\bar q \in V(H)^k : \chi^{(r)}_k[H](\bar q) = c\}\bigr|,$$
 and $k$-WL *distinguishes* $G$ and $H$ if it does so after some number of rounds.
 
+Each coloring $\chi^{(r+1)}_k[G]$ refines $\chi^{(r)}_k[G]$. We say that $k$-WL
+*stabilizes after $r$ rounds* on $G$ if $\chi^{(r)}_k[G]$ and $\chi^{(r+1)}_k[G]$ induce the
+same partition of $V(G)^k$.
+
 # Implementation notes
 
-The definitions are stated for every $k$; they are the $k$-WL algorithm for $k \geq 2$.
+The definitions are stated for every $k$; they are the $k$-WL algorithm for $k \geq 2$. For
+$k \in \{0, 1\}$ they are not the usual algorithms (for $k = 1$, the atomic type of a single
+vertex records no adjacency, so this is not color refinement); statements about $k$-WL assume
+$k \geq 2$ where it matters, and the problems in `Lax119563.WLProblems` include these
+degenerate dimensions only as inputs.
 -/
 
 open Lax119563.ColoredGraphs
@@ -46,10 +54,9 @@ structure AtomicType (k : ℕ) where
   adj : Fin k → Fin k → Bool
   color : Fin k → ℕ
 
+open Classical in
 /-- The atomic type `atp_G(p̄)` of a tuple of vertices. -/
-noncomputable def atp (G : ColoredGraph) {k : ℕ} (p : Fin k → Fin G.n) : AtomicType k := by
-  classical
-  exact
+noncomputable def atp (G : ColoredGraph) {k : ℕ} (p : Fin k → Fin G.n) : AtomicType k :=
     { eq := fun i j => decide (p i = p j)
       adj := fun i j => decide (G.graph.Adj (p i) (p j))
       color := fun i => G.color (p i) }
@@ -77,5 +84,10 @@ def DistinguishesAfter (k r : ℕ) (G H : ColoredGraph) : Prop :=
 /-- `k`-WL distinguishes `G` and `H`. -/
 def Distinguishes (k : ℕ) (G H : ColoredGraph) : Prop :=
   ∃ r, DistinguishesAfter k r G H
+
+/-- `k`-WL stabilizes after `r` rounds on `G`: the colorings of rounds `r` and `r + 1`
+induce the same partition of the `k`-tuples of vertices. -/
+def StabilizesAfter (k r : ℕ) (G : ColoredGraph) : Prop :=
+  ∀ p q : Fin k → Fin G.n, color G r p = color G r q ↔ color G (r + 1) p = color G (r + 1) q
 
 end Lax119563.WeisfeilerLeman

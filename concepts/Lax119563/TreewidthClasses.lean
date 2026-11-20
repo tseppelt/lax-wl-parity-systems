@@ -22,7 +22,7 @@ namespace Lax119563.TreewidthClasses
 
 /-- An isomorphism `e : F ≃g F'` carries a tree decomposition of `F` to one of `F'` with the
 same tree and the images of the bags. -/
-def mapTreeDecomposition {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W} (e : F ≃g F')
+private def mapTreeDecomposition {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W} (e : F ≃g F')
     (D : TreeDecomposition F) : TreeDecomposition F' where
   Node := D.Node
   nodeFintype := D.nodeFintype
@@ -43,7 +43,7 @@ def mapTreeDecomposition {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W} (
     rw [h]
     exact D.bag_indices_connected (e.symm v)
 
-theorem hasTreewidthAtMost_congr {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W}
+private theorem hasTreewidthAtMost_congr {V W : Type} {F : SimpleGraph V} {F' : SimpleGraph W}
     (e : F ≃g F') (w : ℕ) : HasTreewidthAtMost F w → HasTreewidthAtMost F' w := by
   rintro ⟨D, hD⟩
   exact ⟨mapTreeDecomposition e D, fun i => by

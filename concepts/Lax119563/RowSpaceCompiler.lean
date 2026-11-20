@@ -34,7 +34,9 @@ theorem about the same construction, for graphs $F$ with a tree decomposition of
 most $k$ in which adjacent bags differ in one vertex; by a theorem of Abramsky, Jakl and
 Paine, every graph of treewidth at most $k$ has such a decomposition. Here the graphs are
 asserted to exist. The constant of the size bound is absolute, while the constant of the round
-bound may depend on $k$.
+bound may depend on $k$. Unlike `Lax119563.MatrixCompiler`, which states a single construction
+`compile` because it also asserts a machine computing it, this statement only asserts that
+suitable graphs exist for each system.
 -/
 
 open Lax119563.ColoredGraphs Lax119563.PebbleGame Lax119563.ImplicitParitySystems
@@ -48,9 +50,9 @@ variable {k ℓ : ℕ}
 noncomputable def rowRank {w : ℕ} (e : Schema k ℓ w) : ℕ :=
   (Matrix.of fun row (c : e.domain) => checkMatrix k ℓ row c).rank
 
-/-- The size parameter `∑_v |𝔠_v| + (k+1) ∑_e (|𝔠_e| + 2^{rank B_e})` of the row-space
+/-- The size parameter `∑_v |ℭ_v| + (k+1) ∑_e (|ℭ_e| + 2^{rank B_e})` of the row-space
 construction. -/
-noncomputable def sizeParameter (I : ImplicitParitySystem k ℓ) : ℕ :=
+noncomputable def rowSpaceSize (I : ImplicitParitySystem k ℓ) : ℕ :=
   ∑ v, (I.domain v).card + (k + 1) * (I.schemas.map fun e => e.domain.card + 2 ^ rowRank e).sum
 
 /-- **The row-space compiler.** Every implicit parity system with `k ≥ 3` blocks compiles to a
@@ -62,7 +64,7 @@ axiom rowspace_compiler : ∃ C : ℕ, ∀ k : ℕ, 3 ≤ k → ∃ Cₖ : ℕ, 
     ∀ I : ImplicitParitySystem k ℓ, ∃ G₀ G₁ : ColoredGraph,
       (∀ τ : ℕ, I.conflictRound = τ → SpoilerWinsWithin (k + 1) (Cₖ * (τ + 1)) G₀ G₁) ∧
       (∀ r : ℕ, (r : ℕ∞) + 1 ≤ I.conflictRound → DuplicatorSurvives (k + 1) r G₀ G₁) ∧
-      G₀.n + G₁.n ≤ C * sizeParameter I ∧
+      G₀.n + G₁.n ≤ C * rowSpaceSize I ∧
       (∀ F : ColoredGraph, TreewidthAtMost F k → hom F G₀ ≠ hom F G₁ →
         HasContradictionWithin I.toParitySystem (5 * F.n + 1))
 
