@@ -23,7 +23,9 @@ that:
    $k + 1$ pebbles for $\tau - 1$ rounds, or indefinitely if $\tau = \infty$.
 3. With an absolute constant, $\widetilde N = |V(\widetilde G_0)| + |V(\widetilde G_1)| = O(S)$,
    where $S = \sum_{v \in W} |\mathfrak C_v| + (k + 1) \sum_{e \in \mathcal E}
-   \operatorname{nnz}(B_e)$, and the two graphs have at most $3 \widetilde N$ edges.
+   \operatorname{nnz}(B_e)$, and the two graphs have at most $3 \widetilde N$ edges. Their
+   binary encoding has length $O(S \log (S + 2))$; in particular, colors are written with
+   $O(\log (S + 2))$ bits.
 4. The binary encoding of the pair $(\widetilde G_0, \widetilde G_1)$ can be computed from the
    binary encoding of $\mathcal I$ by a deterministic multitape Turing machine in time
    $\widetilde O(H + S)$, where $H$ is the bit length of $\mathcal I$ and $\widetilde O$
@@ -89,7 +91,7 @@ noncomputable def matrixSize (I : ImplicitParitySystem k ℓ) : ℕ :=
 parity systems such that, for `k ≥ 3`, the bijective `(k+1)`-pebble game on the pair follows
 unit propagation: Spoiler wins in `O_k(Λ(τ+1))` rounds if a conflict occurs in round `τ`, and
 Duplicator survives `τ - 1` rounds. The graphs have `O(S)` vertices and at most three times
-as many edges as vertices. A single deterministic machine computes the encoding of the pair
+as many edges as vertices, and their encoding has length `O(S log (S + 2))`. A single deterministic machine computes the encoding of the pair
 from the encoding of the system in time `O((H + S) log^c (H + S + 2))`. -/
 axiom matrix_compiler :
     ∃ compile : ∀ {k ℓ : ℕ}, ImplicitParitySystem k ℓ → ColoredGraph × ColoredGraph,
@@ -101,7 +103,9 @@ axiom matrix_compiler :
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
           (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
-            3 * ((compile I).1.n + (compile I).2.n)) ∧
+            3 * ((compile I).1.n + (compile I).2.n) ∧
+          (encodeGraphPair (compile I).1 (compile I).2).length ≤
+            C * (matrixSize I + 1) * (Nat.log 2 (matrixSize I + 2) + 1)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
