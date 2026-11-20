@@ -53,7 +53,7 @@ theorem computesWithin_quasiLinear {g : Gn} {d R : ℕ} (hc : HasCost [] g 1 d)
   have hL1 : 1 ≤ L := Nat.le_log_of_pow_le (by norm_num) (by simpa using hx)
   have hn2 : n < 2 ^ (L + 1) := Nat.lt_pow_succ_log_self (by norm_num) n
   have h2L : 2 ^ L ≤ n := Nat.pow_log_le_self 2 (by omega)
-  obtain ⟨hF, hC⟩ := hK (L + 1) x [] hn2.le List.Forall₂.nil
+  obtain ⟨hF, hC⟩ := hK (Sc.diag (L + 1)) x [] hn2.le List.Forall₂.nil
   set w := (K + 1) * (L + 1 + 1) + 1 with hw
   have hF' : g.Fits x (2 ^ ((K + 1) * (L + 1 + 1))) [] := fits_up (by omega) hF
   have hB : 2 * 2 ^ ((K + 1) * (L + 1 + 1)) ≤ 2 ^ w := by rw [hw, pow_succ]; omega
@@ -75,7 +75,7 @@ theorem computesWithin_quasiLinear {g : Gn} {d R : ℕ} (hc : HasCost [] g 1 d)
   have h2w : 20 * (2 * w + 1) ≤ 40 * (A * L) ^ 2 := by nlinarith
   have hcost : c ≤ 2 * K * 3 ^ (d + 1) * (n * L ^ (d + 1)) := by
     refine le_trans hC ?_
-    simp only [Ty.bnd, one_mul]
+    simp only [Ty.bnd, one_mul, Sc.diag_l, Sc.diag_L]
     have e1 : 2 ^ (L + 1) ≤ 2 * n := by rw [pow_succ]; omega
     have e2 : (L + 1 + 1) ^ (d + 1) ≤ (3 * L) ^ (d + 1) := Nat.pow_le_pow_left (by omega) _
     rw [mul_pow] at e2

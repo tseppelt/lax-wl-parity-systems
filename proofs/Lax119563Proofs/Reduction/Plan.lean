@@ -46,6 +46,26 @@ graphs have `O(S)` vertices. Exponent `c = 24 + c_matrix`.
   correctness for `H + 2 ≤ s ℓ`; `packed_bounds_h` with `ℓ = max(⌈log₂(n+2)⌉, ⌈(h+2)/s⌉)`
   and `H = max(h, ℓ)`.
 
+## The packed representation (DONE)
+
+`PackedMain`: `packed_representation` (concept `PackedRepresentation`). The system is
+`Iv M x s ℓ H` with `ℓ = pkWidth |x| h s`, `H = pkHorizon |x| h s` (`Packed`); the machine is
+the composition of
+* the preprocessor `PkParse.pkPre` (a `Compiler.CStm` program): reads `h, s` from
+  `encodeNats [h, s] ++ x` and writes `pkInput x h s` (`PkFmt`): one record of `16` symbols per
+  position `k < max(|x|, h, s, 2^⌈(h+2)/s⌉)` with `x_k` at `16 k + 1` and the flags
+  `[k < |x|], [k < h], [k < s]`;
+* the machine of the packed generator `Gn.redGenP M = preludeP M (sysGenP M)`: the number of
+  blocks `s` is a runtime value (global `3`). `PkCmd`: `cmdEnumP` (the tests `miss i` of the
+  root cells by a loop `j < s` per location; the digit loops `t3, t2` merged so that the stack
+  layout above the location number is that of `cmdEnum`), `PkStk`, `PkSch` (copies of
+  `CmdStk`, `SchGen/SchOut/SchFinal`), `PkPass` (`GlobP`, `violGenP`), `PkSys` (`sysGenP`,
+  `out_sysGenP`; checksum shift bits as parities of counts), `PkPre` (`preludeP`, `out_redGenP`),
+  `PkCost`, `PkCostSys`, `PkMachine` (time `O(2^ℓ (h+3)^37)`).
+The growth classes (`CostTy`) are on two scales `Sc = (l, L)`: `P e d` means
+`≤ K 2^(e l) (L + 1)^d`, `big` means `< 2^(K (L + 1))`; the quasi-linear analysis of `Main`
+uses `Sc.diag`, the packed one `l = ℓ + log₂(h + 3) + 5`, `L = (h + 3)^2 + l`.
+
 ## The system generator
 
 On the globals (depth `14`: `|x|, log₂|x|, ℓ, H, R, N, r, Ec, p0, acc, E, W, det, 2^ℓ`),
