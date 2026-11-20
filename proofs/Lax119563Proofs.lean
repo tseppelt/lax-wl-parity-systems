@@ -304,3 +304,9 @@ import Lax119563Proofs.Compiler.P4SchSpec
 import Lax119563Proofs.Compiler.P4SchSpec2
 import Lax119563Proofs.Bridges.SingleTape
 import Lax119563Proofs.Bridges.ToTM2
+import Lax119563Proofs.Bridges.TM2Sim.Defs
+import Lax119563Proofs.Bridges.TM2Sim.Stmts
+import Lax119563Proofs.Bridges.TM2Sim.Phases
+import Lax119563Proofs.Bridges.TM2Sim.TapeRep
+import Lax119563Proofs.Bridges.TM2Sim.Sim
+import Lax119563Proofs.Bridges.TM2Sim.Correct
