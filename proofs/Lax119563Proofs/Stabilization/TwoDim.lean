@@ -208,9 +208,9 @@ theorem chainBound_end : ∀ (n : ℕ) (E : Type) [NormedAddCommGroup E] [InnerP
     · have := clog_le_self n
       unfold recW; omega
 
-/-- **Two-dimensional bound** for matrices (statement of `matrix_chainBound` in
-`Interface.lean`). -/
-theorem matrix_chainBound' (n : ℕ) : ChainBound (Matrix (Fin n) (Fin n) ℂ) (10 * n + 1) := by
+/-- **Two-dimensional bound** for matrices (Theorem 5.15 with constant 10): every weak chain
+in `M_n(ℂ)` has at most `10 n` strict steps. -/
+theorem matrix_chainBound (n : ℕ) : ChainBound (Matrix (Fin n) (Fin n) ℂ) (10 * n + 1) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · refine (chainBound_one_of_span_eq_top ?_).mono (by norm_num)
     exact Subsingleton.elim _ _

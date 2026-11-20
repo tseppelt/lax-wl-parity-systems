@@ -110,7 +110,9 @@ Ambient for the abstract part: `{A} [Ring A] [Algebra ℂ A] [StarRing A] [StarM
 
 ## Status
 
-Planned (2026-11-20).
+Merged on `proofs/stab-merge` (2026-11-20): all three tracks combined; `matrix_chainBound` now
+lives in `TwoDim`; `Main.stabilization_bound` depends only on propext, Classical.choice, Quot.sound.
+Track notes below are historical.
 
 * Track S (structure): done. `Defs.lean` holds the shared definitions; `Structure.lean` proves
   `mem_of_corner'` / `exists_decomposition'`, which `Interface.lean` re-exports (no `sorry`).
@@ -124,6 +126,14 @@ Deviation: no maximal chains, Obs 5.3 or Lemma 5.5 surgery. Instead the chain
 `V 0, …, V s, V s ^ 2, …, V s ^ 2 ^ r = alg (V s)` (`Chains.sqExt`, `r` minimal) lives in
 `S = alg (V s)` and has `r` extra strict steps, which pays for the `r` steps before
 `V (s + r + 1) ⊇ S` contains the corners. Same constants (`10 n - 2 c(n) - 9`).
+
+Track W (branch `proofs/stab-wl`): done. `Defs.lean` holds the shared definitions;
+`Colorings` (items 7), `HigherDim` (8) and `Main` (9) are sorry-free; `Main.stabilization_bound`
+(`C = 13`) depends on `sorryAx` only through `matrix_chainBound`. Deviations: the WL sequence
+is used as an infinite sequence, so Claim 6.6 holds for every non-stable round and the count is
+`r ≤ 3 |Ī over r + 2 rounds| + Σ_v |I^v| ≤ 3 n^(k-2) + 10 n^(k-1)` (no `r - 2`); shufflability
+for non-injective `σ` via a coordinate outside `range σ`; Lemma 6.2 for arbitrary members of
+`classSpace` (multiset transport from `UpperBound/Rounds`), not only class indicators.
 
 Before submission: proof network check (`stabilization_bound` becomes proven; the witness
 upper bound then rests on it), update the abstract ("stated as cited results" no longer applies

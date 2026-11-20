@@ -302,3 +302,14 @@ import Lax119563Proofs.Compiler.P4SchB5
 import Lax119563Proofs.Compiler.P4SchK
 import Lax119563Proofs.Compiler.P4SchSpec
 import Lax119563Proofs.Compiler.P4SchSpec2
+import Lax119563Proofs.Stabilization.Defs
+import Lax119563Proofs.Stabilization.Structure
+import Lax119563Proofs.Stabilization.Interface
+import Lax119563Proofs.Stabilization.Chains
+import Lax119563Proofs.Stabilization.Products
+import Lax119563Proofs.Stabilization.Corner
+import Lax119563Proofs.Stabilization.Recursion
+import Lax119563Proofs.Stabilization.TwoDim
+import Lax119563Proofs.Stabilization.Colorings
+import Lax119563Proofs.Stabilization.HigherDim
+import Lax119563Proofs.Stabilization.Main

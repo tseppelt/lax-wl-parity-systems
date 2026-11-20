@@ -2,12 +2,10 @@ import Lax119563Proofs.Stabilization.Defs
 import Lax119563Proofs.Stabilization.Structure
 
 /-!
-# Stabilization bound: shared definitions and cross-track interface
+# Stabilization bound: structure of `⋆`-subalgebras of `End(E)`
 
-The statements that one work track provides to another; the shared definitions (weak chains,
-invariant and simple subspaces) live in `Defs.lean`. The `sorry`s here are placeholders; each is
-replaced by a proof in the owning track (see `Plan.lean`). Do not change these statements without
-coordinating: other tracks build on them.
+The corner lemma and the decomposition into simple invariant subspaces, in the form used by the
+two-dimensional bound (`TwoDim.lean`). Proofs in `Structure.lean`; definitions in `Defs.lean`.
 -/
 
 open Module
@@ -34,9 +32,5 @@ theorem exists_decomposition (S : StarSubalgebra ℂ (E →ₗ[ℂ] E)) :
   exists_decomposition' S
 
 end Structure
-
-/-- **Two-dimensional bound** (track Algebra, Theorem 5.15 with constant 10). -/
-theorem matrix_chainBound (n : ℕ) : ChainBound (Matrix (Fin n) (Fin n) ℂ) (10 * n + 1) := by
-  sorry
 
 end Lax119563Proofs.Stabilization
