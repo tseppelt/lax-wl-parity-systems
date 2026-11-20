@@ -37,13 +37,8 @@ def flagCount (t d : ℕ) (g : Gn) : Gn := .count (.loopX (var 0) (flagGen t (d 
 /-- The size count body (record at `b + 17`). -/
 def szBodyP (b : ℕ) : Gn := .ite (var (b + 17)) (emitN 9) (emitN 4)
 
-/-- **The prelude of the packed generator.** -/
-def preludeP (M : Machine) (g : Gn) : Gn :=
-  len <|
-  flagCount 3 1 <|
-  flagCount 5 2 <|
-  flagCount 10 3 <|
-  bind (mul (add (var 2) (const 3)) (add (var 2) (const 3))) <|
+/-- The part of the prelude after `|y|, n, h, s, Λ`. -/
+def midP (M : Machine) (g : Gn) : Gn :=
   log (add (var 1) (const 1)) <|
   count (loop (add (var 2) (const 2)) (when (Xp.le (mul (var 3) (add (var 8) (const 1)))
     (add (add (var 2) (const 1)) (var 3))) (emit (const 0)))) <|
@@ -59,6 +54,14 @@ def preludeP (M : Machine) (g : Gn) : Gn :=
   bind (add (add (var 10) (mulC 8 (var 11))) (const 4)) <|
   bind (add (add (var 10) (mulC 8 (var 11))) (const 3)) <|
   bind (minQ (pow2 (var 7)) (var 0)) g
+
+/-- **The prelude of the packed generator.** -/
+def preludeP (M : Machine) (g : Gn) : Gn :=
+  len <|
+  flagCount 3 1 <|
+  flagCount 5 2 <|
+  flagCount 10 3 <|
+  bind (mul (add (var 2) (const 3)) (add (var 2) (const 3))) (midP M g)
 
 end Gn
 
@@ -233,7 +236,7 @@ theorem out_preludeP {x : List Bool} {h s : ℕ} (hx : 2 ≤ x.length) (hh : 2 �
     simp only [eval_mul, eval_add, eval_var, eval_const, getD_take_lt (show 2 < 4 by omega)]
     rfl)]
   -- level 5: log₂(n + 1)
-  rw [out_log_step (by omega) (by
+  rw [Gn.midP, out_log_step (by omega) (by
     simp only [eval_add, eval_var, eval_const, getD_take_lt (show 1 < 5 by omega)]
     rfl)]
   -- level 6: q
