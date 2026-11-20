@@ -1,4 +1,5 @@
 import Lax119563Proofs.Reduction.PkCostSys
+import Lax119563Proofs.Reduction.CostMachine
 
 /-!
 # The machine of the packed generator
@@ -120,7 +121,7 @@ lemma hasTy_ΛX : HasTy [P 1 0, P 1 0, P 0 1, P 0 1] ΛX (P 0 2) := by
 
 set_option maxHeartbeats 1000000 in
 /-- **Fits and cost of the packed generator.** -/
-theorem redGenP_cost (M : Machine) : ∃ K : ℕ, ∀ (x : List Bool) (h s : ℕ), 2 ≤ x.length →
+theorem redGenP_cost (M : Machine) : ∃ K : ℕ, 1 ≤ K ∧ ∀ (x : List Bool) (h s : ℕ), 2 ≤ x.length →
     2 ≤ h → x.length ≤ 2 ^ h → 2 ≤ s → s ≤ h + 2 →
     (Gn.redGenP M).Fits (pkInput x h s) (2 ^ (K * ((scP x.length h s : ℕ) + 1))) [] ∧
     (Gn.redGenP M).cost (pkInput x h s) [] ≤
@@ -130,7 +131,7 @@ theorem redGenP_cost (M : Machine) : ∃ K : ℕ, ∀ (x : List Bool) (h s : ℕ
   obtain ⟨K2, hK2⟩ := hasCost_flagLoop (τs := [P 1 0, P 1 0, P 0 0]) rfl 5 3 1
   obtain ⟨K3, hK3⟩ := hasCost_flagLoop (τs := [P 1 0, P 1 0, P 0 1, P 0 0]) rfl 10 4 1
   obtain ⟨KΛ, hKΛ⟩ := hasTy_ΛX 1
-  refine ⟨Km + K1 + K2 + K3 + KΛ + 8, fun x h s hx hh hxh hs hsh => ?_⟩
+  refine ⟨Km + K1 + K2 + K3 + KΛ + 8, by omega, fun x h s hx hh hxh hs hsh => ?_⟩
   obtain ⟨hPar, hH⟩ := pk_params hx hh hxh hs
   set σ := scP x.length h s with hσ
   set y := pkInput x h s with hy
@@ -224,5 +225,181 @@ theorem redGenP_cost (M : Machine) : ∃ K : ℕ, ∀ (x : List Bool) (h s : ℕ
     rw [eK]
     simp only [List.cons_append, List.nil_append, Nat.reduceAdd]
     omega
+
+/-! ## The output is longer than the input -/
+
+lemma length_le_encodeNatsP (l : List ℕ) : l.length ≤ (encodeNats l).length := by
+  induction l with
+  | nil => simp [encodeNats]
+  | cons a l ih =>
+    simp only [encodeNats, List.flatMap_cons, List.length_append, List.length_cons] at ih ⊢
+    have : 1 ≤ (encodeNat a).length := by simp [encodeNat]
+    omega
+
+lemma two_pow_le_locBlock (s ℓ : ℕ) :
+    2 ^ ℓ ≤ ((List.range (s + 1)).flatMap fun i =>
+      (List.range (2 ^ ℓ)).flatMap fun w => i :: bitsL ℓ w).length := by
+  rw [List.range_succ_eq_map, List.flatMap_cons, List.length_append]
+  have : 2 ^ ℓ ≤ ((List.range (2 ^ ℓ)).flatMap fun w => 0 :: bitsL ℓ w).length := by
+    rw [List.length_flatMap]
+    have h : ∀ w ∈ List.range (2 ^ ℓ), 1 ≤ (0 :: bitsL ℓ w).length := fun w _ => by simp
+    calc 2 ^ ℓ = ((List.range (2 ^ ℓ)).map fun _ => 1).sum := by simp
+      _ ≤ _ := List.sum_le_sum h
+  omega
+
+lemma numLoc_ge (R C H : ℕ) (hR : H + 1 ≤ R) (hC : 1 ≤ C) :
+    16 * ((H + 1) * (H + 1)) ≤ 16 * (R * (C * (C * (R * C)))) := by
+  have h1 : (H + 1) * (H + 1) ≤ R * R := Nat.mul_le_mul hR hR
+  have h2 : 1 ≤ C * C * C := Nat.one_le_iff_ne_zero.mpr
+    (Nat.mul_ne_zero (Nat.mul_ne_zero (by omega) (by omega)) (by omega))
+  have h3 : R * R ≤ R * R * (C * C * C) := Nat.le_mul_of_pos_right _ h2
+  have e : R * (C * (C * (R * C))) = R * R * (C * C * C) := by ring
+  rw [e]; omega
+
+lemma len_le_descP {x : List Bool} {h s : ℕ} (hx : 2 ≤ x.length) (hh : 2 ≤ h)
+    (hxh : x.length ≤ 2 ^ h) (hs : 2 ≤ s) (hsh : s ≤ h + 2) :
+    16 * pkLen x.length h s ≤
+      (systemDescription (Iv M x s (pkWidth x.length h s) (pkHorizon x.length h s))).length := by
+  obtain ⟨hPar, hH⟩ := pk_params hx hh hxh hs
+  set ℓ := pkWidth x.length h s with hℓ
+  set H := pkHorizon x.length h s with hHd
+  have hhH : h ≤ H := le_max_left _ _
+  have hW : numLoc M H ≤ (Iv M x s ℓ H).numLocations := by rw [Iv_numLocations]; omega
+  have hR : H + 1 ≤ radix M H := by unfold radix; omega
+  have hC : 1 ≤ cM M := by unfold cM; omega
+  have hN : 16 * ((H + 1) * (H + 1)) ≤ numLoc M H := by
+    unfold numLoc; exact numLoc_ge _ _ _ hR hC
+  have hloc : (Iv M x s ℓ H).numLocations * 2 ^ ℓ ≤
+      ((List.finRange (Iv M x s ℓ H).numLocations).flatMap
+        (fun v => initNum ((Iv M x s ℓ H).init v) ::
+          domainDescription ((Iv M x s ℓ H).domain v))).length := by
+    rw [locsDesc_IvP, List.length_flatMap]
+    have h : ∀ v ∈ List.range (Iv M x s ℓ H).numLocations, 2 ^ ℓ ≤
+        (((if v = (Loc.code (Loc.accept : Loc M H)).val then 1 else 0) +
+          2 * (if v = numLoc M H + 8 * (verifierCmds' M x s ℓ H).length + 3 then 1 else 0)) ::
+          ((s + 1) * 2 ^ ℓ) :: (List.range (s + 1)).flatMap fun i =>
+            (List.range (2 ^ ℓ)).flatMap fun w => i :: bitsL ℓ w).length := fun v _ => by
+      have := two_pow_le_locBlock s ℓ
+      simp only [List.length_cons]; omega
+    calc (Iv M x s ℓ H).numLocations * 2 ^ ℓ =
+          ((List.range (Iv M x s ℓ H).numLocations).map fun _ => 2 ^ ℓ).sum := by simp
+      _ ≤ _ := List.sum_le_sum h
+  have hpk : pkLen x.length h s ≤ (H + 1) * (H + 1) * 2 ^ ℓ := by
+    have h1 := pkLen_le hPar.hx hsh
+    have h2 : 1 ≤ 2 ^ ℓ := Nat.one_le_two_pow
+    have h3 : h + 3 ≤ (H + 1) * (H + 1) := by nlinarith
+    calc pkLen x.length h s ≤ 2 ^ ℓ + h + 2 := h1
+      _ ≤ (h + 3) * 2 ^ ℓ := by nlinarith
+      _ ≤ (H + 1) * (H + 1) * 2 ^ ℓ := Nat.mul_le_mul_right _ h3
+  have hdesc : ((List.finRange (Iv M x s ℓ H).numLocations).flatMap
+        (fun v => initNum ((Iv M x s ℓ H).init v) ::
+          domainDescription ((Iv M x s ℓ H).domain v))).length ≤
+      (systemDescription (Iv M x s ℓ H)).length := by
+    unfold systemDescription
+    simp only [List.length_append, List.length_cons]
+    omega
+  have hW2 : 16 * ((H + 1) * (H + 1)) * 2 ^ ℓ ≤ (Iv M x s ℓ H).numLocations * 2 ^ ℓ :=
+    Nat.mul_le_mul_right _ (le_trans hN hW)
+  calc 16 * pkLen x.length h s ≤ 16 * ((H + 1) * (H + 1) * 2 ^ ℓ) := Nat.mul_le_mul_left _ hpk
+    _ = 16 * ((H + 1) * (H + 1)) * 2 ^ ℓ := by ring
+    _ ≤ _ := le_trans hW2 (le_trans hloc hdesc)
+
+/-! ## The machine -/
+
+lemma scP_L_le {n h s : ℕ} (hℓ : pkWidth n h s ≤ h + 1) :
+    (scP n h s : ℕ) + 1 ≤ 3 * (h + 3) ^ 2 := by
+  have h1 : Nat.log 2 (h + 3) ≤ h + 3 := Nat.log_le_self 2 _
+  show (h + 3) ^ 2 + pkWidth n h s + (Nat.log 2 (h + 3) + 5) + 1 ≤ 3 * (h + 3) ^ 2
+  nlinarith
+
+lemma two_pow_scP_le {n h s : ℕ} :
+    2 ^ (scP n h s).l ≤ 32 * (h + 3) * 2 ^ pkWidth n h s := by
+  rw [two_pow_scP]
+  have : 2 ^ Nat.log 2 (h + 3) ≤ h + 3 := Nat.pow_log_le_self 2 (by omega)
+  calc 2 ^ pkWidth n h s * (32 * 2 ^ Nat.log 2 (h + 3)) ≤ 2 ^ pkWidth n h s * (32 * (h + 3)) :=
+        Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ this)
+    _ = _ := by ring
+
+lemma κ_boundP (w : ℕ) : κ w + 20 * (2 * w + 1) ≤ 2088 * (w + 3) ^ 2 := by
+  simp only [κ, Ex.nodeCost, unitCost]; nlinarith
+
+lemma w3_boundP {K L A w : ℕ} (hL : L + 1 ≤ 3 * A ^ 2) (hw : w = K * (L + 1) + 1)
+    (hA : 1 ≤ A) : w + 3 ≤ 3 * (K + 2) * A ^ 2 := by
+  have h1 : K * (L + 1) ≤ K * (3 * A ^ 2) := Nat.mul_le_mul_left _ hL
+  have h2 : 1 ≤ A ^ 2 := Nat.one_le_pow _ _ hA
+  have e : 3 * (K + 2) * A ^ 2 = K * (3 * A ^ 2) + 6 * A ^ 2 := by ring
+  rw [hw, e]; omega
+
+lemma cost_boundP {K c A Q X L : ℕ} (hc : c ≤ K * X * (L + 1) ^ 16)
+    (hX : X ≤ 32 * A * Q) (hL : L + 1 ≤ 3 * A ^ 2) : c ≤ K * 32 * 3 ^ 16 * Q * A ^ 33 := by
+  calc c ≤ K * X * (L + 1) ^ 16 := hc
+    _ ≤ K * (32 * A * Q) * (3 * A ^ 2) ^ 16 :=
+        Nat.mul_le_mul (Nat.mul_le_mul_left _ hX) (Nat.pow_le_pow_left hL 16)
+    _ = _ := by ring
+
+/-- The arithmetic of the time bound. -/
+lemma time_arithP {K c w T A Q X L : ℕ} (hc : c ≤ K * X * (L + 1) ^ 16)
+    (hX : X ≤ 32 * A * Q) (hL : L + 1 ≤ 3 * A ^ 2) (hw : w = K * (L + 1) + 1) (hA : 1 ≤ A)
+    (hQ : 1 ≤ Q) (hT : T ≤ (κ w + 20 * (2 * w + 1)) * c + 4) :
+    T ≤ (2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) + 4) * Q * A ^ 37 := by
+  have hw3 := w3_boundP hL hw hA
+  have h1 : κ w + 20 * (2 * w + 1) ≤ 2088 * (3 * (K + 2)) ^ 2 * A ^ 4 := by
+    calc _ ≤ 2088 * (w + 3) ^ 2 := κ_boundP w
+      _ ≤ 2088 * (3 * (K + 2) * A ^ 2) ^ 2 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hw3 2)
+      _ = _ := by ring
+  have h2 := cost_boundP hc hX hL
+  have h4 := Nat.mul_le_mul h1 h2
+  have e : 2088 * (3 * (K + 2)) ^ 2 * A ^ 4 * (K * 32 * 3 ^ 16 * Q * A ^ 33) =
+      2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) * (Q * A ^ 37) := by ring
+  rw [e] at h4
+  have e2 : (2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) + 4) * Q * A ^ 37 =
+      2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) * (Q * A ^ 37) + 4 * (Q * A ^ 37) := by ring
+  rw [e2]
+  have h5 : 1 ≤ Q * A ^ 37 := Nat.one_le_iff_ne_zero.mpr
+    (Nat.mul_ne_zero (by omega) (by positivity))
+  generalize 2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) * (Q * A ^ 37) = Z at h4 ⊢
+  generalize (κ w + 20 * (2 * w + 1)) * c = Y at hT h4
+  omega
+
+/-- **The machine of the packed generator.** -/
+theorem redGenP_computesWithin (M : Machine) : ∃ C : ℕ, ∀ (x : List Bool) (h s : ℕ),
+    2 ≤ x.length → 2 ≤ h → x.length ≤ 2 ^ h → 2 ≤ s → s ≤ h + 2 →
+    ComputesWithin (Gn.machine (Gn.redGenP M).need (Gn.redGenP M)) (pkInput x h s)
+      (encodeSystem (Iv M x s (pkWidth x.length h s) (pkHorizon x.length h s)))
+      (C * 2 ^ pkWidth x.length h s * (h + 3) ^ 37) := by
+  obtain ⟨K, hK1, hK⟩ := redGenP_cost M
+  refine ⟨2088 * (3 * (K + 2)) ^ 2 * (K * 32 * 3 ^ 16) + 4, fun x h s hx hh hxh hs hsh => ?_⟩
+  obtain ⟨hPar, hH⟩ := pk_params hx hh hxh hs
+  obtain ⟨hF, hC⟩ := hK x h s hx hh hxh hs hsh
+  set σ := scP x.length h s with hσ
+  set y := pkInput x h s with hy
+  set w := K * ((σ : ℕ) + 1) + 1 with hw
+  have hout := out_redGenP (M := M) hx hh hxh hs hsh
+  have hB : 2 * 2 ^ (K * ((σ : ℕ) + 1)) ≤ 2 ^ w := by rw [hw, pow_succ]; omega
+  have hw2 : 2 ≤ w := by
+    have : 1 ≤ K * ((σ : ℕ) + 1) := Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero (by omega)
+      (by omega))
+    omega
+  have hlen : y.length ≤ (encodeNats ((Gn.redGenP M).out y [])).length := by
+    rw [hout, length_pkInput]
+    exact le_trans (len_le_descP hx hh hxh hs hsh) (length_le_encodeNatsP _)
+  have H := Gn.computesWithin hw2 hB le_rfl (Gn.wfx_redGenP M) hF hlen
+  rw [hout] at H
+  refine ComputesWithin.mono H ?_
+  have henc : (encodeNats (systemDescription (Iv M x s (pkWidth x.length h s)
+      (pkHorizon x.length h s)))).length ≤ (Gn.redGenP M).cost y [] * (2 * w + 1) := by
+    rw [← hout]
+    refine le_trans (length_encodeNats_le (w := w) fun v hv => ?_)
+      (Nat.mul_le_mul_right _ (length_out_le_cost _ []))
+    have hle : 2 ^ (K * ((σ : ℕ) + 1)) ≤ 2 ^ w := Nat.pow_le_pow_right (by norm_num) (by omega)
+    exact lt_of_lt_of_le (lt_of_mem_out _ hF v hv) hle
+  rw [← hout] at henc ⊢
+  refine time_arithP (c := (Gn.redGenP M).cost y []) (X := 2 ^ σ.l) (L := (σ : ℕ)) hC
+    two_pow_scP_le (scP_L_le (le_trans hPar.hℓH hH)) hw (by omega) Nat.one_le_two_pow ?_
+  have := Nat.mul_le_mul_left 20 henc
+  have e : (κ w + 20 * (2 * w + 1)) * (Gn.redGenP M).cost y [] =
+      κ w * (Gn.redGenP M).cost y [] + 20 * ((Gn.redGenP M).cost y [] * (2 * w + 1)) := by ring
+  rw [e]
+  omega
 
 end Lax119563Proofs.Reduction
