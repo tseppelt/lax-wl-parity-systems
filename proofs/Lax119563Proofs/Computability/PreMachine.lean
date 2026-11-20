@@ -88,4 +88,54 @@ lemma emitBits_good (hw : 2 ≤ w) {t : Fin R} (st : NSt R Q) (hpos : st.pos = 0
   · rw [hex]; exact (hSj _ le_rfl).2.2.2.1
   · rw [hex]; exact (hSj _ le_rfl).2.2.2.2
 
+/-! ## Arithmetic of the time bound -/
+
+lemma pre_arith {Kκ Kf N U X P g a sκ kk sf L A B : ℕ} (hX : 1 ≤ X) (hP : 1 ≤ P) (hg : 1 ≤ g)
+    (hU : U ≤ N) (hN1 : 1 ≤ N) (hN : N ≤ 64 * g ^ 2 * P ^ 2)
+    (h1 : a + sκ + 1 ≤ 3 * g * P * X) (h2 : kk + sf + 1 ≤ 2 * g) (h3 : a + 1 ≤ X)
+    (h4 : L ≤ 2 * g + 3 * X)
+    (hA : A ≤ Kκ * (a + sκ + 1) * N) (hB : B ≤ Kf * (kk + sf + 1) * N) :
+    A + B + 9 * N + 2 * (N + U) + U * (a + 1) + (a + 1) * (8 * N) + U + 20 * (a + L) + 10 ≤
+      64 * (3 * Kκ + 2 * Kf + 173) * g ^ 3 * (P ^ 3 * X) := by
+  have hPX : 1 ≤ P * X := Nat.one_le_iff_ne_zero.mpr (by positivity)
+  set Z := g * P * X * N with hZ
+  have eA : A ≤ 3 * Kκ * Z := by
+    calc A ≤ Kκ * (a + sκ + 1) * N := hA
+      _ ≤ Kκ * (3 * g * P * X) * N := Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ h1)
+      _ = 3 * Kκ * Z := by rw [hZ]; ring
+  have eB : B ≤ 2 * Kf * Z := by
+    calc B ≤ Kf * (kk + sf + 1) * N := hB
+      _ ≤ Kf * (2 * g) * N := Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ h2)
+      _ ≤ Kf * (2 * g * (P * X)) * N :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right _ hPX))
+      _ = 2 * Kf * Z := by rw [hZ]; ring
+  have eX : X * N ≤ Z := by
+    rw [hZ]
+    calc X * N = 1 * 1 * X * N := by ring
+      _ ≤ g * P * X * N :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul hg hP))
+  have eC : 9 * N + 2 * (N + U) + U * (a + 1) + (a + 1) * (8 * N) + U ≤ 23 * Z := by
+    have c1 : U * (a + 1) ≤ X * N := by rw [mul_comm X]; exact Nat.mul_le_mul hU h3
+    have c2 : (a + 1) * (8 * N) ≤ 8 * (X * N) := by
+      rw [show (a + 1) * (8 * N) = 8 * ((a + 1) * N) by ring]
+      exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ h3)
+    have c3 : N ≤ X * N := Nat.le_mul_of_pos_left _ (by omega)
+    omega
+  have eD : 20 * (a + L) + 10 ≤ 150 * Z := by
+    have c4 : X ≤ g * X := Nat.le_mul_of_pos_left _ (by omega)
+    have c5 : g ≤ g * X := Nat.le_mul_of_pos_right _ (by omega)
+    have c7 : g * X ≤ Z := by
+      rw [hZ]
+      calc g * X = g * 1 * X * 1 := by ring
+        _ ≤ g * P * X * N :=
+            Nat.mul_le_mul (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hP)) hN1
+    omega
+  have hZ' : Z ≤ g * P * X * (64 * g ^ 2 * P ^ 2) := by
+    rw [hZ]; exact Nat.mul_le_mul_left _ hN
+  have e : (3 * Kκ + 2 * Kf + 173) * Z = 3 * Kκ * Z + 2 * Kf * Z + 173 * Z := by ring
+  calc _ ≤ (3 * Kκ + 2 * Kf + 173) * Z := by omega
+    _ ≤ (3 * Kκ + 2 * Kf + 173) * (g * P * X * (64 * g ^ 2 * P ^ 2)) :=
+        Nat.mul_le_mul_left _ hZ'
+    _ = 64 * (3 * Kκ + 2 * Kf + 173) * g ^ 3 * (P ^ 3 * X) := by ring
+
 end Lax119563Proofs.Computability
