@@ -3,6 +3,7 @@ import Lax119563.ColoredGraphs
 import Lax119563.ColoredHomomorphisms
 import Lax119563.ContradictionTrees
 import Lax119563.DeterministicTime
+import Lax119563.EXPTIMEHardness
 import Lax119563.ExponentialLowerBound
 import Lax119563.ExponentialTimeHierarchy
 import Lax119563.GameCharacterization
@@ -23,8 +24,8 @@ import Lax119563.TimeHierarchy
 import Lax119563.TimeReduction
 import Lax119563.TreewidthClasses
 import Lax119563.UncoloredWitnessUpperBound
-import Lax119563.WLComplexity
 import Lax119563.WLProblems
+import Lax119563.XPHardness
 import Lax119563.WeisfeilerLeman
 import Lax119563.WitnessFromRounds
 import Lax119563.WitnessLowerBound

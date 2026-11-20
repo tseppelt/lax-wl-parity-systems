@@ -1,10 +1,10 @@
-import Lax119563.WLComplexity
+import Lax119563.EXPTIMEHardness
 import Lax119563.MachineTranslations
 import Lax119563Proofs.Hardness.Pipeline
 import Lax119563Proofs.Hardness.ExpMachine
 
 /-!
-# WL Distinguishing is EXPTIME-hard and EXPTIME-complete
+# WL Distinguishing is EXPTIME-hard
 
 Let `L ∈ EXPTIME`. By the single-tape simulation (`singleTape_simulation`, cited) a
 deterministic machine `M` decides `x ∈ L` within `C (2^{p(n)} + n + 1)` steps. Composed with
@@ -180,7 +180,7 @@ lemma padded_decides {L : Set (List Bool)} {M : Machine} {C : ℕ} {p : Polynomi
 
 /--
 ---
-conclusion: Lax119563.WLComplexity.wl_exptime_hard
+conclusion: Lax119563.EXPTIMEHardness.wl_exptime_hard
 ---
 For `L ∈ EXPTIME`, a deterministic decider (from `singleTape_simulation`) is run on padded
 inputs `true :: true :: x` (`padded_decides`); the machine `redTM R d` writes
@@ -269,16 +269,5 @@ theorem wl_exptime_hard : ∀ L ∈ EXPTIME, ManyOne L WLDistinguishing := by
   have := succ_pow_le x.length E
   calc K * (x.length + 1) ^ E ≤ K * (2 ^ E * x.length ^ E + 2 ^ E) := Nat.mul_le_mul_left _ this
     _ = K * 2 ^ E * x.length ^ E + K * 2 ^ E := by ring
-
-/--
----
-conclusion: Lax119563.WLComplexity.wl_exptime_complete
----
-Membership is the cited `wl_mem_exptime` (Immerman and Lander); hardness is
-`wl_exptime_hard`.
--/
-theorem wl_exptime_complete :
-    WLDistinguishing ∈ EXPTIME ∧ ∀ L ∈ EXPTIME, ManyOne L WLDistinguishing :=
-  ⟨Lax119563.WLComplexity.wl_mem_exptime, Lax119563.WLComplexity.wl_exptime_hard⟩
 
 end Lax119563Proofs.Hardness

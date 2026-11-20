@@ -1,4 +1,4 @@
-import Lax119563.WLComplexity
+import Lax119563.XPHardness
 import Lax119563Proofs.Hardness.Pipeline
 import Lax119563Proofs.Hardness.SuffixMachine
 import Lax119563Proofs.Hardness.XpProgram
@@ -6,7 +6,7 @@ import Lax119563Proofs.Hardness.XpMachine
 import Lax119563Proofs.Computability.Closure
 
 /-!
-# WL Distinguishing is XP-hard and XP-complete
+# WL Distinguishing is XP-hard
 
 Let `P ∈ XP` with a decider `M` running in time `f(k) (n + 1)^{f(k)}` (`k = κ x`,
 `n = |x|`), and let `F k = 2 f(k) + 4`. On input `x`, the reduction works on the padded
@@ -172,7 +172,7 @@ lemma xp_padded_decides {P : ParameterizedProblem} {M : Machine} {f : ℕ → �
 
 /--
 ---
-conclusion: Lax119563.WLComplexity.wl_xp_hard
+conclusion: Lax119563.XPHardness.wl_xp_hard
 ---
 For `P ∈ XP` with decider `M` in time `f(k) (n + 1)^{f(k)}`, let `F k = 2 f(k) + 4`. The
 reduction machine `padTM Q` writes the padded input `y = true :: true :: x` and runs `Q`, the
@@ -296,15 +296,5 @@ theorem wl_xp_hard : ∀ P ∈ XP, FptReduces P paramWLProblem := by
     MachineComputable.mul_const (MachineComputable.pow_const hHc _) Kt, E1 + 2 * c + 1, h3⟩,
     ⟨fun k => 2 * f k + 6, MachineComputable.add_const (MachineComputable.mul_const hf 2) 6,
       fun x => (h2 x).le⟩⟩
-
-/--
----
-conclusion: Lax119563.WLComplexity.wl_xp_complete
----
-Membership is the cited `wl_mem_xp` (Immerman and Lander); hardness is `wl_xp_hard`.
--/
-theorem wl_xp_complete :
-    paramWLProblem ∈ XP ∧ ∀ P ∈ XP, FptReduces P paramWLProblem :=
-  ⟨Lax119563.WLComplexity.wl_mem_xp, Lax119563.WLComplexity.wl_xp_hard⟩
 
 end Lax119563Proofs.Hardness
