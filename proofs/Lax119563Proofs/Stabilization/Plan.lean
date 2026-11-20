@@ -112,6 +112,14 @@ Ambient for the abstract part: `{A} [Ring A] [Algebra ℂ A] [StarRing A] [StarM
 
 Planned (2026-11-20); nothing implemented yet.
 
+Track W (branch `proofs/stab-wl`): done. `Defs.lean` holds the shared definitions;
+`Colorings` (items 7), `HigherDim` (8) and `Main` (9) are sorry-free; `Main.stabilization_bound`
+(`C = 13`) depends on `sorryAx` only through `matrix_chainBound`. Deviations: the WL sequence
+is used as an infinite sequence, so Claim 6.6 holds for every non-stable round and the count is
+`r ≤ 3 |Ī over r + 2 rounds| + Σ_v |I^v| ≤ 3 n^(k-2) + 10 n^(k-1)` (no `r - 2`); shufflability
+for non-injective `σ` via a coordinate outside `range σ`; Lemma 6.2 for arbitrary members of
+`classSpace` (multiset transport from `UpperBound/Rounds`), not only class indicators.
+
 Before submission: proof network check (`stabilization_bound` becomes proven; the witness
 upper bound then rests on it), update the abstract ("stated as cited results" no longer applies
 to the stabilization bound), remove this file.
