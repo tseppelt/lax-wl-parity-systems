@@ -111,6 +111,8 @@ Ambient for the abstract part: `{A} [Ring A] [Algebra ℂ A] [StarRing A] [StarM
 ## Status
 
 Planned (2026-11-20); nothing implemented yet.
+* Track S (structure): done. `Defs.lean` holds the shared definitions; `Structure.lean` proves
+  `mem_of_corner'` / `exists_decomposition'`, which `Interface.lean` re-exports (no `sorry`).
 
 Before submission: proof network check (`stabilization_bound` becomes proven; the witness
 upper bound then rests on it), update the abstract ("stated as cited results" no longer applies
