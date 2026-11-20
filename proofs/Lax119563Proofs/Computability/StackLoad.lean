@@ -138,7 +138,8 @@ lemma readIn_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (hpos : 
     Good x w (readIn q t) st (exec x (readIn q t) st) ((x.length + 1) * (8 * Ex.nodeCost w)) ∧
       (exec x (readIn q t) st).stk q = (syms x).reverse ++ st.stk q ∧
       (exec x (readIn q t) st).env t = 0 ∧
-      ∀ r, r ≠ t → (exec x (readIn q t) st).env r = st.env r := by
+      (∀ r, r ≠ t → (exec x (readIn q t) st).env r = st.env r) ∧
+      (exec x (readIn q t) st).pos = x.length := by
   have hU := Ex.unitCost_le_nodeCost w
   have hU' := unitCost_ge w
   have h4 : (4 : ℕ) ≤ 2 ^ w := by
@@ -182,11 +183,12 @@ lemma readIn_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (hpos : 
       simp only [Ex.Fits, (hSj j hj.le).1]; have := hinb j; omega)
   have g : Good x w (readIn q t) st (S x.length) _ := (Good.rd t).seq hloop
   have hex : exec x (readIn q t) st = S x.length := g.2.1
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [hex]; refine g.mono ?_; simp only [condCost, Ex.size]; nlinarith
   · rw [hex, (hSj _ le_rfl).2.2.1, List.take_length]
   · rw [hex, (hSj _ le_rfl).1, inBit_eq, dif_neg (lt_irrefl _)]
   · rw [hex]; exact (hSj _ le_rfl).2.2.2
+  · rw [hex, (hSj _ le_rfl).2.1]; omega
 
 /-! ## Clearing a stack -/
 

@@ -122,6 +122,21 @@ lemma wPos_chain (l : List (Key M)) (h : ∀ p, wPos (leaf M ρ κ p : CStm R Q)
   | nil => rfl
   | cons p l ih => rw [chain_cons]; simp [wPos, h p, ih]
 
+lemma wStk_core' (hq : ∀ j, κ (.L j) ≠ q ∧ κ (.R j) ≠ q) :
+    wStk q (core M ρ κ : CStm R Q) = false := by
+  have hleaf : ∀ p, wStk q (leaf M ρ κ p : CStm R Q) = false := by
+    intro p
+    unfold leaf
+    split
+    · simp only [wStk, Bool.or_eq_false_iff]
+      exact ⟨trivial, wStk_seqL_map _ _ fun j _ => by simp [pushT, wStk, (hq _).2]⟩
+    · simp only [wStk, Bool.or_eq_false_iff]
+      refine ⟨trivial, wStk_seqL_map _ _ fun j _ => ?_⟩
+      unfold opT; split <;> simp [wStk, (hq _).1, (hq _).2]
+  simp only [core, body, wStk, Bool.or_eq_false_iff]
+  exact ⟨trivial, trivial, trivial, wStk_seqL_map _ _ fun j _ => by simp [popT, wStk, (hq _).2],
+    wStk_chain ρ κ _ hleaf, trivial⟩
+
 variable (hr : ∀ g, ρ g ≠ r) (hq : ∀ g, κ g ≠ q)
 include hr
 
@@ -158,23 +173,9 @@ lemma wReg_simIn : wReg r (simIn M ρ κ : CStm R Q) = false := by
 omit hr
 include hq
 
-lemma wStk_core : wStk q (core M ρ κ : CStm R Q) = false := by
-  have hleaf : ∀ p, wStk q (leaf M ρ κ p : CStm R Q) = false := by
-    intro p
-    unfold leaf
-    split
-    · simp only [wStk, Bool.or_eq_false_iff]
-      exact ⟨trivial, wStk_seqL_map _ _ fun j _ => by simp [pushT, wStk, hq]⟩
-    · simp only [wStk, Bool.or_eq_false_iff]
-      refine ⟨trivial, wStk_seqL_map _ _ fun j _ => ?_⟩
-      unfold opT; split <;> simp [wStk, hq]
-  simp only [core, body, wStk, Bool.or_eq_false_iff]
-  exact ⟨trivial, trivial, trivial, wStk_seqL_map _ _ fun j _ => by simp [popT, wStk, hq],
-    wStk_chain ρ κ _ hleaf, trivial⟩
-
 lemma wStk_tail : wStk q (simTail M ρ κ : CStm R Q) = false := by
   simp only [simTail, seqL, wStk, Bool.or_eq_false_iff]
-  refine ⟨wStk_core ρ κ hq, ?_, ?_, trivial⟩
+  refine ⟨wStk_core' ρ κ fun j => ⟨hq _, hq _⟩, ?_, ?_, trivial⟩
   · simp [extract, seqL, wStk, moveAllS, skipZ, parseB, hq]
   · exact wStk_seqL_map _ _ fun g _ => by simp [clrS, wStk, hq]
 
