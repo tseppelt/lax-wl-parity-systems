@@ -1,6 +1,7 @@
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Compiler.Prog
 import Lax119563Proofs.Compiler.P4SchSpec2
+import Lax119563Proofs.Compiler.Bound
 
 /-!
 # The matrix compiler
@@ -60,13 +61,29 @@ theorem matrix_compiler :
             DuplicatorSurvives (k + 1) r (compile I).1 (compile I).2) ∧
           (compile I).1.n + (compile I).2.n ≤ C * matrixSize I ∧
           (compile I).1.numEdges + (compile I).2.numEdges ≤
-            3 * ((compile I).1.n + (compile I).2.n)) ∧
+            3 * ((compile I).1.n + (compile I).2.n) ∧
+          (encodeGraphPair (compile I).1 (compile I).2).length ≤
+            C * (matrixSize I + 1) * (Nat.log 2 (matrixSize I + 2) + 1)) ∧
       (∃ M : Machine, Deterministic M ∧ ∃ C c : ℕ, ∀ k : ℕ, 3 ≤ k → ∀ ℓ : ℕ, 1 ≤ ℓ →
         ∀ I : ImplicitParitySystem k ℓ,
           ComputesWithin M (encodeSystem I) (encodeGraphPair (compile I).1 (compile I).2)
             (C * (bitLength I + matrixSize I) *
-              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) :=
-  Lax119563Proofs.Compiler.matrix_compiler_of_schSpec (SCH := Lax119563Proofs.Compiler.p4Sch)
-    (K := 400000) (fun _ hk _ hℓ I => Lax119563Proofs.Compiler.p4Sch_spec I hk hℓ)
+              Nat.log 2 (bitLength I + matrixSize I + 2) ^ c)) := by
+  obtain ⟨M, hD, C, c, h⟩ := Lax119563Proofs.Compiler.machine_clause_of_schSpec
+    (SCH := Lax119563Proofs.Compiler.p4Sch) (K := 400000)
+    (fun _ hk _ hℓ I => Lax119563Proofs.Compiler.p4Sch_spec I hk hℓ)
+  refine ⟨Lax119563Proofs.Compiler.compileM, ⟨3360, fun k hk => ⟨2 * k + stepConst k,
+    fun ℓ _ I => ?_⟩⟩, ⟨M, hD, C, c, fun k hk ℓ hℓ I => ?_⟩⟩
+  · obtain ⟨h1, h2, h3, h4⟩ := Lax119563Proofs.Compiler.reGraph_spec hk
+      (Lax119563Proofs.Compiler.ordL I) (Lax119563Proofs.Compiler.ordL_perm I)
+    refine ⟨h1, h2, h3.trans (Nat.mul_le_mul_right _ (by norm_num)), h4, ?_⟩
+    rw [Lax119563Proofs.Compiler.encode_compileM]
+    refine (Lax119563Proofs.Compiler.length_out_le_log I (by omega) 0).trans ?_
+    rw [zero_add]
+    calc 2 * (2 + 7 * (16 * matrixSize I)) * (2 * (Nat.log 2 (matrixSize I + 2) + 7) + 1)
+        ≤ (224 * (matrixSize I + 1)) * (15 * (Nat.log 2 (matrixSize I + 2) + 1)) :=
+          Nat.mul_le_mul (by omega) (by omega)
+      _ = _ := by ring
+  · rw [Lax119563Proofs.Compiler.encode_compileM]; exact h k hk ℓ hℓ I
 
 end Lax119563Proofs.Matrix

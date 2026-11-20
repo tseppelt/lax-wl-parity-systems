@@ -2,7 +2,7 @@ import Lax119563.PackedRepresentation
 import Lax119563.WLProblems
 import Lax119563Proofs.Hardness.LeadMachine
 import Lax119563Proofs.Hardness.SizeBound
-import Lax119563Proofs.Game.Characterization
+import Lax119563.GameCharacterization
 import Lax119563Proofs.Hardness.Decoding
 
 /-!
@@ -48,10 +48,10 @@ lemma distinguishes_iff_conflict {k ℓ : ℕ} (hk : 2 ≤ k) (I : ImplicitParit
     by_contra hlt
     have htop : I.conflictRound = ⊤ := not_lt_top_iff.mp hlt
     have hw : DuplicatorWins (k + 1) G₀ G₁ := fun r => hdu r (by rw [htop]; exact le_top)
-    exact (Game.duplicatorWins_iff hk _ _).mp hw hd
+    exact (Lax119563.GameCharacterization.duplicatorWins_iff hk _ _).mp hw hd
   · intro hlt
     obtain ⟨τ, hτ⟩ := ENat.ne_top_iff_exists.mp hlt.ne
-    obtain ⟨r, -, hr⟩ := Game.distinguishesAfter_of_spoilerWinsWithin hk (hsp τ hτ.symm)
+    obtain ⟨r, -, hr⟩ := Lax119563.GameCharacterization.distinguishesAfter_of_spoilerWinsWithin hk (hsp τ hτ.symm)
     exact ⟨r, hr⟩
 
 /-! ## Encodings -/

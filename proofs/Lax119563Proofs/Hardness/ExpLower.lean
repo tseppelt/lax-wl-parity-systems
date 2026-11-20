@@ -11,8 +11,8 @@ By the exponential time hierarchy theorem there is a language `L` decidable in t
 but not in time `O(2^{n/4})`. For an input `x` of length `n ≥ 2` choose the horizon
 `h = n + c₀` (so that the decider of `L` halts within `2^h` steps), `a = ⌈log₂ (n + 2)⌉` and
 the least `s` with `s a ≥ h + 2`. Then the packed width is `a`, and the pipeline produces
-in polynomial time an instance of length `N = O((h + 4)^5)` (`pipeline_len`, with the
-explicit matrix compiler, whose output has length `O(S log S)`; here `S = O(h^4 2^a / a)`).
+in polynomial time an instance of length `N = O((h + 4)^5)` (`pipeline_len`; the matrix
+compiler's output has length `O(S log S)`, and here `S = O(h^4 2^a / a)`).
 A decider for WL Distinguishing running in time `O(2^{ε N^{1/5}})` with `ε` small would then
 decide `L` in time `O(2^{n/4})`.
 -/
@@ -27,12 +27,12 @@ namespace Lax119563Proofs.Hardness
 
 /-- The length bound: the instance has length `O(m^5)`. The factor `log₂ S = O(a)` of the
 encoding is absorbed by `(s + 1) a = O(m)`. -/
-lemma exp_len_arith {Cs n s a h m c₀ : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ n + 2) (hn2 : n + 2 ≤ 2 ^ a)
+lemma exp_len_arith {Cl Cs n s a h m c₀ : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ n + 2) (hn2 : n + 2 ≤ 2 ^ a)
     (h2a : 2 ^ a ≤ 2 * (n + 2)) (hsa : s * a ≤ h + 2 + a) (hs : s + 1 ≤ h + 3)
     (hh : h = n + c₀) (hm : m = h + 4) :
-    2 * (s + 1) + 1 + 3360 * (Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) + 1) *
+    2 * (s + 1) + 1 + Cl * (Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) + 1) *
       (Nat.log 2 (Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) + 2) + 1) ≤
-      (3360 * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) + 3) * m ^ 5 := by
+      (Cl * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) + 3) * m ^ 5 := by
   obtain ⟨Sb, hSb⟩ : ∃ Sb, Sb = Cs * (h + 1) ^ 2 * (s + 1) ^ 2 * 2 ^ a * (a + 1) := ⟨_, rfl⟩
   rw [← hSb]
   have hm1 : 1 ≤ m := by omega
@@ -98,12 +98,12 @@ lemma exp_len_arith {Cs n s a h m c₀ : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ n + 2
     have e : (Sb + 1) * a = Sb * a + a := by ring
     have e2 : (36 * Cs + 1) * m ^ 5 = 36 * Cs * m ^ 5 + m ^ 5 := by ring
     omega
-  have hfin : 3360 * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1) ≤
-      3360 * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) * m ^ 5 := by
-    calc 3360 * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1)
-        ≤ 3360 * (Sb + 1) * ((2 * Cs + 6 * c₀ + 21) * a) := Nat.mul_le_mul_left _ hlog
-      _ = 3360 * (2 * Cs + 6 * c₀ + 21) * ((Sb + 1) * a) := by ring
-      _ ≤ 3360 * (2 * Cs + 6 * c₀ + 21) * ((36 * Cs + 1) * m ^ 5) := Nat.mul_le_mul_left _ hSa
+  have hfin : Cl * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1) ≤
+      Cl * (2 * Cs + 6 * c₀ + 21) * (36 * Cs + 1) * m ^ 5 := by
+    calc Cl * (Sb + 1) * (Nat.log 2 (Sb + 2) + 1)
+        ≤ Cl * (Sb + 1) * ((2 * Cs + 6 * c₀ + 21) * a) := Nat.mul_le_mul_left _ hlog
+      _ = Cl * (2 * Cs + 6 * c₀ + 21) * ((Sb + 1) * a) := by ring
+      _ ≤ Cl * (2 * Cs + 6 * c₀ + 21) * ((36 * Cs + 1) * m ^ 5) := Nat.mul_le_mul_left _ hSa
       _ = _ := by ring
   have hs3 : 2 * (s + 1) + 1 ≤ 3 * m ^ 5 := by
     have : m ≤ m ^ 5 := Nat.le_self_pow (by norm_num) m
@@ -193,9 +193,9 @@ theorem exponential_lower_bound :
           ⌊C * (2 : ℝ) ^ (ε * ((encodeWLInstance k G H).length : ℝ) ^ ((1 : ℝ) / 5)) + C⌋₊ := by
   classical
   obtain ⟨L, ⟨M, hMdet, C₀, hM⟩, hnot⟩ := Lax119563.ExponentialTimeHierarchy.exp_time_hierarchy
-  obtain ⟨c, hpipe⟩ := pipeline_len
+  obtain ⟨c, Cl, hpipe⟩ := pipeline_len
   obtain ⟨R, -, CR, Cs, hR⟩ := hpipe M hMdet
-  obtain ⟨B, hB⟩ : ∃ B, B = 3360 * (2 * Cs + 6 * (2 * C₀ + 2) + 21) * (36 * Cs + 1) + 3 :=
+  obtain ⟨B, hB⟩ : ∃ B, B = Cl * (2 * Cs + 6 * (2 * C₀ + 2) + 21) * (36 * Cs + 1) + 3 :=
     ⟨_, rfl⟩
   obtain ⟨P, -, KP, hP⟩ := par_machine (2 * C₀ + 2)
   refine ⟨1 / (4 * ((B : ℝ) + 1) ^ ((1 : ℝ) / 5)), by positivity, ?_⟩

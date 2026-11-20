@@ -1,11 +1,11 @@
 import Lax119563.HomomorphismCharacterization
 import Lax119563Proofs.HomChar.Tensor
-import Lax119563Proofs.HomTensors.WitnessFromRounds
+import Lax119563.WitnessFromRounds
 
 /-!
 # The homomorphism characterization of Weisfeiler–Leman
 
-Direction (→) is `HomTensors.witness_from_rounds`. For (←), suppose `k`-WL does not distinguish
+Direction (→) is `Lax119563.WitnessFromRounds.witness_from_rounds`. For (←), suppose `k`-WL does not distinguish
 `G` and `H`, and let `F` have treewidth at most `k`. A one-vertex forest of `F`
 (`RowSpace.oneVertexForest_of_treewidth`) writes `hom(F, ·)` as a product over its roots of sums
 over all `k`-tuples of WL-determined tensors (`hom_eq_prod`, `exists_det_root`); these sums agree
@@ -79,7 +79,7 @@ theorem distinguishes_iff_exists_hom_ne (hk : 2 ≤ k) (G H : ColoredGraph) :
     Distinguishes k G H ↔ ∃ F : ColoredGraph, TreewidthAtMost F k ∧ hom F G ≠ hom F H := by
   constructor
   · rintro ⟨r, hr⟩
-    obtain ⟨F, hF, -, hne⟩ := HomTensors.witness_from_rounds hk hr
+    obtain ⟨F, hF, -, hne⟩ := Lax119563.WitnessFromRounds.witness_from_rounds hk hr
     exact ⟨F, hF, hne⟩
   · rintro ⟨F, hF, hne⟩
     by_contra h
