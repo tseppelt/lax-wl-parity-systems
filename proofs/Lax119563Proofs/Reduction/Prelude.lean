@@ -7,7 +7,7 @@ import Lax119563Proofs.Reduction.CostGlob
 
 `prelude M s C₀ g` pushes the 14 globals `globs M x s ℓ H` (for `ℓ = timeWidth C₀ |x|`,
 `H = timeHorizon s C₀ |x|`) and runs `g` on them (**`out_prelude`**, for `s ≥ 2`):
-`|x|` (`len`), `log₂ |x|` (`log`), `ℓ`, `H`, `R`, `N = 16 R^5` by expressions, the command
+`|x|` (`len`), `log₂ |x|` (`log`), `ℓ`, `H`, `R`, `N = 16 C^3 R^2` (`C = cM M`) by expressions, the command
 count `r` and the schema count `Ec` by counting runs of the command enumerator, the codes of
 `query` (`2`) and `accept` (`0`), the number `E` of schemas by a counting run of the schema
 enumerator, `W, det` by expressions and `2^ℓ` as
@@ -30,7 +30,7 @@ def prelude (M : Machine) (s C₀ : ℕ) (g : Gn) : Gn :=
   bind (add (var 1) (const (C₀ + 4))) <|
   bind (add (mulC (s - 2) (var 2)) (mulC 2 (add (var 1) (const (C₀ + 3))))) <|
   bind (add (var 3) (const (1 + cM M))) <|
-  bind (mulC 16 (mul (mul (mul (mul (var 4) (var 4)) (var 4)) (var 4)) (var 4))) <|
+  bind (mulC (16 * cM M ^ 3) (mul (var 4) (var 4))) <|
   count (cmdEnum M s 7 (var 3) (var 4) (emit (const 0))) <|
   count (cmdEnum M s 8 (var 3) (var 4) (szBody 8)) <|
   bind (const 2) <|
@@ -250,8 +250,7 @@ theorem Gn.hasCost_prelude (M : Machine) (s C₀ : ℕ) {D : ℕ} (hD : 12 ≤ D
   refine hasCost_bind (τ := P 0 5) ?_ ?_
   · have hR : HasTy ([] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1]) (var 4) (P 0 1) :=
       hasTy_var' rfl
-    simpa using hasTy_mulC (hasTy_mul (hasTy_mul (hasTy_mul (hasTy_mul hR hR hR) hR hR) hR hR)
-      hR hR) 16
+    exact (hasTy_mulC (hasTy_mul hR hR hR) (16 * cM M ^ 3)).le ⟨le_rfl, by norm_num⟩
   -- r
   have hc6 := hasCost_cmdEnum (M := M) (s := s)
     (τs := [] ++ [P 1 0] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 1] ++ [P 0 5] ++ [P 0 0])

@@ -68,7 +68,7 @@ lemma blk_lt_eight {d ω θ : ℕ} (hd : d < H) (hω : ω < 2 ^ d) (hθ : θ < 2
   omega
 
 lemma complete_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tape M)
-    (c : CellVal M) {A : ℕ} (hA : A < 2 ^ (s * ℓ)) (hS : Sem M x H (.cell d θ ν c) A) :
+    (c : CellVal M) {A : ℕ} (hA : A < 2 ^ (H + 2)) (hS : Sem M x H (.cell d θ ν c) A) :
     ∃ mv ∈ moves M x s ℓ H (.cell d θ ν c),
       mv.Fires ℓ (Sem M x H) (rank M H) (.cell d θ ν c) A := by
   have hA2 := P.addr_lt hA
@@ -91,13 +91,13 @@ lemma complete_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : 
             simp only [hitGuard, zero_mul, ↓reduceIte, decide_eq_true_eq, field_zero_eq_mod]
             rw [← root_hit P.hℓH hdiv, hS]
           · simp only [hitGuard, hi, ↓reduceIte, decide_eq_true_eq]
-            exact (regs_agree_iff hA P.T_lt).mpr hdiv i hi
+            exact (regs_agree_iff (P.lt_sl hA) P.T_lt).mpr hdiv i hi
       · have hc : c = (0, false) := by rw [← hS, root_miss P.hℓH P.hx hdiv]
         obtain ⟨i₀, hi₀, hne⟩ : ∃ i₀ : Fin s, i₀.val ≠ 0 ∧
             field A (i₀ * ℓ) ℓ ≠ field (2 ^ H) (i₀ * ℓ) ℓ := by
           by_contra hcon
           push Not at hcon
-          exact hdiv ((regs_agree_iff hA P.T_lt).mp hcon)
+          exact hdiv ((regs_agree_iff (P.lt_sl hA) P.T_lt).mp hcon)
         refine ⟨.test (missGuard s ℓ H i₀) .accept, ?_, ?_, trivial, hrk⟩
         · simp only [moves, h0, hd0, ↓reduceIte, hc, List.mem_cons, List.mem_map,
             List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq]
@@ -209,7 +209,7 @@ lemma cellT_of_rel {d ω θ : ℕ} {ν : Tape M} {j : ℕ} (h : rel M x H d ω �
   linarith
 
 lemma complete_state (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (p : ExtState M)
-    {A : ℕ} (hA : A < 2 ^ (s * ℓ)) (hS : Sem M x H (.state d θ p) A) :
+    {A : ℕ} (hA : A < 2 ^ (H + 2)) (hS : Sem M x H (.state d θ p) A) :
     ∃ mv ∈ moves M x s ℓ H (.state d θ p),
       mv.Fires ℓ (Sem M x H) (rank M H) (.state d θ p) A := by
   have hA2 := P.addr_lt hA
@@ -340,7 +340,7 @@ lemma complete_headIn (d : Fin (H + 1)) (θ : Fin 2) (ν : Tape M)
       rw [hω]
       omega
 
-lemma moves_complete (P : Params x s ℓ H) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (s * ℓ))
+lemma moves_complete (P : Params x s ℓ H) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (H + 2))
     (hS : Sem M x H L A) :
     L = .accept ∨ ∃ mv ∈ moves M x s ℓ H L, mv.Fires ℓ (Sem M x H) (rank M H) L A := by
   have hA2 := P.addr_lt hA
@@ -506,15 +506,15 @@ variable {M : Machine} {x : List Bool} {s ℓ H : ℕ}
 
 /-- The verifier accepts exactly the configurations whose assertion is true. -/
 theorem verifier_accepts_iff (P : Params x s ℓ H) {locs : List (Loc M H)}
-    (hlocs : ∀ L, L ∈ locs) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (s * ℓ)) :
+    (hlocs : ∀ L, L ∈ locs) (L : Loc M H) {A : ℕ} (hA : A < 2 ^ (H + 2)) :
     AAccepts ℓ (progCmds ℓ locs (moves M x s ℓ H)) .accept .reject L A ↔ Sem M x H L A := by
   constructor
   · intro h
-    exact progCmds_sound P.hℓ (fun src _ => moves_wf P.hH src)
+    exact progCmds_sound P.hℓ P.hH (fun src _ => moves_wf src)
       (fun src _ => moves_sound P src) (fun A => show Sem M x H .accept A from trivial) h hA
   · intro hS
-    exact progCmds_complete P.hℓ (rank M H) hlocs
-      (fun src _ => moves_wf P.hH src) (fun _ h => h)
+    exact progCmds_complete P.hℓ P.hH (rank M H) hlocs
+      (fun src _ => moves_wf src) (fun _ h => h)
       (fun src _ hA hS => moves_complete P src hA hS) L A hA hS
 
 end Lax119563Proofs.Circuits

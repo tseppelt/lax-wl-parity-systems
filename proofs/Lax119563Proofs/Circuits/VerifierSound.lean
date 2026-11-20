@@ -20,8 +20,8 @@ lemma ppred_val {θ : Fin 3} (h : θ.val ≠ 0) : (ppred θ).val + 1 = θ.val :=
   simp only [ppred]
   omega
 
-lemma moves_wf (hH : s * ℓ = H + 2) (L : Loc M H) :
-    ∀ mv ∈ moves M x s ℓ H L, mv.WF s ℓ := by
+lemma moves_wf (L : Loc M H) :
+    ∀ mv ∈ moves M x s ℓ H L, mv.WF (H + 2) := by
   have h8 : ∀ q : Fin 8, q.val < 2 ^ 3 := fun q => q.isLt
   have h4 : ∀ q : Fin 4, q.val < 2 ^ 2 := fun q => q.isLt
   have h2 : ∀ q : Fin 2, q.val < 2 ^ 1 := fun q => q.isLt
@@ -205,16 +205,19 @@ lemma root_miss {A : ℕ} (hℓH : ℓ ≤ H) (hx : x.length < 2 ^ ℓ)
 
 /-! ## Soundness of the moves -/
 
-/-- Standing hypotheses on the parameters: the address has `s ℓ = H + 2` bits, and the input
-fits into register `0`. -/
+/-- Standing hypotheses on the parameters: the address has `s ℓ ≥ H + 2` bits (the claims use
+the low `H + 2` of them), and the input fits into register `0`. -/
 structure Params (x : List Bool) (s ℓ H : ℕ) : Prop where
-  hH : s * ℓ = H + 2
+  hH : H + 2 ≤ s * ℓ
   hℓ : 0 < ℓ
   hℓH : ℓ ≤ H
   hx : x.length < 2 ^ ℓ
 
-lemma Params.addr_lt (P : Params x s ℓ H) {A : ℕ} (hA : A < 2 ^ (s * ℓ)) : A < 2 ^ (H + 2) :=
-  P.hH ▸ hA
+lemma Params.addr_lt (_P : Params x s ℓ H) {A : ℕ} (hA : A < 2 ^ (H + 2)) : A < 2 ^ (H + 2) :=
+  hA
+
+lemma Params.lt_sl (P : Params x s ℓ H) {A : ℕ} (hA : A < 2 ^ (H + 2)) : A < 2 ^ (s * ℓ) :=
+  lt_of_lt_of_le hA (Nat.pow_le_pow_right (by norm_num) P.hH)
 
 lemma Params.s_pos (P : Params x s ℓ H) : 0 < s := by
   rcases Nat.eq_zero_or_pos s with h | h
@@ -222,11 +225,11 @@ lemma Params.s_pos (P : Params x s ℓ H) : 0 < s := by
   · exact h
 
 lemma Params.T_lt (P : Params x s ℓ H) : 2 ^ H < 2 ^ (s * ℓ) := by
-  rw [P.hH]; exact Nat.pow_lt_pow_right (by norm_num) (by omega)
+  exact Nat.pow_lt_pow_right (by norm_num) (by have := P.hH; omega)
 
 lemma sound_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tape M)
     (c : CellVal M) : ∀ mv ∈ moves M x s ℓ H (.cell d θ ν c),
-      mv.Sound ℓ (Sem M x H) (.cell d θ ν c) := by
+      mv.Sound ℓ (H + 2) (Sem M x H) (.cell d θ ν c) := by
   intro mv hmv
   simp only [moves] at hmv
   split_ifs at hmv with h0 hd0 hc hdH h2'
@@ -237,7 +240,7 @@ lemma sound_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tap
       simp only [hitGuard, zero_mul, ↓reduceIte, decide_eq_true_eq, field_zero_eq_mod] at e0
       have eo : ∀ i : Fin s, i.val ≠ 0 → field A (i * ℓ) ℓ = field (2 ^ H) (i * ℓ) ℓ :=
         fun i hi => by simpa [hitGuard, hi] using hen i
-      have hdiv := (regs_agree_iff hA P.T_lt).mp eo
+      have hdiv := (regs_agree_iff (P.lt_sl hA) P.T_lt).mp eo
       show semCell M x H d θ ν c A
       rw [hd0, h0, semCell_root (P.addr_lt hA), root_hit P.hℓH hdiv, e0]
     · simp only [List.mem_map, List.mem_filter, List.mem_finRange, true_and,
@@ -247,7 +250,7 @@ lemma sound_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tap
       have e := hen i₀
       simp only [missGuard, ↓reduceIte, decide_eq_true_eq] at e
       have hdiv : A / 2 ^ ℓ ≠ 2 ^ H / 2 ^ ℓ := fun h =>
-        e ((regs_agree_iff hA P.T_lt).mpr h i₀ hi₀)
+        e ((regs_agree_iff (P.lt_sl hA) P.T_lt).mpr h i₀ hi₀)
       show semCell M x H d θ ν c A
       rw [hd0, h0, semCell_root (P.addr_lt hA), root_miss P.hℓH P.hx hdiv, hc]
   · simp only [List.mem_cons, List.not_mem_nil, or_false] at hmv
@@ -257,7 +260,7 @@ lemma sound_cell (P : Params x s ℓ H) (d : Fin (H + 1)) (θ : Fin 3) (ν : Tap
     simp only [hitGuard, zero_mul, ↓reduceIte, decide_eq_true_eq, field_zero_eq_mod] at e0
     have eo : ∀ i : Fin s, i.val ≠ 0 → field A (i * ℓ) ℓ = field (2 ^ H) (i * ℓ) ℓ :=
       fun i hi => by simpa [hitGuard, hi] using hen i
-    have hdiv := (regs_agree_iff hA P.T_lt).mp eo
+    have hdiv := (regs_agree_iff (P.lt_sl hA) P.T_lt).mp eo
     show semCell M x H d θ ν c A
     rw [hd0, h0, semCell_root (P.addr_lt hA), root_hit P.hℓH hdiv, e0]
   · -- gather from the parent
@@ -307,7 +310,7 @@ lemma rel_of_cellT_flag {d ω θ : ℕ} {ν : Tape M} {j : ℕ} {γ : Sym M}
   rw [h.2]; ring
 
 lemma moves_sound (P : Params x s ℓ H) (L : Loc M H) :
-    ∀ mv ∈ moves M x s ℓ H L, mv.Sound ℓ (Sem M x H) L := by
+    ∀ mv ∈ moves M x s ℓ H L, mv.Sound ℓ (H + 2) (Sem M x H) L := by
   cases L with
   | accept => simp [moves]
   | reject => simp [moves]

@@ -116,7 +116,7 @@ theorem timeProgram_accepts_iff {s C₀ : ℕ} (hs : 2 ≤ s)
   have P := params_of (C₀ := C₀) hs hx
   have hmask : MasksBounded s (timeWidth C₀ x.length)
       (verifierCmds M x s (timeWidth C₀ x.length) (timeHorizon s C₀ x.length)) :=
-    progCmds_masks fun src _ => moves_wf P.hH src
+    progCmds_masks P.hH fun src _ => moves_wf src
   unfold timeProgram timeQuery
   rw [compile_accepts Loc.code_injective _ hmask, addr_zero]
   unfold verifierCmds
@@ -137,15 +137,26 @@ lemma length_flatMap_le {α β : Type} {l : List α} {f : α → List β} {k : �
     have := ih fun b hb => h b (by simp [hb])
     nlinarith
 
+/-- A bound on the number of moves at a location other than the root cells `cell 0 0 ν c`. -/
+def movBound0 (M : Machine) : ℕ := 16 + 8 * (M.symbols + 3) * rowBound M
+
 /-- A bound on the number of moves at a location. -/
-def movBound (M : Machine) (s : ℕ) : ℕ := s + 16 + 8 * (M.symbols + 3) * rowBound M
+def movBound (M : Machine) (s : ℕ) : ℕ := s + movBound0 M
+
+/-- `1` at the root cells `cell 0 0 ν c` (which carry the `s - 1` tests `missGuard`), else `0`. -/
+def Loc.rootCount : Loc M H → ℕ
+  | .cell d θ _ _ => if θ.val = 0 ∧ d.val = 0 then 1 else 0
+  | _ => 0
+
+lemma Loc.rootCount_le_one (L : Loc M H) : L.rootCount ≤ 1 := by
+  cases L <;> simp only [Loc.rootCount] <;> (try split_ifs) <;> omega
 
 lemma length_allRows : (allRows M).length = rowBound M := by
   simp [allRows, allExt, allFun, allOptBool, List.length_product, rowBound]
   ring
 
-lemma moves_length_le (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
-    (moves M x s ℓ H L).length ≤ movBound M s := by
+lemma moves_length_le' (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
+    (moves M x s ℓ H L).length ≤ movBound0 M + L.rootCount * s := by
   have hR : 3 * (M.states + 1) ≤ rowBound M := by
     unfold rowBound; exact Nat.le_mul_of_pos_right _ (by positivity)
   have hR1 : 1 ≤ rowBound M := le_trans (by omega) hR
@@ -153,22 +164,31 @@ lemma moves_length_le (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
   have hRS : rowBound M ≤ 8 * (M.symbols + 3) * rowBound M := by nlinarith
   have hE : (allExt M).length = 3 * (M.states + 1) := by
     simp [allExt, allOptBool, List.length_product]; ring
-  unfold movBound
+  unfold movBound0
   cases L with
-  | accept => simp [moves]
-  | reject => simp [moves]
+  | accept => simp [moves, Loc.rootCount]
+  | reject => simp [moves, Loc.rootCount]
   | query =>
+    simp only [Loc.rootCount, zero_mul, add_zero]
     simp only [moves, List.length_map]
     have := List.length_filter_le (fun p : ExtState M => decide (p.2 = some true)) (allExt M)
     omega
   | cell d θ ν c =>
+    simp only [Loc.rootCount]
+    by_cases hr : θ.val = 0 ∧ d.val = 0
+    · rw [if_pos hr, one_mul]
+      simp only [moves, if_pos hr.1, if_pos hr.2]
+      split_ifs
+      · simp only [List.length_cons, List.length_map]
+        have := List.length_filter_le (fun i : Fin s => decide (i.val ≠ 0)) (List.finRange s)
+        simp only [List.length_finRange] at this
+        omega
+      · simp; omega
+    rw [if_neg hr, zero_mul, add_zero]
     simp only [moves]
     split_ifs
-    · simp only [List.length_cons, List.length_map]
-      have := List.length_filter_le (fun i : Fin s => decide (i.val ≠ 0)) (List.finRange s)
-      simp only [List.length_finRange] at this
-      omega
-    · (simp <;> omega)
+    · exact absurd ⟨‹_›, ‹_›⟩ hr
+    · exact absurd ⟨‹_›, ‹_›⟩ hr
     · (simp [List.length_flatMap] <;> omega)
     · (simp <;> omega)
     · have : ((allRows M).flatMap fun ρ => (allCV M).flatMap fun old =>
@@ -188,6 +208,7 @@ lemma moves_length_le (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
       nlinarith
     · (simp <;> omega)
   | state d θ p =>
+    simp only [Loc.rootCount, zero_mul, add_zero]
     simp only [moves]
     split_ifs
     · (simp <;> omega)
@@ -200,17 +221,24 @@ lemma moves_length_le (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
       nlinarith
     · (simp <;> omega)
   | headIn d θ ν u =>
+    simp only [Loc.rootCount, zero_mul, add_zero]
     simp only [moves]
     split_ifs
     · simp only [List.length_map, List.length_finRange]; omega
     · (simp [List.length_flatMap] <;> omega)
     · (simp <;> omega)
-  | headSet d θ ν β => simp only [moves]; split_ifs <;> (simp <;> omega)
-  | restore d θ ν c β => simp only [moves]; split_ifs <;> (simp <;> omega)
-  | gather d θ ν c β => simp only [moves]; split_ifs <;> (simp <;> omega)
-  | baseCell ν ρ old k => simp only [moves]; split_ifs <;> (simp <;> omega)
-  | baseState ρ k => simp only [moves]; split_ifs <;> (simp <;> omega)
-  | setJ ν h c => simp [moves]; omega
+  | headSet d θ ν β => simp only [Loc.rootCount, zero_mul, add_zero]; simp only [moves]; split_ifs <;> (simp <;> omega)
+  | restore d θ ν c β => simp only [Loc.rootCount, zero_mul, add_zero]; simp only [moves]; split_ifs <;> (simp <;> omega)
+  | gather d θ ν c β => simp only [Loc.rootCount, zero_mul, add_zero]; simp only [moves]; split_ifs <;> (simp <;> omega)
+  | baseCell ν ρ old k => simp only [Loc.rootCount, zero_mul, add_zero]; simp only [moves]; split_ifs <;> (simp <;> omega)
+  | baseState ρ k => simp only [Loc.rootCount, zero_mul, add_zero]; simp only [moves]; split_ifs <;> (simp <;> omega)
+  | setJ ν h c => simp [moves, Loc.rootCount]; omega
+
+lemma moves_length_le (x : List Bool) (s ℓ : ℕ) (L : Loc M H) :
+    (moves M x s ℓ H L).length ≤ movBound M s := by
+  have h1 := moves_length_le' x s ℓ L
+  have h2 : L.rootCount * s ≤ 1 * s := Nat.mul_le_mul_right _ L.rootCount_le_one
+  unfold movBound; omega
 
 lemma dedup_length_le : (allLocs M H).dedup.length ≤ numLoc M H := by
   have h : ((allLocs M H).dedup.map Loc.code).Nodup :=
@@ -228,6 +256,12 @@ lemma timeProgram_commands_le (s C₀ : ℕ) (x : List Bool) :
   calc _ ≤ (allLocs M (timeHorizon s C₀ x.length)).dedup.length * movBound M s :=
         length_flatMap_le fun L _ => by rw [List.length_map]; exact moves_length_le _ _ _ L
     _ ≤ _ := Nat.mul_le_mul_right _ dedup_length_le
+
+lemma numLoc_le_pow : numLoc M H ≤ 16 * radix M H ^ 5 := by
+  rw [numLoc_eq]
+  have := cM_le_radix (M := M) (H := H)
+  calc 16 * cM M ^ 3 * radix M H ^ 2 ≤ 16 * radix M H ^ 3 * radix M H ^ 2 := by gcongr
+    _ = _ := by ring
 
 lemma numLoc_le {s C₀ : ℕ} (hs : 1 ≤ s) {x : List Bool} (hx : 2 ≤ x.length) :
     numLoc M (timeHorizon s C₀ x.length) ≤
@@ -248,9 +282,9 @@ lemma numLoc_le {s C₀ : ℕ} (hs : 1 ≤ s) {x : List Bool} (hx : 2 ≤ x.leng
       omega
     have e : (s * (C₀ + 5) + cM M) * L = s * (C₀ + 5) * L + cM M * L := by ring
     omega
-  unfold numLoc
-  calc 16 * radix M (timeHorizon s C₀ x.length) ^ 5
-      ≤ 16 * ((s * (C₀ + 5) + cM M) * L) ^ 5 := by gcongr
+  calc numLoc M (timeHorizon s C₀ x.length) ≤ 16 * radix M (timeHorizon s C₀ x.length) ^ 5 :=
+        numLoc_le_pow
+    _ ≤ 16 * ((s * (C₀ + 5) + cM M) * L) ^ 5 := by gcongr
     _ = _ := by ring
 
 /-- **Time simulation.** For a machine `M` halting within `C₀ n^s + C₀` steps with `s ≥ 2`,

@@ -41,6 +41,10 @@ graphs have `O(S)` vertices. Exponent `c = 24 + c_matrix`.
   system in emittable form: `domainDescription_eq_domL`, `permDescription_of_permDesc`,
   `schemaDescription_of_match`, `locsDesc_compile`), `SysGen` (`sysGen`, **`out_sysGen`**),
   `CostSys` (`hasCost_sysGen`, `wfx_sysGen`), `Main`.
+* `Packed`: the size of `Iv M x s ℓ H` for general parameters (`packed_bounds`):
+  `O_M((H + 1)^2)` locations and schemas, `S = O_M((s+1)^2 2^ℓ (ℓ+1) (H+1)^2)`, and
+  correctness for `H + 2 ≤ s ℓ`; `packed_bounds_h` with `ℓ = max(⌈log₂(n+2)⌉, ⌈(h+2)/s⌉)`
+  and `H = max(h, ℓ)`.
 
 ## The system generator
 

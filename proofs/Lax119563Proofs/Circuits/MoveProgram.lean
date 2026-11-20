@@ -40,18 +40,19 @@ def Move.toACmd (ℓ : ℕ) (src : L) : Move L s → ACmd L s
 def progCmds (ℓ : ℕ) (locs : List L) (moves : L → List (Move L s)) : List (ACmd L s) :=
   locs.flatMap fun src => (moves src).map (Move.toACmd ℓ src)
 
-/-- The fields of a move lie inside the address and its constants fit into them. -/
-def Move.WF (s ℓ : ℕ) : Move L s → Prop
-  | .step k m q v _ => k + m ≤ s * ℓ ∧ q < 2 ^ m ∧ v < 2 ^ m
-  | .fork k m q _ _ => k + m ≤ s * ℓ ∧ q < 2 ^ m
+/-- The fields of a move lie inside the low `B` bits of the address and its constants fit
+into them. -/
+def Move.WF (B : ℕ) : Move L s → Prop
+  | .step k m q v _ => k + m ≤ B ∧ q < 2 ^ m ∧ v < 2 ^ m
+  | .fork k m q _ _ => k + m ≤ B ∧ q < 2 ^ m
   | .test _ _ => True
 
-/-- A move at `src` is sound for `Sem`. -/
-def Move.Sound (ℓ : ℕ) (Sem : L → ℕ → Prop) (src : L) : Move L s → Prop
-  | .step k m q v dst => ∀ A, A < 2 ^ (s * ℓ) → field A k m = q →
+/-- A move at `src` is sound for `Sem` on the addresses below `2 ^ B`. -/
+def Move.Sound (ℓ B : ℕ) (Sem : L → ℕ → Prop) (src : L) : Move L s → Prop
+  | .step k m q v dst => ∀ A, A < 2 ^ B → field A k m = q →
       Sem dst (setBits A k m v) → Sem src A
-  | .fork k m q l r => ∀ A, A < 2 ^ (s * ℓ) → field A k m = q → Sem l A → Sem r A → Sem src A
-  | .test g dst => ∀ A, A < 2 ^ (s * ℓ) → Enabled ℓ g A → Sem dst A → Sem src A
+  | .fork k m q l r => ∀ A, A < 2 ^ B → field A k m = q → Sem l A → Sem r A → Sem src A
+  | .test g dst => ∀ A, A < 2 ^ B → Enabled ℓ g A → Sem dst A → Sem src A
 
 /-- A move at `src` fires at address `A` into configurations satisfying `Sem` of smaller rank. -/
 def Move.Fires (ℓ : ℕ) (Sem : L → ℕ → Prop) (rank : L → ℕ → ℕ) (src : L) (A : ℕ) :
@@ -67,8 +68,8 @@ lemma field_zero_width (A k : ℕ) : field A k 0 = 0 := by simp [field, Nat.mod_
 lemma setBits_zero_width (A k : ℕ) : setBits A k 0 0 = A := by
   simp [setBits, field_zero_width]
 
-lemma progCmds_masks {ℓ : ℕ} {locs : List L} {moves : L → List (Move L s)}
-    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF s ℓ) :
+lemma progCmds_masks {ℓ B : ℕ} (hB : B ≤ s * ℓ) {locs : List L} {moves : L → List (Move L s)}
+    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF B) :
     MasksBounded s ℓ (progCmds ℓ locs moves) := by
   intro p g m q hc
   simp only [progCmds, List.mem_flatMap, List.mem_map] at hc
@@ -78,7 +79,7 @@ lemma progCmds_masks {ℓ : ℕ} {locs : List L} {moves : L → List (Move L s)}
   | step k m' q' v dst =>
     simp only [Move.toACmd, ACmd.assign.injEq] at heq
     obtain ⟨-, -, rfl, -⟩ := heq
-    exact fieldMask_lt hw.2.1 hw.2.2 hw.1
+    exact fieldMask_lt hw.2.1 hw.2.2 (hw.1.trans hB)
   | fork => simp [Move.toACmd] at heq
   | test g' dst =>
     simp only [Move.toACmd, ACmd.assign.injEq] at heq
@@ -88,14 +89,14 @@ lemma progCmds_masks {ℓ : ℕ} {locs : List L} {moves : L → List (Move L s)}
 section
 
 variable {ℓ : ℕ} {locs : List L} {moves : L → List (Move L s)} {Sem : L → ℕ → Prop}
-  {acc rej : L}
+  {acc rej : L} {B : ℕ}
 
 /-- Soundness from local soundness. -/
-theorem progCmds_sound (hℓ : 0 < ℓ)
-    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF s ℓ)
-    (hs : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.Sound ℓ Sem src)
+theorem progCmds_sound (hℓ : 0 < ℓ) (hB : B ≤ s * ℓ)
+    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF B)
+    (hs : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.Sound ℓ B Sem src)
     (hacc : ∀ A, Sem acc A) {p : L} {A : ℕ}
-    (h : AAccepts ℓ (progCmds ℓ locs moves) acc rej p A) (hA : A < 2 ^ (s * ℓ)) :
+    (h : AAccepts ℓ (progCmds ℓ locs moves) acc rej p A) (hA : A < 2 ^ B) :
     Sem p A := by
   induction h with
   | accept A => exact hacc A
@@ -108,7 +109,7 @@ theorem progCmds_sound (hℓ : 0 < ℓ)
     | step k m' q' v dst =>
       simp only [Move.toACmd, ACmd.assign.injEq] at heq
       obtain ⟨rfl, rfl, rfl, rfl⟩ := heq
-      have hf : field A k m' = q' := (enabled_fieldGuard hℓ hw.1 hw.2.1).mp hg
+      have hf : field A k m' = q' := (enabled_fieldGuard hℓ (hw.1.trans hB) hw.2.1).mp hg
       rw [xor_fieldMask hf] at ih
       exact hso A hA hf (ih (setBits_lt hw.2.2 hA hw.1))
     | fork => simp [Move.toACmd] at heq
@@ -127,18 +128,18 @@ theorem progCmds_sound (hℓ : 0 < ℓ)
     | fork k m' q' l r' =>
       simp only [Move.toACmd, ACmd.fork.injEq] at heq
       obtain ⟨rfl, rfl, rfl, rfl⟩ := heq
-      exact hso A hA ((enabled_fieldGuard hℓ hw.1 hw.2).mp hg) (ih₁ hA) (ih₂ hA)
+      exact hso A hA ((enabled_fieldGuard hℓ (hw.1.trans hB) hw.2).mp hg) (ih₁ hA) (ih₂ hA)
     | test => simp [Move.toACmd] at heq
 
 /-- Completeness from local progress. -/
-theorem progCmds_complete (hℓ : 0 < ℓ) (rank : L → ℕ → ℕ)
+theorem progCmds_complete (hℓ : 0 < ℓ) (hB : B ≤ s * ℓ) (rank : L → ℕ → ℕ)
     (hmem : ∀ src, src ∈ locs)
-    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF s ℓ)
+    (hwf : ∀ src ∈ locs, ∀ mv ∈ moves src, mv.WF B)
     (hrej : ∀ A, ¬ Sem rej A)
-    (hc : ∀ src A, A < 2 ^ (s * ℓ) → Sem src A → src = acc ∨
+    (hc : ∀ src A, A < 2 ^ B → Sem src A → src = acc ∨
       ∃ mv ∈ moves src, mv.Fires ℓ Sem rank src A) :
-    ∀ src A, A < 2 ^ (s * ℓ) → Sem src A → AAccepts ℓ (progCmds ℓ locs moves) acc rej src A := by
-  suffices ∀ n, ∀ src A, rank src A = n → A < 2 ^ (s * ℓ) → Sem src A →
+    ∀ src A, A < 2 ^ B → Sem src A → AAccepts ℓ (progCmds ℓ locs moves) acc rej src A := by
+  suffices ∀ n, ∀ src A, rank src A = n → A < 2 ^ B → Sem src A →
       AAccepts ℓ (progCmds ℓ locs moves) acc rej src A from
     fun src A => this _ src A rfl
   intro n
@@ -156,12 +157,12 @@ theorem progCmds_complete (hℓ : 0 < ℓ) (rank : L → ℕ → ℕ)
   cases mv with
   | step k m q v dst =>
     obtain ⟨hfq, hS', hr⟩ := hf
-    refine AAccepts.assign hcmd hacc hrj ((enabled_fieldGuard hℓ hw.1 hw.2.1).mpr hfq) ?_
+    refine AAccepts.assign hcmd hacc hrj ((enabled_fieldGuard hℓ (hw.1.trans hB) hw.2.1).mpr hfq) ?_
     rw [xor_fieldMask hfq]
     exact ih _ (hn ▸ hr) dst _ rfl (setBits_lt hw.2.2 hA hw.1) hS'
   | fork k m q l r =>
     obtain ⟨hfq, hl, hr, hrl, hrr⟩ := hf
-    exact AAccepts.fork hcmd hacc hrj ((enabled_fieldGuard hℓ hw.1 hw.2).mpr hfq)
+    exact AAccepts.fork hcmd hacc hrj ((enabled_fieldGuard hℓ (hw.1.trans hB) hw.2).mpr hfq)
       (ih _ (hn ▸ hrl) l A rfl hA hl) (ih _ (hn ▸ hrr) r A rfl hA hr)
   | test g dst =>
     obtain ⟨hg, hS', hr⟩ := hf

@@ -4,8 +4,10 @@ import Lax119563Proofs.Circuits.Verifier
 # Numbering the locations
 
 An explicit injective numbering `Loc.code : Loc M H → Fin (numLoc M H)` of the verifier's
-locations with `numLoc M H = 16 * (H + cM M) ^ 5`: a location is a tag `< 16` and at most five
-fields, each a number below `H + cM M`, written in mixed radix.
+locations with `numLoc M H = 16 * cM M ^ 3 * radix M H ^ 2`, `radix M H = H + 1 + cM M`: a
+location is a tag `< 16` and five fields, written in mixed radix. Only the fields `1` and `4`
+(the depths `d` and `u`) grow with `H`; the fields `2`, `3`, `5` are below the constant `cM M`.
+So the number of locations is `O_M((H + 1)^2)`.
 -/
 
 namespace Lax119563Proofs.Circuits
@@ -128,48 +130,63 @@ lemma Loc.tuple_injective : Function.Injective (Loc.tuple (M := M) (H := H)) := 
     (try exact ⟨encRow_inj h.2.1, Fin.ext h.2.2.1⟩) <;>
     (try exact ⟨Fin.ext h.2.1, Fin.ext h.2.2.1, encCV_inj h.2.2.2.1⟩)
 
+lemma cM_pos : 0 < cM M := by unfold cM; omega
+
+lemma cM_le_radix : cM M ≤ radix M H := by unfold radix; omega
+
+/-- The fields `1` and `4` (the depths `d`, `u`) are below `radix M H`; the fields `2`, `3`, `5`
+are constant-size, below `cM M`. -/
 lemma Loc.tuple_lt (L : Loc M H) :
-    L.tuple.1 < 16 ∧ L.tuple.2.1 < radix M H ∧ L.tuple.2.2.1 < radix M H ∧
-      L.tuple.2.2.2.1 < radix M H ∧ L.tuple.2.2.2.2.1 < radix M H ∧
-      L.tuple.2.2.2.2.2 < radix M H := by
-  have hcv : ∀ c : CellVal M, encCV c < radix M H := fun c => by
-    have := encCV_lt c; unfold radix cM; omega
-  have hex : ∀ p : ExtState M, encExt p < radix M H := fun p => by
+    L.tuple.1 < 16 ∧ L.tuple.2.1 < radix M H ∧ L.tuple.2.2.1 < cM M ∧
+      L.tuple.2.2.2.1 < cM M ∧ L.tuple.2.2.2.2.1 < radix M H ∧
+      L.tuple.2.2.2.2.2 < cM M := by
+  have hcv : ∀ c : CellVal M, encCV c < cM M := fun c => by
+    have := encCV_lt c; unfold cM; omega
+  have hex : ∀ p : ExtState M, encExt p < cM M := fun p => by
     have := encExt_lt p
     have : 3 * (M.states + 1) ≤ rowBound M := by
       unfold rowBound
       exact Nat.le_mul_of_pos_right _ (by positivity)
-    unfold radix cM; omega
-  have hrw : ∀ ρ : Row M, encRow ρ < radix M H := fun ρ => by
-    have := encRow_lt ρ; unfold radix cM; omega
+    unfold cM; omega
+  have hrw : ∀ ρ : Row M, encRow ρ < cM M := fun ρ => by
+    have := encRow_lt ρ; unfold cM; omega
   have hd : ∀ d : Fin (H + 1), d.val < radix M H := fun d => by
     have := d.isLt; unfold radix; omega
-  have hk : ∀ {m : ℕ} (k : Fin m), m ≤ 9 + (M.tapes + 2) → k.val < radix M H := fun k hm => by
-    have := k.isLt; unfold radix cM; omega
-  have h0 : 0 < radix M H := by unfold radix; omega
+  have hk : ∀ {m : ℕ} (k : Fin m), m ≤ 9 + (M.tapes + 2) → k.val < cM M := fun k hm => by
+    have := k.isLt; unfold cM; omega
+  have hR : ∀ {a : ℕ}, a < cM M → a < radix M H := fun h => lt_of_lt_of_le h cM_le_radix
+  have h0 : 0 < cM M := cM_pos
+  have h0' : 0 < radix M H := hR h0
   cases L <;> simp only [Loc.tuple] <;>
     refine ⟨by norm_num, ?_, ?_, ?_, ?_, ?_⟩ <;>
     first
     | exact h0
+    | exact h0'
     | exact hd _
     | exact hcv _
     | exact hex _
     | exact hrw _
     | exact hk _ (by omega)
+    | exact hR (hcv _)
+    | exact hR (hex _)
+    | exact hR (hrw _)
+    | exact hR (hk _ (by omega))
 
-/-- The number of location codes. -/
-def numLoc (M : Machine) (H : ℕ) : ℕ := 16 * radix M H ^ 5
+/-- The number of location codes: a tag below `16`, two depth digits below `radix M H` and
+three constant-size digits below `cM M`. -/
+def numLoc (M : Machine) (H : ℕ) : ℕ := 16 * (radix M H * (cM M * (cM M * (radix M H * cM M))))
 
-/-- The number of a location. -/
+lemma numLoc_eq : numLoc M H = 16 * cM M ^ 3 * radix M H ^ 2 := by
+  unfold numLoc; ring
+
+/-- The number of a location, in mixed radix `16, R, C, C, R, C` (`R = radix M H`,
+`C = cM M`). -/
 def Loc.code (L : Loc M H) : Fin (numLoc M H) :=
-  ⟨pack 16 L.tuple.1 (pack (radix M H) L.tuple.2.1 (pack (radix M H) L.tuple.2.2.1
-    (pack (radix M H) L.tuple.2.2.2.1 (pack (radix M H) L.tuple.2.2.2.2.1
+  ⟨pack 16 L.tuple.1 (pack (radix M H) L.tuple.2.1 (pack (cM M) L.tuple.2.2.1
+    (pack (cM M) L.tuple.2.2.2.1 (pack (radix M H) L.tuple.2.2.2.2.1
       L.tuple.2.2.2.2.2)))), by
     obtain ⟨h0, h1, h2, h3, h4, h5⟩ := L.tuple_lt
-    have := pack_lt h0 (pack_lt h1 (pack_lt h2 (pack_lt h3 (pack_lt h4 h5))))
-    unfold numLoc
-    calc _ < _ := this
-      _ = _ := by ring⟩
+    exact pack_lt h0 (pack_lt h1 (pack_lt h2 (pack_lt h3 (pack_lt h4 h5))))⟩
 
 lemma Loc.code_injective : Function.Injective (Loc.code (M := M) (H := H)) := by
   intro L L' h

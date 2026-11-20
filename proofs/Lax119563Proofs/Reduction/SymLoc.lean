@@ -121,24 +121,28 @@ def flds (HX : Xp) : SLoc M → Xp × Xp × Xp × Xp × Xp
   | setJ ν h c => (const ν, const h, const (encCV c), const 0, const 0)
 
 open Xp in
-/-- The location number in mixed radix `16, R, R, R, R, R`. -/
+/-- The location number in mixed radix `16, R, C, C, R, C` (`C = cM M`). -/
 def codeX (R HX : Xp) (L : SLoc M) : Xp :=
-  add (const L.tag) (mulC 16 (add (L.flds HX).1 (mul (add (L.flds HX).2.1 (mul (add
-    (L.flds HX).2.2.1 (mul (add (L.flds HX).2.2.2.1 (mul (L.flds HX).2.2.2.2 R)) R)) R)) R)))
+  add (const L.tag) (mulC 16 (add (L.flds HX).1 (mul (add (L.flds HX).2.1 (mulC (cM M) (add
+    (L.flds HX).2.2.1 (mulC (cM M) (add (L.flds HX).2.2.2.1 (mul (L.flds HX).2.2.2.2 R)))))) R)))
 
 lemma bnd_codeX {n : ℕ} {R HX : Xp} (hR : R.Bnd n) (hH : HX.Bnd n) (L : SLoc M)
     (hL : L.Bnd n) : (codeX R HX L).Bnd n := by
   have h0 : ∀ c, (Xp.const c).Bnd n := fun _ => trivial
   have hm : ∀ {a : Xp}, a.Bnd n → (minX a HX).Bnd n := fun ha => bnd_minX ha hH
+  have hf : (L.flds HX).1.Bnd n ∧ (L.flds HX).2.1.Bnd n ∧ (L.flds HX).2.2.1.Bnd n ∧
+      (L.flds HX).2.2.2.1.Bnd n ∧ (L.flds HX).2.2.2.2.Bnd n := by
+    cases L <;> simp only [flds, Bnd] at hL ⊢ <;>
+      first
+      | exact ⟨h0 _, h0 _, h0 _, h0 _, h0 _⟩
+      | exact ⟨hm hL, h0 _, h0 _, h0 _, h0 _⟩
+      | exact ⟨hm hL.1, h0 _, h0 _, hm hL.2, h0 _⟩
+  obtain ⟨f1, f2, f3, f4, f5⟩ := hf
   refine ⟨trivial, Xp.bnd_mulC ?_ 16⟩
-  cases L <;> simp only [flds, Bnd] at hL ⊢ <;>
-    first
-    | exact ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul
-        (h0 _) hR⟩ hR⟩ hR⟩ hR⟩
-    | exact ⟨hm hL, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul
-        (h0 _) hR⟩ hR⟩ hR⟩ hR⟩
-    | exact ⟨hm hL.1, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨h0 _, Xp.bnd_mul ⟨hm hL.2, Xp.bnd_mul
-        (h0 _) hR⟩ hR⟩ hR⟩ hR⟩
+  refine ⟨f1, Xp.bnd_mul ?_ hR⟩
+  refine ⟨f2, Xp.bnd_mulC ?_ _⟩
+  refine ⟨f3, Xp.bnd_mulC ?_ _⟩
+  exact ⟨f4, Xp.bnd_mul f5 hR⟩
 
 lemma eval_codeX {H : ℕ} {R HX : Xp} {ρ : List ℕ} (hR : R.eval ρ = radix M H)
     (hH : HX.eval ρ = H) (L : SLoc M) :
