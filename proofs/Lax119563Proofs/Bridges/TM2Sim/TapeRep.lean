@@ -69,7 +69,7 @@ lemma applyTape_rep {h : ℤ} {cells : ℤ → Sym R} {L Rl : List (G R)} (H : T
       rcases i with _ | _ | i
       · rw [if_neg (by omega)]
         simp only [List.getD_cons_zero, getD_head]
-        have := H2 0; rw [← this]; congr 1 <;> push_cast <;> omega
+        have := H2 0; rw [← this]; congr 1
       · simp
       · rw [if_neg (by omega)]
         simp only [List.getD_cons_succ, getD_tail]

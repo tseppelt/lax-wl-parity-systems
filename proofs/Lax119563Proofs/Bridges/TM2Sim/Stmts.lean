@@ -222,7 +222,7 @@ lemma stepAux_popAll (js : List (Fin (R.tapes + 1))) (hjs : js.Nodup)
     rw [ih hjs.2]
     have hL : (Function.update Ls j (Ls j).tail) j = (Ls j).tail := by simp
     congr 2
-    · simp only [List.any_cons, Function.update_self]
+    · simp only [List.any_cons]
       have e : ∀ i ∈ js, Function.update Ls j (Ls j).tail i = Ls i ∧
           Function.update Rs j (Rs j).tail i = Rs i := by
         intro i hi
@@ -230,7 +230,7 @@ lemma stepAux_popAll (js : List (Fin (R.tapes + 1))) (hjs : js.Nodup)
         simp [hij]
       rw [any_congr' js _ _ (fun i hi => by rw [(e i hi).1, (e i hi).2])]
       rcases hLj : Ls j with _ | ⟨a, l⟩ <;> rcases hRj : Rs j with _ | ⟨b, l'⟩ <;>
-        simp [hLj, hRj, Bool.or_assoc]
+        simp
     · funext i
       by_cases hi : i ∈ js
       · have hij : i ≠ j := fun e => hjs.1 (e ▸ hi)

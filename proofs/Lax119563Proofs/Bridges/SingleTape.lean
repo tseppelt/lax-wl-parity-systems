@@ -1,4 +1,4 @@
-import Lax434930.ExponentialTime
+import Lax119563.MachineTranslations
 import Lax119563Proofs.Machines.Compile
 import Lax119563Proofs.Main.Runs
 
@@ -17,11 +17,13 @@ We simulate such a machine step by step by a deterministic machine of the archiv
 and halting costs one more step.
 
 Main results:
-* `singleTape_simulation`: for every `M₀` there is a deterministic machine `M` (independent of
+* `singleTape_simulation_succ`: for every `M₀` there is a deterministic machine `M` (independent of
   the input and the time bound) such that, whenever `M₀` halts on `w` within `T` steps in the
   configuration `c`, `M` decides `M₀.accept c.q = true` within `T + 1` steps.
 * `exptime_decidesWithin`: every language in `EXPTIME` is decided by a deterministic machine of
   the archive model within `2 ^ p(|w|) + 1` steps, for a polynomial `p`.
+* `Lax119563Proofs.Bridges.singleTape_simulation`: the concept statement
+  `Lax119563.MachineTranslations.singleTape_simulation` (with `C = 1`).
 -/
 
 open Turing
@@ -181,7 +183,7 @@ lemma run_sim (ans : (simTM M₀).Q → (Fin 1 → M₀.Γ) → Bool) (hans : �
 is a deterministic machine `M` of the archive model such that, whenever `M₀` started on `w`
 halts within `T` steps in the configuration `c`, `M` decides `M₀.accept c.q = true` within
 `T + 1` steps. -/
-theorem singleTape_simulation (M₀ : SingleTape) :
+theorem singleTape_simulation_succ (M₀ : SingleTape) :
     ∃ M : Machine, Deterministic M ∧
       ∀ (w : List Bool) (c : TM0.Cfg M₀.Γ M₀.Q) (T : ℕ),
         StateTransition.EvalsToInTime (TM0.step M₀.transition)
@@ -199,31 +201,39 @@ theorem singleTape_simulation (M₀ : SingleTape) :
   rw [runOn, TM.init_eq_toConfig]
   exact key
 
-/-- The same simulation, phrased with `runOn` and `Accepts`. -/
-theorem singleTape_simulation' (M₀ : SingleTape) :
-    ∃ M : Machine, Deterministic M ∧
-      ∀ (w : List Bool) (c : TM0.Cfg M₀.Γ M₀.Q) (T : ℕ),
-        StateTransition.EvalsToInTime (TM0.step M₀.transition)
-          (TM0.init (w.map M₀.input)) (some c) T →
-        TM0.step M₀.transition c = none →
-        (runOn M w (T + 1)).answer.isSome ∧ (Accepts M w ↔ M₀.accept c.q = true) := by
-  obtain ⟨M, hM, h⟩ := singleTape_simulation M₀
-  refine ⟨M, hM, fun w c T hev hc => ?_⟩
-  have hd := h w c T hev hc
-  refine ⟨?_, Lax119563Proofs.Main.accepts_iff_of_decidesWithin hd⟩
-  obtain ⟨b, hb, -⟩ := hd
-  simp [hb]
-
 /-- **`EXPTIME` in the multitape model.** Every language in the archive's `EXPTIME` is decided
 by a deterministic machine of the archive model within `2 ^ p(|w|) + 1` steps. -/
 theorem exptime_decidesWithin {L : Set (List Bool)} (hL : L ∈ Lax434930.ExponentialTime.EXPTIME) :
     ∃ M : Machine, Deterministic M ∧ ∃ p : Polynomial ℕ, ∀ w : List Bool,
       DecidesWithin M w (w ∈ L) (2 ^ p.eval w.length + 1) := by
   obtain ⟨M₀, p, hM₀⟩ := hL
-  obtain ⟨M, hM, h⟩ := singleTape_simulation M₀
+  obtain ⟨M, hM, h⟩ := singleTape_simulation_succ M₀
   refine ⟨M, hM, p, fun w => ?_⟩
   obtain ⟨c, ⟨hev⟩, hc, hacc⟩ := hM₀ w
   obtain ⟨b, hb, hbP⟩ := h w c _ hev hc
   exact ⟨b, hb, hbP.trans hacc⟩
 
 end Lax119563Proofs.Bridges.SingleTapeSim
+
+namespace Lax119563Proofs.Bridges
+
+open SingleTapeSim
+
+/--
+---
+conclusion: Lax119563.MachineTranslations.singleTape_simulation
+---
+The simulating machine `simMachine M₀` performs one transition per `TM0` transition and one more
+for halting, so it decides within `T + 1 ≤ 1 · (T + |w| + 1)` steps (`singleTape_simulation_succ`).
+-/
+theorem singleTape_simulation (M₀ : SingleTape) :
+    ∃ M : Machine, Deterministic M ∧ ∃ C : ℕ, ∀ (w : List Bool) (T : ℕ) (c : TM0.Cfg M₀.Γ M₀.Q),
+      Nonempty (StateTransition.EvalsToInTime (TM0.step M₀.transition)
+        (TM0.init (w.map M₀.input)) (some c) T) →
+      TM0.step M₀.transition c = none →
+      DecidesWithin M w (M₀.accept c.q = true) (C * (T + w.length + 1)) := by
+  obtain ⟨M, hM, h⟩ := singleTape_simulation_succ M₀
+  refine ⟨M, hM, 1, fun w T c ⟨hev⟩ hc => ?_⟩
+  exact Lax119563Proofs.Main.decidesWithin_mono (h w c T hev hc) (by omega)
+
+end Lax119563Proofs.Bridges
