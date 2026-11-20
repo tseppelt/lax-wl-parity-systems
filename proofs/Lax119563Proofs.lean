@@ -23,11 +23,6 @@ import Lax119563Proofs.Machines.Routines
 import Lax119563Proofs.Machines.WordRoutines
 import Lax119563Proofs.Machines.Numbers
 import Lax119563Proofs.Machines.Output
-import Lax119563Proofs.Machines.SortModel
-import Lax119563Proofs.Machines.SortTape
-import Lax119563Proofs.Machines.SortMerge
-import Lax119563Proofs.Machines.SortPass
-import Lax119563Proofs.Machines.SortMain
 import Lax119563Proofs.Machines.Extras
 import Lax119563Proofs.Machines.ComposeComputes
 import Lax119563Proofs.Hierarchy.Plan
@@ -87,7 +82,6 @@ import Lax119563Proofs.Matrix.SpoilerGadget
 import Lax119563Proofs.Matrix.SpoilerWalk
 import Lax119563Proofs.Matrix.SpoilerMain
 import Lax119563Proofs.Matrix.Size
-import Lax119563Proofs.Reduction.Plan
 import Lax119563Proofs.Reduction.StackOut
 import Lax119563Proofs.Reduction.Bits
 import Lax119563Proofs.Reduction.HProg
@@ -97,7 +91,6 @@ import Lax119563Proofs.Reduction.HHeads
 import Lax119563Proofs.Reduction.HCompile
 import Lax119563Proofs.Reduction.HMachine
 import Lax119563Proofs.Reduction.HLib
-import Lax119563Proofs.Reduction.Locs
 import Lax119563Proofs.Reduction.HFrame
 import Lax119563Proofs.Reduction.SProg
 import Lax119563Proofs.Reduction.SStm
@@ -132,7 +125,6 @@ import Lax119563Proofs.Reduction.CostMachine
 import Lax119563Proofs.Reduction.CostCmd
 import Lax119563Proofs.Reduction.CostSch
 import Lax119563Proofs.Reduction.CostDom
-import Lax119563Proofs.Reduction.CostPrelude
 import Lax119563Proofs.Matrix.Edges
 import Lax119563Proofs.Matrix.Main
 import Lax119563Proofs.UpperBound.Rounds
@@ -193,8 +185,6 @@ import Lax119563Proofs.Reduction.CostPassBase
 import Lax119563Proofs.Reduction.SchemaParts
 import Lax119563Proofs.Reduction.Prelude
 import Lax119563Proofs.Reduction.SysDesc
-import Lax119563Proofs.Reduction.SysGen
-import Lax119563Proofs.Reduction.CostSys
 import Lax119563Proofs.Reduction.Packed
 import Lax119563Proofs.Reduction.PkCmd
 import Lax119563Proofs.Reduction.PkStk
@@ -360,9 +350,7 @@ import Lax119563Proofs.Computability.Bridge
 import Lax119563Proofs.Computability.Clock
 import Lax119563Proofs.Computability.Call
 import Lax119563Proofs.Computability.Closure
-import Lax119563Proofs.Computability.Majorant
 import Lax119563Proofs.Computability.Param
-import Lax119563Proofs.Computability.PreMachine
 import Lax119563Proofs.Hardness.XpProgram
 import Lax119563Proofs.Hardness.XpMachine
 import Lax119563Proofs.Hardness.Xp

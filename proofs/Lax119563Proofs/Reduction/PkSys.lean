@@ -5,7 +5,7 @@ import Lax119563Proofs.Reduction.SysDesc
 # The packed system generator
 
 `sysGenP M` (run on the globals `GlobP`, depth `19`) emits `systemDescription (Iv M x s ℓ H)`
-(**`out_sysGenP`**), as `sysGen` of `SysGen`, but with the number `s` of data blocks read from
+(**`out_sysGenP`**), with the number `s` of data blocks read from
 the globals. The input `y` of the generator holds the bit `x_v` of the input of the machine at
 position `16 v + 1` (`hy`), so the domain loops run a `loopX` over `16 · 2^ℓ` positions and use
 those with `k % 16 = 1`. The checksum shift (`i = s`) is emitted bit by bit as parities of

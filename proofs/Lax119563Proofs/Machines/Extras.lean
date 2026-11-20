@@ -1,5 +1,7 @@
 import Mathlib.Data.Nat.Size
-import Lax119563Proofs.Machines.SortMain
+import Mathlib.Tactic.FinCases
+import Mathlib.Data.Nat.Log
+import Lax119563Proofs.Machines.Numbers
 
 /-!
 # Further combinators and routines
@@ -8,7 +10,7 @@ import Lax119563Proofs.Machines.SortMain
   (`test ;; loop c (body ;; test)`), with a lemma along a sequence of tape families.
 * `TM.revCopy`: copy a word in reverse order onto the end of another tape (e.g. to turn the
   little-endian digits of a number into big-endian ones).
-* `TM.sortRecords_onTapes`: the merge sort run on three tapes of a larger machine.
+* `TM.countLen`: add the length of a word to a counter.
 -/
 
 open Lax489179.TuringMachine (Move)
@@ -167,19 +169,6 @@ theorem revCopy_ofWord {i j : Fin k} (hij : i ≠ j) (p : Γ → Bool) {T : Tape
   · by_cases hl' : l = j
     · subst hl'; simp [Function.update_of_ne hl]
     · simp [Function.update_of_ne hl, Function.update_of_ne hl', T₁]
-
-/-- The merge sort run on the tapes `σ 0, σ 1, σ 2` of a larger machine. -/
-theorem sortRecords_onTapes [DecidableEq Γ] (S : Seps Γ) (σ : Fin 3 ↪ Fin k)
-    (rs : List (List Bool)) {U : Tapes k Γ} (h₀ : U (σ 0) = .ofWord [] (recWord S rs))
-    (h₁ : U (σ 1) = .ofWord [] []) (h₂ : U (σ 2) = .ofWord [] []) :
-    (onTapes σ (sortRecords S)).RunsWithin U
-      (48 * ((recWord S rs).length + 1) * (Nat.clog 2 rs.length + 1))
-      (updateTapes σ U (tapes3 (.ofWord [] (recWord S (rs.mergeSort recLE))) (.ofWord [] [])
-        (.ofWord [] []))) := by
-  apply onTapes_runsWithin
-  convert sortRecords_spec S rs using 2
-  funext i
-  fin_cases i <;> simp [tapes3, h₀, h₁, h₂]
 
 /-- Add the length of the word on tape `i` (from the head on) to the number on tape `c`. -/
 def countLen [DecidableEq Γ] (i c : Fin k) : TM k Γ :=

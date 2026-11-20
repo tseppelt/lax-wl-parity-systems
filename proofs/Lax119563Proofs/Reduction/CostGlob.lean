@@ -1,4 +1,4 @@
-import Lax119563Proofs.Reduction.CostPrelude
+import Lax119563Proofs.Reduction.CostGn
 import Lax119563Proofs.Reduction.CostDom
 
 /-!

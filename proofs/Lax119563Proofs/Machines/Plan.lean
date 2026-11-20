@@ -2,9 +2,9 @@
 # Plan and guide of the `Machines` area
 
 Infrastructure for writing deterministic multitape Turing machines of the archive model
-(`Lax489179.TuringMachine.Machine`) with proven running times, for use by the quasi-linear
-reduction of `Lax119563.TimeReduction.time_reduction`. Everything listed below is proven
-(no `sorry`).
+(`Lax489179.TuringMachine.Machine`) with proven running times, used by the machines of the
+hardness results (area Hardness) and the composition lemmas (area Main). Everything listed
+below is proven (no `sorry`).
 
 ## Layers
 
@@ -28,17 +28,14 @@ reduction of `Lax119563.TimeReduction.time_reduction`. Everything listed below i
 4. `Numbers`: numbers as `natWord m` (`Nat.bits m`, least significant first); `incr`,
    the equality branch `ifEq` (also for arbitrary blank-free words), and `emitNat`
    appending `encodeNat m`.
-5. `SortModel`, `SortTape`, `SortMerge`, `SortPass`, `SortMain`: merge sort of records
-   (bit strings, each followed by `S.hash`) on three tapes; `TM.sortRecords_spec`: sorted by
-   `recLE` (`List.mergeSort`), within `48 (L + 1) (⌈log₂ m⌉ + 1)` transitions.
-6. `Output`: `inputTapes_zero`, `TM.finish o` and `TM.computesWithin_finish`.
-7. `Extras`: `whileM` (loop with a test machine), `revCopy` (reversed copy), `countLen`
-   (add the length of a word to a counter), `sortRecords_onTapes`.
+5. `Output`: `inputTapes_zero`, `TM.finish o` and `TM.computesWithin_finish`.
+6. `Extras`: `whileM` (loop with a test machine), `revCopy` (reversed copy), `countLen`
+   (add the length of a word to a counter).
 
 ## How to build a reduction machine
 
 Fix an alphabet `Γ` with `[Fintype Γ] [DecidableEq Γ] [TapeAlphabet Γ]` containing the
-separators needed (e.g. a `Seps Γ` for sorting). Write the machine as a `TM (k + 1) Γ`
+separators needed. Write the machine as a `TM (k + 1) Γ`
 from the combinators, prove `M.RunsWithin (inputTapes k x) t T` by chaining
 `seq_runsWithin` and the routine lemmas (most routines are stated for tapes of the form
 `Tape.ofWord pre rest` and produce `Function.update T i _`), end with `finish o` to move the

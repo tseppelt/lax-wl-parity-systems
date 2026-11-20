@@ -1,4 +1,4 @@
-import Lax119563Proofs.Computability.PreMachine
+import Lax119563Proofs.Computability.Param
 import Lax119563Proofs.Hardness.PrefixProgram
 
 /-!

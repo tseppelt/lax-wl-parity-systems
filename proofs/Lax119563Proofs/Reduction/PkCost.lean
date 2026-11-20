@@ -1,5 +1,7 @@
 import Lax119563Proofs.Reduction.PkPre
-import Lax119563Proofs.Reduction.CostSys
+import Lax119563Proofs.Reduction.SysDesc
+import Lax119563Proofs.Reduction.Prelude
+import Lax119563Proofs.Reduction.CostPassBase
 
 /-!
 # Fits and cost of the packed enumerators

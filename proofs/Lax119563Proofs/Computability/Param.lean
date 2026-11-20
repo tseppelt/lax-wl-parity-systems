@@ -1,4 +1,4 @@
-import Lax119563Proofs.Computability.Majorant
+import Lax119563Proofs.Computability.Closure
 
 /-!
 # Computing a parameter and a computable function of it inside a statement
