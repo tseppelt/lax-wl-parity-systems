@@ -110,7 +110,17 @@ Ambient for the abstract part: `{A} [Ring A] [Algebra ℂ A] [StarRing A] [StarM
 
 ## Status
 
-Planned (2026-11-20); nothing implemented yet.
+Planned (2026-11-20).
+
+Track A (branch `proofs/stab-algebra`): done. `Defs` (definitions moved from `Interface`),
+`Chains`, `Products`, `Corner`, `Recursion`, `TwoDim`; `TwoDim.matrix_chainBound'` has exactly
+the statement of `Interface.matrix_chainBound` and depends on `sorryAx` only through
+`mem_of_corner` / `exists_decomposition` (track S). Merge: move `matrix_chainBound` out of
+`Interface` (e.g. `matrix_chainBound := matrix_chainBound'` in a file importing `TwoDim`).
+Deviation: no maximal chains, Obs 5.3 or Lemma 5.5 surgery. Instead the chain
+`V 0, …, V s, V s ^ 2, …, V s ^ 2 ^ r = alg (V s)` (`Chains.sqExt`, `r` minimal) lives in
+`S = alg (V s)` and has `r` extra strict steps, which pays for the `r` steps before
+`V (s + r + 1) ⊇ S` contains the corners. Same constants (`10 n - 2 c(n) - 9`).
 
 Before submission: proof network check (`stabilization_bound` becomes proven; the witness
 upper bound then rests on it), update the abstract ("stated as cited results" no longer applies

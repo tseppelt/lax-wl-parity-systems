@@ -329,4 +329,57 @@ theorem IsChain.strictSteps_add_one_le_of_le (S : StarSubalgebra ℂ A) {N : ℕ
 
 end Transfer
 
+/-! ### Extending a chain by squares (replaces the surgery of Lemma 5.5) -/
+
+/-- `V` up to `s`, then the squares `V s ^ 2 ^ (i - s)`. -/
+def sqExt (V : ℕ → Submodule ℂ A) (s i : ℕ) : Submodule ℂ A :=
+  if i ≤ s then V i else V s ^ (2 ^ (i - s))
+
+theorem sqExt_of_le {V : ℕ → Submodule ℂ A} {s i : ℕ} (h : i ≤ s) : sqExt V s i = V i :=
+  if_pos h
+
+theorem sqExt_of_ge {V : ℕ → Submodule ℂ A} {s i : ℕ} (h : s ≤ i) :
+    sqExt V s i = V s ^ (2 ^ (i - s)) := by
+  unfold sqExt
+  split_ifs with h'
+  · obtain rfl : i = s := by omega
+    simp
+  · rfl
+
+theorem pow_two_pow_ne_of_ne_alg {V : Submodule ℂ A} (h1 : (1 : A) ∈ V) {j : ℕ}
+    (h : V ^ (2 ^ j) ≠ alg V) : V ^ (2 ^ j) ≠ V ^ (2 ^ (j + 1)) := by
+  intro heq
+  have hj := Nat.one_le_two_pow (n := j)
+  have hle1 : V ^ (2 ^ j) ≤ V ^ (2 ^ j + 1) := pow_le_pow_of_one_mem h1 (by omega)
+  have hle2 : V ^ (2 ^ j + 1) ≤ V ^ (2 ^ (j + 1)) :=
+    pow_le_pow_of_one_mem h1 (by rw [pow_succ]; omega)
+  exact h (alg_eq_of_stable h1 (le_antisymm hle1 (heq ▸ hle2))).symm
+
+theorem IsChain.isChain_sqExt {V : ℕ → Submodule ℂ A} {ℓ s : ℕ} (hV : IsChain V ℓ) (hs : s ≤ ℓ)
+    (r : ℕ) : IsChain (sqExt V s) (s + r) := by
+  refine ⟨?_, fun i hi x hx => ?_, fun i hi => ?_⟩
+  · rw [sqExt_of_le (Nat.zero_le _), hV.zero]
+  · rcases le_total i s with h | h
+    · rw [sqExt_of_le h] at hx ⊢; exact hV.star_mem i (by omega) x hx
+    · rw [sqExt_of_ge h] at hx ⊢
+      exact (StarClosed.pow (hV.star_mem s hs) _) x hx
+  · rcases lt_or_ge i s with h | h
+    · rw [sqExt_of_le h.le, sqExt_of_le h]; exact hV.mul_le i (by omega)
+    · rw [sqExt_of_ge h, sqExt_of_ge (by omega : s ≤ i + 1), ← pow_add]
+      apply le_of_eq; congr 1
+      rw [show i + 1 - s = (i - s) + 1 by omega, pow_succ]; ring
+
+theorem IsChain.strictSteps_sqExt {V : ℕ → Submodule ℂ A} {ℓ s r : ℕ} (hV : IsChain V ℓ)
+    (hs : s ≤ ℓ) (hr : ∀ j < r, V s ^ (2 ^ j) ≠ alg (V s)) :
+    strictSteps (sqExt V s) (s + r) = strictSteps V s + r := by
+  rw [strictSteps_add, strictSteps_congr (V := sqExt V s) (V' := V) fun i hi => by
+    rw [sqExt_of_le hi.le, sqExt_of_le hi]]
+  congr 1
+  calc ∑ i ∈ Finset.range r, stepInd (sqExt V s) (s + i) = ∑ _i ∈ Finset.range r, 1 := by
+        refine Finset.sum_congr rfl fun i hi => stepInd_eq_one ?_
+        rw [sqExt_of_ge (by omega), sqExt_of_ge (by omega),
+          show s + i - s = i by omega, show s + i + 1 - s = i + 1 by omega]
+        exact pow_two_pow_ne_of_ne_alg (hV.one_mem s hs) (hr i (Finset.mem_range.mp hi))
+    _ = r := by simp
+
 end Lax119563Proofs.Stabilization
