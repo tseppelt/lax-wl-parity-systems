@@ -21,9 +21,6 @@ We follow Flum and Grohe, with deterministic multitape Turing machines as the ma
   2. $R$ is computed by a machine in time $f(\kappa(x)) \cdot (|x| + 1)^d$ for a computable
      $f$ and a constant $d$;
   3. $\kappa'(R(x)) \leq g(\kappa(x))$ for a computable $g$.
-* For a class $\mathcal C$ of parameterized problems, $(L', \kappa')$ is
-  **$\mathcal C$-hard** if every member of $\mathcal C$ fpt-reduces to it, and
-  **$\mathcal C$-complete** if it moreover belongs to $\mathcal C$.
 
 # Implementation notes
 * Machines are the deterministic machines of `Lax119563.DeterministicTime`, numbers are
@@ -76,13 +73,5 @@ structure IsFptReduction (P Q : ParameterizedProblem) (R : List Bool → List Bo
 
 /-- `P` fpt-reduces to `Q`. -/
 def FptReduces (P Q : ParameterizedProblem) : Prop := ∃ R, IsFptReduction P Q R
-
-/-- `Q` is `𝒞`-hard: every member of `𝒞` fpt-reduces to it. -/
-def Hard (𝒞 : Set ParameterizedProblem) (Q : ParameterizedProblem) : Prop :=
-  ∀ P ∈ 𝒞, FptReduces P Q
-
-/-- `Q` is `𝒞`-complete: it belongs to `𝒞` and is `𝒞`-hard. -/
-def Complete (𝒞 : Set ParameterizedProblem) (Q : ParameterizedProblem) : Prop :=
-  Q ∈ 𝒞 ∧ Hard 𝒞 Q
 
 end Lax119563.ParameterizedComplexity

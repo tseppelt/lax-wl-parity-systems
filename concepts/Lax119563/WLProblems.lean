@@ -52,7 +52,7 @@ def leadingNat : List Bool → ℕ
   | _ => 0
 
 /-- **WL Distinguishing** as a parameterized problem, with parameter `k`. -/
-def wlProblem : ParameterizedProblem where
+def paramWLProblem : ParameterizedProblem where
   L := WLDistinguishing
   κ := leadingNat
 
