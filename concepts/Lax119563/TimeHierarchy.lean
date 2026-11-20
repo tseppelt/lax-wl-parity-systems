@@ -36,9 +36,9 @@ not interchangeable here. The available Turing machine notions compare as follow
   * mathlib has no time classes for a fixed exponent, and no proof that the model is
     equivalent to multitape Turing machines.
 
-  Hence $\mathsf{DTIME}(n^s)$ would have to be defined here anyway, and the cited theorem,
-  which is proven for multitape tapes, would hold for this model only through an unformalized
-  simulation.
+  Hence $\mathsf{DTIME}(n^s)$ would have to be defined here anyway, and the theorem, which is
+  stated in the literature for multitape machines, would transfer to this model only through
+  a simulation.
 * **Complexity classes in the archive.** The registered classes on bit strings, such as
   `Lax434930.PolynomialTime.P` and `Lax429075.Reductions.ManyOne` (built on mathlib's
   `FinTM2` in polynomial time), `Lax759944.TuringPolytime` (the same, with equivalence to
@@ -55,16 +55,17 @@ not interchangeable here. The available Turing machine notions compare as follow
   * the input is laid out on tape $0$, and halting returns a bit.
 
   This is the model in which Hartmanis–Stearns and Hennie–Stearns state the hierarchy, and in
-  which the paper states its reduction and its lower bound, so the cited axiom says exactly
+  which the paper states its reduction and its lower bound, so the statement says exactly
   what the literature proves. It is the registered model of the fine-grained hypotheses
   (SETH, ETH, 3SUM, APSP), so the lower bound lives in the same model as those conditional
   statements. We restrict it to deterministic machines (`Deterministic`), whose transitions
   ignore the random bit.
 
-The price of this choice is that `Lax489179` has no bridge to mathlib's machines or to the
-polynomial-time classes of the archive. The machine constructions needed for the reduction
-(composition, rewinding and the compiled reduction program) are therefore carried out
-directly in this model in the proofs.
+Neither mathlib nor the archive provides machine constructions for `Lax489179`, so those
+needed here (composition, rewinding, the compiled reduction programs, and a universal machine
+for the diagonalization) are carried out directly in this model in the proofs. The
+translations to the archive's single-tape and multi-stack models, used for the
+$\mathsf{EXPTIME}$-hardness of WL Distinguishing, are `Lax119563.MachineTranslations`.
 -/
 
 open Lax119563.DeterministicTime
