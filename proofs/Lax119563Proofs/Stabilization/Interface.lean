@@ -1,52 +1,20 @@
-import Mathlib
+import Lax119563Proofs.Stabilization.Defs
 
 /-!
-# Stabilization bound: shared definitions and cross-track interface
+# Stabilization bound: cross-track interface
 
-Weak chains (the `A`-sequences of Döring–Neuen, without strictness) and the statements that
-one work track provides to another. The `sorry`s here are placeholders; each is replaced by a
-proof in the owning track (see `Plan.lean`). Do not change these statements without
-coordinating: other tracks build on them.
+The statements that one work track provides to another (definitions in `Defs.lean`). The
+`sorry`s here are placeholders; each is replaced by a proof in the owning track (see
+`Plan.lean`). Do not change these statements without coordinating: other tracks build on them.
 -/
 
 open Module
 
 namespace Lax119563Proofs.Stabilization
 
-section Chains
-
-variable {A : Type*} [Ring A] [Algebra ℂ A] [StarRing A] [StarModule ℂ A]
-
-/-- A weak chain of length `ℓ` in a star algebra `A`: `V 0 = ℂ 1`, every `V i` (`i ≤ ℓ`) is
-closed under `star`, and `V i * V i ≤ V (i + 1)` for `i < ℓ`. -/
-structure IsChain (V : ℕ → Submodule ℂ A) (ℓ : ℕ) : Prop where
-  zero : V 0 = ℂ ∙ (1 : A)
-  star_mem : ∀ i ≤ ℓ, ∀ x ∈ V i, star x ∈ V i
-  mul_le : ∀ i < ℓ, V i * V i ≤ V (i + 1)
-
-/-- The number of strict steps `V i ≠ V (i + 1)`, `i < ℓ`. -/
-noncomputable def strictSteps (V : ℕ → Submodule ℂ A) (ℓ : ℕ) : ℕ := by
-  classical
-  exact ((Finset.range ℓ).filter fun i => V i ≠ V (i + 1)).card
-
-variable (A) in
-/-- Every weak chain in `A` has fewer than `N` strict steps. -/
-def ChainBound (N : ℕ) : Prop :=
-  ∀ (V : ℕ → Submodule ℂ A) (ℓ : ℕ), IsChain V ℓ → strictSteps V ℓ + 1 ≤ N
-
-end Chains
-
 section Structure
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] [FiniteDimensional ℂ E]
-
-/-- `W` is invariant under every element of `S`. -/
-def Invariant (S : StarSubalgebra ℂ (E →ₗ[ℂ] E)) (W : Submodule ℂ E) : Prop :=
-  ∀ a ∈ S, ∀ x ∈ W, a x ∈ W
-
-/-- `W` is a nonzero `S`-invariant subspace without nontrivial `S`-invariant subspaces. -/
-def IsSimpleFor (S : StarSubalgebra ℂ (E →ₗ[ℂ] E)) (W : Submodule ℂ E) : Prop :=
-  W ≠ ⊥ ∧ Invariant S W ∧ ∀ U : Submodule ℂ E, U ≤ W → Invariant S U → U = ⊥ ∨ U = W
 
 /-- **Corner lemma** (track Structure). If `W` is `S`-simple and `2 dim W > dim E`, then `S`
 contains every operator with range in `W` vanishing on `Wᗮ`. -/
