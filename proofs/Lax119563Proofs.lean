@@ -350,3 +350,6 @@ import Lax119563Proofs.Computability.Closure
 import Lax119563Proofs.Computability.Majorant
 import Lax119563Proofs.Computability.Param
 import Lax119563Proofs.Computability.PreMachine
+import Lax119563Proofs.Hardness.XpProgram
+import Lax119563Proofs.Hardness.XpMachine
+import Lax119563Proofs.Hardness.Xp

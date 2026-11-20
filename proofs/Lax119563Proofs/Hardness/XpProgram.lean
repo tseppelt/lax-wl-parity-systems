@@ -167,7 +167,7 @@ lemma tail_phase2 (hw2 : 2 ≤ w) (n : ℕ) (hw : 4 * (n + 4) < 2 ^ w) :
         (stV b ![k, F, t, 0, n, 2 ^ j, j, 0, 0] n []).env := by
       simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega
     refine ((Good.set hf1).seq (Good.set ?_)).of_eq ?_ ?_
-    · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp [Function.update_apply]
+    · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp
       omega
     · rw [stV_set, stV_set]
       simp only [Ex.eval, xr, stV_ex]
@@ -214,7 +214,7 @@ lemma tail_phase3 (hw2 : 2 ≤ w) (n a : ℕ) (ha : a ≤ n + 2) (p : ℕ)
         (stV b ![k, F, t, 0, n, p, a, j * a, j] n []).env := by
       simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega
     refine ((Good.set hf1).seq (Good.set ?_)).of_eq ?_ ?_
-    · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp [Function.update_apply]
+    · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp
       omega
     · rw [stV_set, stV_set]
       simp only [Ex.eval, xr, stV_ex]
@@ -226,7 +226,7 @@ lemma tail_phase3 (hw2 : 2 ≤ w) (n a : ℕ) (ha : a ≤ n + 2) (p : ℕ)
     (fun j => stV b ![k, F, t, 0, n, p, a, j * a, j] n []) (8 * NC)
     (fun j hj => by simp [Ex.eval, hj])
     (by simp [Ex.eval])
-    (fun j hj => by simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega)
+    (fun j hj => by simp only [Ex.Fits, xr, stV_ex]; simp; omega)
     hS
   refine hl.mono ?_
   have := cond_le' (w := w) (.lt (.var (xr C 8)) (.var (xr C 1)) : Ex (C + 9))
