@@ -45,9 +45,9 @@ lemma hasCost_lenLog {τs : List Ty} {n : ℕ} (hn : τs.length = n) {g : Gn} {e
           exact le_trans hp (Nat.le_mul_of_pos_left _ (by omega)))
   have hstk : ρ ++ [m] ++ [L] ++ [1 * 2 ^ L] = ρ ++ [m, L, 1 * 2 ^ L] := by simp
   obtain ⟨g1, g2⟩ := hKg ℓ x _ hx hA'
-  have hB1 : ↑ℓ + 1 ≤ (Kg + 10) * (ℓ + 1) := by nlinarith
-  have hlt : 2 ^ ℓ.l < 2 ^ ((Kg + 10) * (ℓ + 1)) := Nat.pow_lt_pow_right (by norm_num) (by omega)
-  have hl1 : ℓ.l < 2 ^ ((Kg + 10) * (ℓ + 1)) := lt_of_lt_of_le Nat.lt_two_pow_self hlt.le
+  have hB1 : ↑ℓ + 1 ≤ (Kg + 10) * ((ℓ : ℕ) + 1) := by nlinarith
+  have hlt : 2 ^ ℓ.l < 2 ^ ((Kg + 10) * ((ℓ : ℕ) + 1)) := Nat.pow_lt_pow_right (by norm_num) (by omega)
+  have hl1 : ℓ.l < 2 ^ ((Kg + 10) * ((ℓ : ℕ) + 1)) := lt_of_lt_of_le Nat.lt_two_pow_self hlt.le
   refine ⟨⟨by omega, ?_, ?_⟩, ?_⟩
   · show (var n).Fits _ (ρ ++ [m])
     simp only [Xp.Fits]; rw [show (ρ ++ [m]).getD n 0 = m from e1]; omega
