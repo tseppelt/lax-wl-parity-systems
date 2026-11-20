@@ -310,3 +310,8 @@ import Lax119563Proofs.Bridges.TM2Sim.Phases
 import Lax119563Proofs.Bridges.TM2Sim.TapeRep
 import Lax119563Proofs.Bridges.TM2Sim.Sim
 import Lax119563Proofs.Bridges.TM2Sim.Correct
+import Lax119563Proofs.Hardness.SimMachine
+import Lax119563Proofs.Hardness.LeadMachine
+import Lax119563Proofs.Hardness.SizeBound
+import Lax119563Proofs.Hardness.Decoding
+import Lax119563Proofs.Hardness.Pipeline
