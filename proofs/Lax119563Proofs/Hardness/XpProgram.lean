@@ -122,14 +122,14 @@ lemma tail_phase1 (hw2 : 2 ≤ w) (hw : x.length + 3 < 2 ^ w) :
       simp only [Ex.Fits, Ex.eval, xr, stV_ex]
       simp
       omega
-    refine ((Good.set hf).seq (Good.rd _)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf).seq (CStm.Good.rd _)).of_eq ?_ ?_
     · rw [stV_set, stV_set]
       simp only [stV_pos', stV_pos, Ex.eval, stV_ex, show min (j + 1) x.length = j + 1 by omega]
       congr 1; funext i; fin_cases i <;> rfl
     · simp only [Ex.size]
       have := @unit_le_nc' w
       omega
-  have hl := Good.loop_const (x := x) (w := w) (e := (.var (xr C 3) : Ex (C + 9))) x.length
+  have hl := CStm.Good.loop_const (x := x) (w := w) (e := (.var (xr C 3) : Ex (C + 9))) x.length
     (fun j => stV b ![k, F, t, inBit x j, j, 0, 0, 0, 0] (min (j + 1) x.length) []) (8 * NC)
     (fun j hj => by simpa [Ex.eval] using inBit_lt hj)
     (by simpa [Ex.eval] using inBit_len x)
@@ -166,7 +166,7 @@ lemma tail_phase2 (hw2 : 2 ≤ w) (n : ℕ) (hw : 4 * (n + 4) < 2 ^ w) :
     have hf1 : (Ex.add (.var (xr C 5)) (.var (xr C 5)) : Ex (C + 9)).Fits w
         (stV b ![k, F, t, 0, n, 2 ^ j, j, 0, 0] n []).env := by
       simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega
-    refine ((Good.set hf1).seq (Good.set ?_)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf1).seq (CStm.Good.set ?_)).of_eq ?_ ?_
     · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp
       omega
     · rw [stV_set, stV_set]
@@ -174,7 +174,7 @@ lemma tail_phase2 (hw2 : 2 ≤ w) (n : ℕ) (hw : 4 * (n + 4) < 2 ^ w) :
       rw [show 2 ^ (j + 1) = 2 ^ j + 2 ^ j by ring]
       congr 1; funext i; fin_cases i <;> rfl
     · simp only [Ex.size]; have := @unit_le_nc' w; omega
-  have hl := Good.loop_const (x := x) (w := w)
+  have hl := CStm.Good.loop_const (x := x) (w := w)
     (e := (.lt (.var (xr C 5)) (.add (.var (xr C 4)) (.const 2)) : Ex (C + 9))) (parA n)
     (fun j => stV b ![k, F, t, 0, n, 2 ^ j, j, 0, 0] n []) (8 * NC)
     (fun j hj => by simp [Ex.eval, pow_lt_of_lt_parA hj])
@@ -213,7 +213,7 @@ lemma tail_phase3 (hw2 : 2 ≤ w) (n a : ℕ) (ha : a ≤ n + 2) (p : ℕ)
     have hf1 : (Ex.add (.var (xr C 7)) (.var (xr C 6)) : Ex (C + 9)).Fits w
         (stV b ![k, F, t, 0, n, p, a, j * a, j] n []).env := by
       simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega
-    refine ((Good.set hf1).seq (Good.set ?_)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf1).seq (CStm.Good.set ?_)).of_eq ?_ ?_
     · rw [stV_set]; simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp
       omega
     · rw [stV_set, stV_set]
@@ -221,7 +221,7 @@ lemma tail_phase3 (hw2 : 2 ≤ w) (n a : ℕ) (ha : a ≤ n + 2) (p : ℕ)
       rw [e2]
       congr 1; funext i; fin_cases i <;> rfl
     · simp only [Ex.size]; have := @unit_le_nc' w; omega
-  have hl := Good.loop_const (x := x) (w := w)
+  have hl := CStm.Good.loop_const (x := x) (w := w)
     (e := (.lt (.var (xr C 8)) (.var (xr C 1)) : Ex (C + 9))) F
     (fun j => stV b ![k, F, t, 0, n, p, a, j * a, j] n []) (8 * NC)
     (fun j hj => by simp [Ex.eval, hj])
@@ -248,18 +248,18 @@ lemma tail_good (hw2 : 2 ≤ w) (hw : 4 * ((F + 1) * (x.length + 4)) < 2 ^ w) :
   have hFa : F * parA x.length ≤ (F + 1) * (x.length + 4) :=
     Nat.mul_le_mul (by omega) (by omega)
   have hU := @unit_le_nc' w
-  have g0 := Good.rst (x := x) (w := w) (st := stV b ![k, F, t, 0, 0, 0, 0, 0, 0] x.length [])
+  have g0 := CStm.Good.rst (x := x) (w := w) (st := stV b ![k, F, t, 0, 0, 0, 0, 0, 0] x.length [])
   simp only [stV_pos', stV_pos] at g0
   have g1 : Good x w (.rd (xr C 3) : CStm (C + 9) C) (stV b ![k, F, t, 0, 0, 0, 0, 0, 0] 0 [])
       (stV b ![k, F, t, inBit x 0, 0, 0, 0, 0, 0] (min (0 + 1) x.length) []) (unitCost w) := by
-    refine (Good.rd _).of_eq ?_ le_rfl
+    refine (CStm.Good.rd _).of_eq ?_ le_rfl
     rw [stV_set]; simp only [stV_pos', stV_pos]
     congr 1; funext i; fin_cases i <;> rfl
   have g2 := tail_phase1 (x := x) (w := w) b k F t hw2 (by omega)
   have g3 : Good x w (.set (xr C 5) (.const 1) : CStm (C + 9) C)
       (stV b ![k, F, t, 0, x.length, 0, 0, 0, 0] x.length [])
       (stV b ![k, F, t, 0, x.length, 2 ^ 0, 0, 0, 0] x.length []) (2 * NC) := by
-    refine (Good.set (by simp only [Ex.Fits]; omega)).of_eq ?_ (by simp only [Ex.size]; omega)
+    refine (CStm.Good.set (by simp only [Ex.Fits]; omega)).of_eq ?_ (by simp only [Ex.size]; omega)
     rw [stV_set]; simp only [Ex.eval]
     congr 1; funext i; fin_cases i <;> rfl
   have g4 := tail_phase2 (x := x) (w := w) b k F t hw2 x.length (by omega)
@@ -271,7 +271,7 @@ lemma tail_good (hw2 : 2 ≤ w) (hw : 4 * ((F + 1) * (x.length + 4)) < 2 ^ w) :
         x.length [])
       (stV b ![k, F, t, 0, x.length, 2 ^ parA x.length, parA x.length, F * parA x.length, F]
         x.length [F * parA x.length]) (2 * NC) := by
-    refine (Good.emit ?_).of_eq ?_ (by simp only [Ex.size]; omega)
+    refine (CStm.Good.emit ?_).of_eq ?_ (by simp only [Ex.size]; omega)
     · simp only [Ex.Fits, xr, stV_ex]; simp; omega
     · simp only [Ex.eval, xr, stV_ex, stV_out', stV_outF]; simp
   have g7 : Good x w (.emit (.add (.var (xr C 1)) (.const 1)) : CStm (C + 9) C)
@@ -279,11 +279,11 @@ lemma tail_good (hw2 : 2 ≤ w) (hw : 4 * ((F + 1) * (x.length + 4)) < 2 ^ w) :
         x.length [F * parA x.length])
       (stV b ![k, F, t, 0, x.length, 2 ^ parA x.length, parA x.length, F * parA x.length, F]
         x.length [F * parA x.length, F + 1]) (4 * NC) := by
-    refine (Good.emit ?_).of_eq ?_ (by simp only [Ex.size]; omega)
+    refine (CStm.Good.emit ?_).of_eq ?_ (by simp only [Ex.size]; omega)
     · simp only [Ex.Fits, Ex.eval, xr, stV_ex]; simp; omega
     · simp only [Ex.eval, xr, stV_ex, stV_out', stV_outF]; simp
   refine (g0.seq (g1.seq (g2.seq (g3.seq (g4.seq (g5.seq (g6.seq (g7.seq
-    Good.skip)))))))).mono ?_
+    CStm.Good.skip)))))))).mono ?_
   have e : 30 * (x.length + parA x.length + F + 1) * NC =
       30 * (x.length * NC) + 30 * (parA x.length * NC) + 30 * (F * NC) + 30 * NC := by ring
   have e1 : unitCost w * (x.length + 1) ≤ NC * (x.length + 1) := Nat.mul_le_mul_right _ hU

@@ -40,12 +40,12 @@ theorem call_good {M : Machine} {C E : ℕ} (h : need M ≤ C) (hw : 2 ≤ w) (h
       (Ex.nodeCost w + unitCost w) := by
     have e : st1 = st.set (ρs M C E h .inp) ((Ex.var src : Ex (C + E)).eval st.env) := by
       rw [hst1]; congr 1; simp only [Ex.eval]; exact hk.symm
-    rw [e]; exact (Good.set (by simp only [Ex.Fits, hk]; exact hkw)).mono (by simp [Ex.size])
-  have hb1 := Good.bdd hw g1 hb hp
+    rw [e]; exact (CStm.Good.set (by simp only [Ex.Fits, hk]; exact hkw)).mono (by simp [Ex.size])
+  have hb1 := CStm.Good.bdd hw g1 hb hp
   obtain ⟨T, g2, e1, e2, e3, e4, e5, e6⟩ := simNat_slot (x := x) h hw hB st1 hb1.1 hb1.2
     (fun q => by simp [hst1, hemp]) (by simp [hst1]) hkw hM hs hv
   have g := g1.seq g2
-  have hb2 := Good.bdd hw g hb hp
+  have hb2 := CStm.Good.bdd hw g hb hp
   refine ⟨_, _, g, e1, e2, e3, fun i => ?_, hb2.1, by rw [e5]; rfl, by rw [e6]; rfl⟩
   rw [e4, hst1, NSt.set_env, Function.update_of_ne (ρs_ne_ex M h _ i).symm]
 

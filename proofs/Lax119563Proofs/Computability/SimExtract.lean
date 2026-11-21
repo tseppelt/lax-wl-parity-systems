@@ -131,10 +131,10 @@ lemma extract_good (hw : 2 ≤ w) (st : NSt R Q) (hb : st.Bdd w) {c : Config M} 
   set st3 := (st2.set (ρ .out) 0).set (ρ .pw) 1 with hst3
   have g3a : Good x w (.set (ρ .out) (.const 0) : CStm R Q) st2 (st2.set (ρ .out) 0)
       (Ex.nodeCost w + unitCost w) :=
-    (Good.set (by simp [Ex.Fits])).mono (by simp [Ex.size])
+    (CStm.Good.set (by simp [Ex.Fits])).mono (by simp [Ex.size])
   have g3b : Good x w (.set (ρ .pw) (.const 1) : CStm R Q) (st2.set (ρ .out) 0) st3
       (Ex.nodeCost w + unitCost w) :=
-    (Good.set (by simp [Ex.Fits]; omega)).mono (by simp [Ex.size])
+    (CStm.Good.set (by simp [Ex.Fits]; omega)).mono (by simp [Ex.size])
   obtain ⟨g4, e4o, e4R⟩ := parseB_good (x := x) (q := κ (.R 0)) hw (t := ρ .tmp)
     (o := ρ .out) (p := ρ .pw) (by simp) (by simp) (by simp) st3 v.bits rest' hv
     (by
@@ -145,7 +145,7 @@ lemma extract_good (hw : 2 ≤ w) (st : NSt R Q) (hb : st.Bdd w) {c : Config M} 
     (by simp [hst3]) (by simp [hst3])
   set st4 := exec x (parseB (κ (.R 0)) (ρ .tmp) (ρ .out) (ρ .pw)) st3 with hst4
   have g : Good x w (extract M ρ κ) st st4 _ :=
-    g1.seq (g2.seq (g3a.seq (g3b.seq (g4.seq Good.skip))))
+    g1.seq (g2.seq (g3a.seq (g3b.seq (g4.seq CStm.Good.skip))))
   have hex : exec x (extract M ρ κ) st = st4 := g.2.1
   -- lengths
   have hlenl : l.length ≤ a + 3 * s := by

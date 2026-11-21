@@ -134,7 +134,7 @@ theorem core_good (hB : simB M ≤ 2 ^ w) (u : List Bool) (st : NSt R Q)
       have := iter_step ρ κ (x := x) hB (by simpa [show j + 1 ≠ s by omega] using this.2)
         (haltTime_min hh hj') (by omega)
       rw [hsucc (j + 1)]; exact this.1
-  have hloop := Good.loop (x := x) (w := w) (e := condE M ρ) (body := body M ρ κ) s S
+  have hloop := CStm.Good.loop (x := x) (w := w) (e := condE M ρ) (body := body M ρ κ) s S
     (fun _ => bodyCost M w)
     (fun j hj => by
       have := (hI j hj.le).1.2.1
@@ -150,8 +150,8 @@ theorem core_good (hB : simB M ≤ 2 ^ w) (u : List Bool) (st : NSt R Q)
       split_ifs <;> omega)
     (fun j hj => (hI j hj.le).2 hj)
   have gc : Good x w (core M ρ κ) st (S s) _ :=
-    (Good.set (by simp [Ex.Fits])).seq ((Good.set (by simp [Ex.Fits])).seq
-      ((Good.set (by simp [Ex.Fits])).seq hloop))
+    (CStm.Good.set (by simp [Ex.Fits])).seq ((CStm.Good.set (by simp [Ex.Fits])).seq
+      ((CStm.Good.set (by simp [Ex.Fits])).seq hloop))
   refine ⟨?_, ?_⟩
   · rw [gc.2.1]
     refine gc.mono ?_

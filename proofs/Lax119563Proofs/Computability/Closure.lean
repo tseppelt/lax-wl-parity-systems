@@ -61,17 +61,17 @@ def powOp : ArithOp (· ^ ·) where
         simp [hS1, Function.update_of_ne hsu, Function.update_of_ne hst, hs]
       have g2 : Good x w (.set o (.var t) : CStm R Q) S1 (S1.set o (A ^ j * A))
           (Ex.nodeCost w + unitCost w) :=
-        (Good.set (by simp only [Ex.Fits, e1t]; exact hlt _ (by omega))).of_eq
+        (CStm.Good.set (by simp only [Ex.Fits, e1t]; exact hlt _ (by omega))).of_eq
           (by simp [Ex.eval, e1t]) (by simp [Ex.size])
       have e2s : (S1.set o (A ^ j * A)).env s = j := by
         simp [Function.update_of_ne hos.symm, e1s]
       have g3 : Good x w (.set s (.add (.var s) (.const 1)) : CStm R Q) (S1.set o (A ^ j * A))
           ((S1.set o (A ^ j * A)).set s (j + 1)) (3 * Ex.nodeCost w + unitCost w) :=
-        (Good.set (by
+        (CStm.Good.set (by
           simp only [Ex.Fits, Ex.eval, e2s]
           exact ⟨hlt j (by omega), hlt 1 (by omega), hlt (j + 1) (by omega)⟩)).of_eq
           (by simp [Ex.eval, e2s]) (by simp [Ex.size])
-      have g := g1.seq (g2.seq (g3.seq Good.skip))
+      have g := g1.seq (g2.seq (g3.seq CStm.Good.skip))
       exact ⟨g.1, g.2.1⟩
     have hSj : ∀ j ≤ B, (S j).env o = A ^ j ∧ (S j).env s = j ∧ (S j).env a = A ∧
         (S j).env b = B ∧ (∀ r, r ≠ o → r ≠ s → r ≠ t → r ≠ u → (S j).env r = st.env r) ∧
@@ -100,7 +100,7 @@ def powOp : ArithOp (· ^ ·) where
             Function.update_of_ne hbt, i4]
         · rw [Function.update_of_ne h2, Function.update_of_ne h1, Function.update_of_ne h4,
             Function.update_of_ne h3, i5 r h1 h2 h3 h4]
-    have hloop := Good.loop (x := x) (w := w) (e := .lt (.var s) (.var b)) (body := body) B S
+    have hloop := CStm.Good.loop (x := x) (w := w) (e := .lt (.var s) (.var b)) (body := body) B S
       (fun j => cost x w body (S j))
       (fun j hj => by simp [Ex.eval, (hSj j hj.le).2.1, (hSj j hj.le).2.2.2.1, hj])
       (by simp [Ex.eval, (hSj B le_rfl).2.1, (hSj B le_rfl).2.2.2.1])
@@ -112,9 +112,9 @@ def powOp : ArithOp (· ^ ·) where
         have := hstep (S j) j hj i1 i2 i3 i4
         rw [show S (j + 1) = exec x body (S j) from iter_succ _ _ _]
         exact ⟨this.1, rfl, le_rfl⟩)
-    have g0 := (Good.set (x := x) (w := w) (r := o) (e := .const 1) (st := st)
-      (by simp only [Ex.Fits]; exact hlt 1 (by omega))).seq ((Good.set (x := x) (w := w) (r := s)
-        (e := .const 0) (st := st.set o 1) (by simp [Ex.Fits])).seq (hloop.seq Good.skip))
+    have g0 := (CStm.Good.set (x := x) (w := w) (r := o) (e := .const 1) (st := st)
+      (by simp only [Ex.Fits]; exact hlt 1 (by omega))).seq ((CStm.Good.set (x := x) (w := w) (r := s)
+        (e := .const 0) (st := st.set o 1) (by simp [Ex.Fits])).seq (hloop.seq CStm.Good.skip))
     have hex : exec x (powS a b o s t u) st = S B := g0.2.1
     obtain ⟨i1, -, -, -, i5, i6, i7, i8⟩ := hSj B le_rfl
     refine ⟨g0.1, by rw [hex, i1], fun r h1 h2 h3 h4 => by rw [hex, i5 r h1 h2 h3 h4],
@@ -124,7 +124,7 @@ def powOp : ArithOp (· ^ ·) where
 
 theorem MachineComputable.const (c : ℕ) : MachineComputable fun _ => c := by
   refine machineComputable_of_stm (.emit (.const c) : CStm 1 0) _ fun k => ⟨c + 2, by omega,
-    _, _, Good.emit (by simp only [Ex.Fits]; exact lt_two_pow_of_le (by omega)), rfl⟩
+    _, _, CStm.Good.emit (by simp only [Ex.Fits]; exact lt_two_pow_of_le (by omega)), rfl⟩
 
 theorem MachineComputable.id' : MachineComputable fun k => k := by
   refine machineComputable_of_stm (seqL [startS 0 3 le_rfl, .emit (.var (ex 0 3 0))]) _
@@ -134,7 +134,7 @@ theorem MachineComputable.id' : MachineComputable fun k => k := by
   have e1k' : st1.env (ex 0 3 0) = k := e1k
   have hf : (Ex.var (ex 0 3 0) : Ex (0 + 3)).Fits (k + 2) st1.env := by
     simp only [Ex.Fits, e1k']; exact lt_two_pow_of_le (by omega)
-  refine ⟨k + 2, by omega, _, _, g1.seq ((Good.emit hf).seq Good.skip), ?_⟩
+  refine ⟨k + 2, by omega, _, _, g1.seq ((CStm.Good.emit hf).seq CStm.Good.skip), ?_⟩
   simp [Ex.eval, e1k', e1o]
 
 /-! ## Composition -/
@@ -179,9 +179,9 @@ theorem MachineComputable.arith {H : ℕ → ℕ → ℕ} (O : ArithOp H) {f g :
     have e : st3 = st2.set (ex C 9 3)
         ((Ex.var (ρs Mf C 9 (by omega) .out) : Ex (C + 9)).eval st2.env) := by
       rw [hst3]; congr 1; simp only [Ex.eval]; exact e2o.symm
-    rw [e]; exact (Good.set (by simp only [Ex.Fits, e2o]; exact lt_two_pow_of_le (by omega))).mono
+    rw [e]; exact (CStm.Good.set (by simp only [Ex.Fits, e2o]; exact lt_two_pow_of_le (by omega))).mono
       (by simp [Ex.size])
-  have hb3 := Good.bdd hw g3 e2b (by omega)
+  have hb3 := CStm.Good.bdd hw g3 e2b (by omega)
   have e3k : st3.env (ex C 9 ⟨0, by omega⟩) = k := by
     rw [hst3, NSt.set_env, Function.update_of_ne (ex_ne_ex (by simp)), e2x, e1k]
   obtain ⟨st4, T4, g4, e4o, -, e4s, e4x, e4b, e4p, e4out⟩ := call_good (x := encodeNat k)
@@ -195,7 +195,7 @@ theorem MachineComputable.arith {H : ℕ → ℕ → ℕ} (O : ArithOp H) {f g :
     have e : st5 = st4.set (ex C 9 4)
         ((Ex.var (ρs Mg C 9 (by omega) .out) : Ex (C + 9)).eval st4.env) := by
       rw [hst5]; congr 1; simp only [Ex.eval]; exact e4o.symm
-    rw [e]; exact (Good.set (by simp only [Ex.Fits, e4o]; exact lt_two_pow_of_le (by omega))).mono
+    rw [e]; exact (CStm.Good.set (by simp only [Ex.Fits, e4o]; exact lt_two_pow_of_le (by omega))).mono
       (by simp [Ex.size])
   have e5a : st5.env (ex C 9 3) = f k := by
     rw [hst5, NSt.set_env, Function.update_of_ne (ex_ne_ex (by simp)), e4x, hst3]; simp
@@ -211,9 +211,9 @@ theorem MachineComputable.arith {H : ℕ → ℕ → ℕ} (O : ArithOp H) {f g :
   have g6 : Good (encodeNat k) w (O.op (ex C 9 3) (ex C 9 4) (ex C 9 5) (ex C 9 6) (ex C 9 7)
     (ex C 9 8)) st5 st6 _ := ⟨o1, rfl, le_rfl⟩
   rw [e5a, e5b] at o2
-  have g7 := Good.emit (x := encodeNat k) (w := w) (st := st6) (e := .var (ex C 9 5))
+  have g7 := CStm.Good.emit (x := encodeNat k) (w := w) (st := st6) (e := .var (ex C 9 5))
     (by simp only [Ex.Fits, o2]; exact lt_two_pow_of_le (by omega))
-  refine ⟨_, _, g1.seq (g2.seq (g3.seq (g4.seq (g5.seq (g6.seq (g7.seq Good.skip)))))), ?_⟩
+  refine ⟨_, _, g1.seq (g2.seq (g3.seq (g4.seq (g5.seq (g6.seq (g7.seq CStm.Good.skip)))))), ?_⟩
   simp [Ex.eval, o2, o6, hst5, e4out, hst3, e2out, e1o]
 
 theorem MachineComputable.add {f g : ℕ → ℕ} (hf : MachineComputable f)

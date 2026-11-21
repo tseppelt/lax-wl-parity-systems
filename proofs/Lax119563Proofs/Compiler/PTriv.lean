@@ -141,7 +141,7 @@ lemma p0Body_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s 
         (20 * Ex.nodeCost w * ((H I - s.pos) - (H I - s'.pos)) + 50 * Ex.nodeCost w) ∧
       p0Inv I st s' ∧ I.numLocations - s'.env rJ < I.numLocations - s.env rJ ∧
       H I - s'.pos ≤ H I - s.pos := by
-  have hU := nodeCost_ge w
+  have hU := CStm.nodeCost_ge w
   have hU' := unitCost_ge w
   obtain ⟨hW, hstk, hout, hjW, hcase⟩ := hI
   have hlt : s.env rJ < I.numLocations := by
@@ -267,7 +267,7 @@ lemma p0End_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st s :
     ∃ s', Good (encodeSystem I) w p0End s s' (30 * (H I + 1) * Ex.nodeCost w) ∧
       s'.stk = st.stk ∧ s'.out = st.out ∧ (s'.env rTriv = 1 ↔ trivSys I) ∧
       s'.env rTriv ≤ 1 := by
-  have hU := nodeCost_ge w
+  have hU := CStm.nodeCost_ge w
   have hU' := unitCost_ge w
   have h4 : 4 ≤ 2 ^ w := by
     calc (4 : ℕ) = 2 ^ 2 := by norm_num
@@ -328,7 +328,7 @@ theorem p0_good {w : ℕ} (hw : 2 ≤ w) (hH : 2 * (H I + 1) ≤ 2 ^ w) (st : NS
     ∃ st', Good (encodeSystem I) w p0 st st' (200 * (H I + 1) * Ex.nodeCost w) ∧
       st'.stk = st.stk ∧ st'.out = st.out ∧ (st'.env rTriv = 1 ↔ trivSys I) ∧
       st'.env rTriv ≤ 1 := by
-  have hU := nodeCost_ge w
+  have hU := CStm.nodeCost_ge w
   have hU' := unitCost_ge w
   have hWH := W_le I
   have h4 : 4 ≤ 2 ^ w := by

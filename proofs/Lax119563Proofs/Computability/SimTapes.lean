@@ -168,7 +168,7 @@ lemma good_seqL {ι : Type} {G : ι → CStm R Q} (Inv : NSt R Q → Prop) (C : 
     ∀ (l : List ι) (st : NSt R Q), Inv st →
       Good x w (seqL (l.map G)) st (exec x (seqL (l.map G)) st) (l.length * C + unitCost w) ∧
         Inv (exec x (seqL (l.map G)) st)
-  | [], st, h => ⟨(Good.skip (x := x) (w := w) (st := st)).mono (by simp), h⟩
+  | [], st, h => ⟨(CStm.Good.skip (x := x) (w := w) (st := st)).mono (by simp), h⟩
   | i :: l, st, h => by
     obtain ⟨g, hi⟩ := hG i st h
     obtain ⟨g', hi'⟩ := good_seqL Inv C hG l _ hi

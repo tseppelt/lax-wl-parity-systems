@@ -37,7 +37,7 @@ lemma start_good (C E : ℕ) (hE : 3 ≤ E) (hw : 2 ≤ w) (k : ℕ) (hk : k ≤
   have hn12 : ex C E ⟨1, by omega⟩ ≠ ex C E ⟨2, by omega⟩ := ex_ne_ex (by simp)
   have g := rdNumS_good (x := encodeNat k) (Q := C) hw hn01 hn02 hn12 (NSt.zero (C + E) C) k []
     (by simp [NSt.zero]) (by have := bits_length_le k; omega)
-  have hb := Good.bdd hw g (bdd_zero _ _ _) (by simp [NSt.zero])
+  have hb := CStm.Good.bdd hw g (bdd_zero _ _ _) (by simp [NSt.zero])
   refine ⟨_, _, g, ?_, fun q => by simp [rdNumFinal, NSt.zero], hb.1, hb.2, by
     simp [rdNumFinal, NSt.zero]⟩
   simp [rdNumFinal, Function.update_of_ne hn01, Function.update_of_ne hn02]
@@ -71,18 +71,18 @@ theorem machineComputable_haltTime {M : Machine} {f : ℕ → ℕ}
         ((Ex.var (ex (need M) 3 ⟨0, by omega⟩) : Ex (need M + 3)).eval st1.env) := by
       rw [hst2]; congr 1; simp only [Ex.eval]; exact e1k.symm
     rw [e]
-    exact (Good.set (by simp only [Ex.Fits, e1k]; exact hkw)).mono (by simp [Ex.size])
-  have hb2 := Good.bdd hw g2 e1b (by omega)
+    exact (CStm.Good.set (by simp only [Ex.Fits, e1k]; exact hkw)).mono (by simp [Ex.size])
+  have hb2 := CStm.Good.bdd hw g2 e1b (by omega)
   obtain ⟨T3, g3, -, e3c, -, -, -, e3o⟩ := simNat_slot (x := encodeNat k) le_rfl hw
     (lt_two_pow_of_le (by omega)).le st2 hb2.1 hb2.2 (fun q => by simp [hst2, e1s])
     (by simp [hst2]) hkw ht (lt_two_pow_of_le (by omega))
     (by have := bits_length_le (f k); omega)
   set st3 := exec (encodeNat k) (simNat M (ρs M (need M) 3 le_rfl) (κs M (need M) le_rfl)) st2
     with hst3
-  have g4 := Good.emit (x := encodeNat k) (w := w) (st := st3)
+  have g4 := CStm.Good.emit (x := encodeNat k) (w := w) (st := st3)
     (e := .var (ρs M (need M) 3 le_rfl .clk))
     (by simp only [Ex.Fits]; rw [e3c]; exact lt_two_pow_of_le (by omega))
-  refine ⟨_, _, g1.seq (g2.seq (g3.seq (g4.seq Good.skip))), ?_⟩
+  refine ⟨_, _, g1.seq (g2.seq (g3.seq (g4.seq CStm.Good.skip))), ?_⟩
   simp [Ex.eval, e3c, e3o, hst2, e1o, hs]
 
 /-- **Computable functions have computable running times.** -/

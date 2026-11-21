@@ -48,7 +48,7 @@ lemma clear_list (hw : 2 ≤ w) (Λ : ℕ) : ∀ (l : List (Sk (M.tapes + 1))) (
         (exec x (seqL (l.map fun g => clrS (κ g) (ρ .tmp) (ρ .flg))) st)
         (l.length * ((Λ + 1) * (8 * Ex.nodeCost w)) + unitCost w) ∧
       ∀ g ∈ l, (exec x (seqL (l.map fun g => clrS (κ g) (ρ .tmp) (ρ .flg))) st).stk (κ g) = []
-  | [], st, _ => ⟨(Good.skip (x := x) (w := w) (st := st)).mono (by simp), by simp⟩
+  | [], st, _ => ⟨(CStm.Good.skip (x := x) (w := w) (st := st)).mono (by simp), by simp⟩
   | g :: l, st, h => by
     obtain ⟨g1, e1, e2⟩ := clrS_good (x := x) hw (q := κ g) (t := ρ .tmp) (f := ρ .flg)
       (by simp) st
@@ -95,7 +95,7 @@ theorem tail_good (hw : 2 ≤ w) (hB : simB M ≤ 2 ^ w) (st : NSt R Q) (hb : st
   obtain ⟨gc, hI⟩ := core_good ρ κ (x := x) hB u st hL hR hh hs
   set s := haltTime M u with hsdef
   set st1 := exec x (core M ρ κ) st with hst1
-  have hbd := Good.bdd hw gc hb hp
+  have hbd := CStm.Good.bdd hw gc hb hp
   have hc : (runOn M u s).tape 0 = (Lax489179.TuringMachine.init M (encodeNat v)).tape 0 :=
     (ComputesWithin.haltTime hM).1.2
   obtain ⟨ge, eo, eR, eL, eq⟩ := extract_good ρ κ (x := x) hw st1 hbd.1 hI
@@ -120,7 +120,7 @@ theorem tail_good (hw : 2 ≤ w) (hB : simB M ≤ 2 ^ w) (st : NSt R Q) (hb : st
   obtain ⟨gcl, ecl⟩ := clear_list ρ κ (x := x) hw (u.length + 3 * s) (allSk (M.tapes + 1)) st2
     (fun g _ => hΛ g)
   set st3 := exec x (clearAll M ρ κ) st2 with hst3
-  have g : Good x w (simTail M ρ κ) st st3 _ := gc.seq (ge.seq (gcl.seq Good.skip))
+  have g : Good x w (simTail M ρ κ) st st3 _ := gc.seq (ge.seq (gcl.seq CStm.Good.skip))
   have hex : exec x (simTail M ρ κ) st = st3 := g.2.1
   refine ⟨?_, ?_, ?_, fun g' => ?_⟩
   · rw [hex]; exact g.mono (by simp only [tailCost]; omega)
@@ -148,17 +148,17 @@ lemma loadNat_good (hw : 2 ≤ w) (st : NSt R Q) (hb : st.Bdd w) (hp : st.pos �
       (Ex.nodeCost w + unitCost w) := by
     have e : st1 = st.set (ρ .tmp) ((Ex.var (ρ .inp) : Ex R).eval st.env) := by
       simp [hst1, Ex.eval, hk]
-    rw [e]; exact (Good.set (by simp [Ex.Fits, hk, hkw])).mono (by simp [Ex.size])
+    rw [e]; exact (CStm.Good.set (by simp [Ex.Fits, hk, hkw])).mono (by simp [Ex.size])
   obtain ⟨g2, e2stk, -, -⟩ := pushBits_good (x := x) (q := κ .aux) (t := ρ .tmp) hw st1 k (by simp [hst1])
     hkw
   set st2 := exec x (pushBits (κ .aux) (ρ .tmp)) st1 with hst2
   set st3 := st2.setS (κ .aux) (1 :: st2.stk (κ .aux)) with hst3
   have g3 : Good x w (.push (κ .aux) (.const 1) : CStm R Q) st2 st3 (Ex.nodeCost w + unitCost w) :=
-    (Good.push (by simp [Ex.Fits, h1])).of_eq (by simp [hst3, Ex.eval]) (by simp [Ex.size])
-  have hbd3 := Good.bdd hw (g1.seq (g2.seq g3)) hb hp
+    (CStm.Good.push (by simp [Ex.Fits, h1])).of_eq (by simp [hst3, Ex.eval]) (by simp [Ex.size])
+  have hbd3 := CStm.Good.bdd hw (g1.seq (g2.seq g3)) hb hp
   obtain ⟨st4, g4, e4stk, -, -, -⟩ := moveAllS_good (x := x) hw (q := κ .aux) (q' := κ (.R 0))
     (t := ρ .tmp) (f := ρ .flg) (by simp) (by simp) st3 hbd3.1
-  have g : Good x w (loadNat M ρ κ) st _ _ := g1.seq (g2.seq (g3.seq (g4.seq Good.skip)))
+  have g : Good x w (loadNat M ρ κ) st _ _ := g1.seq (g2.seq (g3.seq (g4.seq CStm.Good.skip)))
   have hex := g.2.1
   have hs2 : ∀ g, g ≠ .aux → st2.stk (κ g) = [] := fun g hg => by
     rw [hst2, exec_stk_of _ _ (by simp [pushBits, seqL, wStk, Ne.symm hg])]
@@ -192,13 +192,13 @@ lemma loadIn_good (hw : 2 ≤ w) (st : NSt R Q) (hb : st.Bdd w) (hp : st.pos ≤
   have hU' := unitCost_ge w
   set st1 : NSt R Q := { st with pos := 0 } with hst1
   have g1 : Good x w (.rst : CStm R Q) st st1 (unitCost w * (x.length + 1)) :=
-    Good.rst.mono (Nat.mul_le_mul_left _ (by omega))
+    CStm.Good.rst.mono (Nat.mul_le_mul_left _ (by omega))
   obtain ⟨g2, e2stk, -, -, e2pos⟩ := readIn_good (x := x) (q := κ .aux) (t := ρ .tmp) hw st1 rfl
   set st2 := exec x (readIn (κ .aux) (ρ .tmp)) st1 with hst2
-  have hbd2 := Good.bdd hw (g1.seq g2) hb hp
+  have hbd2 := CStm.Good.bdd hw (g1.seq g2) hb hp
   obtain ⟨st3, g3, e3stk, e3pos, -, -⟩ := moveAllS_good (x := x) hw (q := κ .aux) (q' := κ (.R 0))
     (t := ρ .tmp) (f := ρ .flg) (by simp) (by simp) st2 hbd2.1
-  have g : Good x w (loadIn M ρ κ) st _ _ := g1.seq (g2.seq (g3.seq Good.skip))
+  have g : Good x w (loadIn M ρ κ) st _ _ := g1.seq (g2.seq (g3.seq CStm.Good.skip))
   have hex := g.2.1
   have hs2 : ∀ g, g ≠ .aux → st2.stk (κ g) = [] := fun g hg => by
     rw [hst2, exec_stk_of _ _ (by simp [readIn, wStk, Ne.symm hg])]
@@ -243,7 +243,7 @@ theorem simNat_good (hw : 2 ≤ w) (hB : simB M ≤ 2 ^ w) (st : NSt R Q) (hb : 
       (∀ q, (∀ g, κ g ≠ q) → (exec x (simNat M ρ κ) st).stk q = st.stk q) ∧
       (exec x (simNat M ρ κ) st).pos = st.pos ∧ (exec x (simNat M ρ κ) st).out = st.out := by
   obtain ⟨g1, e1⟩ := loadNat_good ρ κ (x := x) hw st hb hp hemp hk hkw
-  have hbd := Good.bdd hw g1 hb hp
+  have hbd := CStm.Good.bdd hw g1 hb hp
   obtain ⟨g2, e2o, e2c, e2s⟩ := tail_good ρ κ (x := x) hw hB _ hbd.1 hbd.2 _ e1 hM hs hv
   have g : Good x w (simNat M ρ κ) st _ _ := g1.seq g2
   have hex : exec x (simNat M ρ κ) st = _ := g.2.1
@@ -269,7 +269,7 @@ theorem simIn_good (hw : 2 ≤ w) (hB : simB M ≤ 2 ^ w) (st : NSt R Q) (hb : s
       (∀ q, (∀ g, κ g ≠ q) → (exec x (simIn M ρ κ) st).stk q = st.stk q) ∧
       (exec x (simIn M ρ κ) st).pos = x.length ∧ (exec x (simIn M ρ κ) st).out = st.out := by
   obtain ⟨g1, e1, e1p⟩ := loadIn_good ρ κ (x := x) hw st hb hp hemp
-  have hbd := Good.bdd hw g1 hb hp
+  have hbd := CStm.Good.bdd hw g1 hb hp
   obtain ⟨g2, e2o, e2c, e2s⟩ := tail_good ρ κ (x := x) hw hB _ hbd.1 hbd.2 _ e1 hM hs hv
   have g : Good x w (simIn M ρ κ) st _ _ := g1.seq g2
   have hex : exec x (simIn M ρ κ) st = _ := g.2.1

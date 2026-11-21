@@ -71,11 +71,11 @@ lemma pushBits_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (k : �
         ∀ r, r ≠ t → (exec x B S').env r = S'.env r := by
     intro S' j hj hS'
     have hkj : k / 2 ^ j ≤ k := Nat.div_le_self _ _
-    have g := (Good.push (x := x) (w := w) (st := S') (q := q) (e := .const 2)
-      (show (2 : ℕ) < 2 ^ w by omega)).seq ((Good.push (q := q) (e := .add (.odd (.var t)) (.const 1))
+    have g := (CStm.Good.push (x := x) (w := w) (st := S') (q := q) (e := .const 2)
+      (show (2 : ℕ) < 2 ^ w by omega)).seq ((CStm.Good.push (q := q) (e := .add (.odd (.var t)) (.const 1))
         (by simp only [Ex.Fits, NSt.setS_env, Ex.eval, hS']; refine ⟨by omega, by omega, ?_⟩
             have := Nat.mod_lt (k / 2 ^ j) (show 2 > 0 by norm_num); omega)).seq
-        ((Good.set (r := t) (e := .half (.var t)) (by simp [Ex.Fits, hS']; omega)).seq Good.skip))
+        ((CStm.Good.set (r := t) (e := .half (.var t)) (by simp [Ex.Fits, hS']; omega)).seq CStm.Good.skip))
     have hex : exec x B S' = _ := g.2.1
     refine ⟨?_, ?_, ?_, fun r hr => ?_⟩
     · rw [hex]; refine g.mono ?_; simp only [Ex.size]; omega
@@ -102,7 +102,7 @@ lemma pushBits_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (k : �
     have := bits_drop k n
     rw [List.drop_length] at this
     exact (Machines.bits_eq_nil_iff _).mp this.symm
-  have hloop := Good.loop_const (x := x) (w := w) (e := .var t) (body := B) n S
+  have hloop := CStm.Good.loop_const (x := x) (w := w) (e := .var t) (body := B) n S
     (12 * Ex.nodeCost w)
     (fun j hj => by simp [Ex.eval, (hSj j hj.le).1, hnz j hj])
     (by simp [Ex.eval, (hSj n le_rfl).1, hn])
@@ -168,7 +168,7 @@ lemma readIn_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (hpos : 
       simp only [NSt.set_stk, NSt.setS_stk, Function.update_self, Ex.eval, i1, i3, inBit_eq,
         dif_pos (show j < x.length by omega), syms_take_succ _ _ (show j < x.length by omega)]
       rfl
-  have hloop := Good.loop_const (x := x) (w := w) (e := .var t) (body := B) x.length S
+  have hloop := CStm.Good.loop_const (x := x) (w := w) (e := .var t) (body := B) x.length S
     (2 * Ex.nodeCost w + 2 * unitCost w)
     (fun j hj => by
       simp only [Ex.eval, (hSj j hj.le).1, inBit_eq, dif_pos hj]; exact (symOf_pos _).ne')
@@ -176,9 +176,9 @@ lemma readIn_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (hpos : 
     (fun j hj => by simp only [Ex.Fits, (hSj j hj).1]; have := hinb j; omega)
     (fun j hj => by
       rw [show S (j + 1) = exec x B (S j) from iter_succ _ _ _]
-      refine ((Good.push ?_).seq (Good.rd t)).mono (by simp [Ex.size]; omega)
+      refine ((CStm.Good.push ?_).seq (CStm.Good.rd t)).mono (by simp [Ex.size]; omega)
       simp only [Ex.Fits, (hSj j hj.le).1]; have := hinb j; omega)
-  have g : Good x w (readIn q t) st (S x.length) _ := (Good.rd t).seq hloop
+  have g : Good x w (readIn q t) st (S x.length) _ := (CStm.Good.rd t).seq hloop
   have hex : exec x (readIn q t) st = S x.length := g.2.1
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [hex]; refine g.mono ?_; simp only [condCost, Ex.size]; nlinarith
@@ -223,15 +223,15 @@ lemma clrS_good (hw : 2 ≤ w) {q : Fin Q} {t f : Fin R} (htf : t ≠ f) (st : N
       refine ⟨by simp, ?_⟩
       simp only [List.tail_drop, List.isEmpty_iff, List.drop_eq_nil_iff]
       split_ifs <;> omega
-  have hloop := Good.loop_const (x := x) (w := w) (e := .var f) (body := B) l.length S
+  have hloop := CStm.Good.loop_const (x := x) (w := w) (e := .var f) (body := B) l.length S
     (unitCost w + 1 + (2 * unitCost w + 1))
     (fun j hj => by simp [Ex.eval, (hSj j hj.le).2, hj])
     (by simp [Ex.eval, (hSj _ le_rfl).2])
     (fun j hj => by simp only [Ex.Fits, (hSj j hj).2]; split_ifs <;> omega)
     (fun j hj => by
       rw [show S (j + 1) = exec x B (S j) from iter_succ _ _ _]
-      exact (Good.pop q t).seq (Good.sne f q))
-  have g : Good x w (clrS q t f) st (S l.length) _ := (Good.sne f q).seq hloop
+      exact (CStm.Good.pop q t).seq (CStm.Good.sne f q))
+  have g : Good x w (clrS q t f) st (S l.length) _ := (CStm.Good.sne f q).seq hloop
   have hex : exec x (clrS q t f) st = S l.length := g.2.1
   refine ⟨?_, ?_, fun q' hq' => ?_⟩
   · rw [hex]; refine g.mono ?_; simp only [condCost, Ex.size]; nlinarith

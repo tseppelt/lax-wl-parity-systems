@@ -102,8 +102,8 @@ theorem call_cost {M : Machine} {C E : ℕ} (h : need M ≤ C) (hw : 2 ≤ w) (h
       (Ex.nodeCost w + unitCost w) := by
     have e : st1 = st.set (ρs M C E h .inp) ((Ex.var src : Ex (C + E)).eval st.env) := by
       rw [hst1]; congr 1; simp only [Ex.eval]; exact hk.symm
-    rw [e]; exact (Good.set (by simp only [Ex.Fits, hk]; exact hkw)).mono (by simp [Ex.size])
-  have hb1 := Good.bdd hw g1 hb hp
+    rw [e]; exact (CStm.Good.set (by simp only [Ex.Fits, hk]; exact hkw)).mono (by simp [Ex.size])
+  have hb1 := CStm.Good.bdd hw g1 hb hp
   have g2 := (simNat_good (ρs M C E h) (κs M C h) hw hB st1 hb1.1 hb1.2
     (fun g => by simp [hst1, hemp]) (by simp [hst1]) hkw hM hs hv).1
   have g := g1.seq g2
@@ -144,23 +144,23 @@ theorem paramS_good {Mκ Mf : Machine} {C E : ℕ} (hκ : need Mκ ≤ C) (hf : 
   set st2 := st1.set (ex C E ⟨0, by omega⟩) k with hst2
   have g2 : Good x w (.set (ex C E ⟨0, by omega⟩) (.var (ρs Mκ C E hκ .out)) : CStm (C + E) C)
       st1 st2 (Ex.nodeCost w + unitCost w) :=
-    (Good.set (by simp only [Ex.Fits, e1o]; exact hkw)).of_eq (by simp [hst2, Ex.eval, e1o])
+    (CStm.Good.set (by simp only [Ex.Fits, e1o]; exact hkw)).of_eq (by simp [hst2, Ex.eval, e1o])
       (by simp [Ex.size])
-  have hb2 := Good.bdd hw (g1.seq g2) hb hp
+  have hb2 := CStm.Good.bdd hw (g1.seq g2) hb hp
   obtain ⟨st3, T3, g3, e3o, e3c, e3s, e3x, e3b, e3p, e3out⟩ := call_good (x := x) hf hw hBf st2
     hb2.1 hb2.2 (fun q => by simp [hst2, e1s]) (ex C E ⟨0, by omega⟩) (by simp [hst2]) hkw hMf
     hsf hv
   set st4 := st3.set (ex C E ⟨1, by omega⟩) v with hst4
   have g4 : Good x w (.set (ex C E ⟨1, by omega⟩) (.var (ρs Mf C E hf .out)) : CStm (C + E) C)
       st3 st4 (Ex.nodeCost w + unitCost w) :=
-    (Good.set (by simp only [Ex.Fits, e3o]; exact hvw)).of_eq (by simp [hst4, Ex.eval, e3o])
+    (CStm.Good.set (by simp only [Ex.Fits, e3o]; exact hvw)).of_eq (by simp [hst4, Ex.eval, e3o])
       (by simp [Ex.size])
   have e4c : st4.env (ρs Mf C E hf .clk) = haltTime Mf (encodeNat k) := by
     rw [hst4, NSt.set_env, Function.update_of_ne (ρs_ne_ex Mf hf _ _), e3c]
   set st5 := st4.set (ex C E ⟨2, by omega⟩) (haltTime Mf (encodeNat k)) with hst5
   have g5 : Good x w (.set (ex C E ⟨2, by omega⟩) (.var (ρs Mf C E hf .clk)) : CStm (C + E) C)
       st4 st5 (Ex.nodeCost w + unitCost w) :=
-    (Good.set (by simp only [Ex.Fits, e4c]; exact hsf)).of_eq (by simp [hst5, Ex.eval, e4c])
+    (CStm.Good.set (by simp only [Ex.Fits, e4c]; exact hsf)).of_eq (by simp [hst5, Ex.eval, e4c])
       (by simp [Ex.size])
   have g3' : Good x w (callS Mf C E hf (ex C E ⟨0, by omega⟩)) st2 st3
       (Ex.nodeCost w + unitCost w + simNatCost Mf w (encodeNat k).length
@@ -169,8 +169,8 @@ theorem paramS_good {Mκ Mf : Machine} {C E : ℕ} (hκ : need Mκ ≤ C) (hf : 
       (ex C E ⟨0, by omega⟩) (by simp [hst2]) hkw hMf hsf hv
     rwa [g3.2.1] at this
   have g : Good x w (paramS Mκ Mf C E hκ hf hE) st st5 _ :=
-    g1.seq (g2.seq (g3'.seq (g4.seq (g5.seq Good.skip))))
-  have hbd := Good.bdd hw g hb hp
+    g1.seq (g2.seq (g3'.seq (g4.seq (g5.seq CStm.Good.skip))))
+  have hbd := CStm.Good.bdd hw g hb hp
   refine ⟨st5, g.mono (by omega), ?_, ?_, by simp [hst5], fun i hi => ?_, fun q => by
     simp [hst5, hst4, e3s], hbd.1, by simp [hst5, hst4, e3p, hst2, e1p], by
     simp [hst5, hst4, e3out, hst2, e1out]⟩

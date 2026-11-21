@@ -110,7 +110,7 @@ lemma good_phase1 (hw2 : 2 ≤ w) (hw : x.length + 3 < 2 ^ w) :
       (NSt.zero 6 0) (st6 0 x.length 0 0 0 0 x.length []) ((x.length + 1) * (20 * NC)) := by
   have h1 : Good x w (.rd 0 : CStm 6 0) (NSt.zero 6 0) (st6 (inBit x 0) 0 0 0 0 0 (min 1 x.length) [])
       (unitCost w) := by
-    refine (Good.rd 0).of_eq ?_ le_rfl
+    refine (CStm.Good.rd 0).of_eq ?_ le_rfl
     refine NSt.ext (funext fun i => ?_) (funext fun i => i.elim0) rfl rfl
     fin_cases i <;> simp [NSt.zero, st6]
   have hS : ∀ j < x.length, Good x w (.seq (.set 1 (.add (.var 1) (.const 1))) (.rd 0) : CStm 6 0)
@@ -121,14 +121,14 @@ lemma good_phase1 (hw2 : 2 ≤ w) (hw : x.length + 3 < 2 ^ w) :
         (st6 (inBit x j) j 0 0 0 0 (min (j + 1) x.length) []).env := by
       simp [Ex.Fits, st6, Ex.eval]
       omega
-    refine ((Good.set hf).seq (Good.rd 0)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf).seq (CStm.Good.rd 0)).of_eq ?_ ?_
     · refine NSt.ext (funext fun i => ?_) rfl ?_ rfl
       · fin_cases i <;> simp [st6, Ex.eval, Function.update, show min (j + 1) x.length = j + 1 by omega]
       · simp [st6]; omega
     · simp only [Ex.size]
       have := @unit_le_nc w
       omega
-  have hl := Good.loop_const (x := x) (w := w) (e := (.var 0 : Ex 6)) x.length
+  have hl := CStm.Good.loop_const (x := x) (w := w) (e := (.var 0 : Ex 6)) x.length
     (fun j => st6 (inBit x j) j 0 0 0 0 (min (j + 1) x.length) []) (8 * NC)
     (fun j hj => by simpa [st6, Ex.eval] using inBit_lt hj)
     (by simpa [st6, Ex.eval] using inBit_len x)
@@ -154,7 +154,7 @@ lemma good_phase2 (n : ℕ) (hw2 : 2 ≤ w) (hw : 4 * (n + 4) < 2 ^ w) :
   have hA := pow_parA_le n
   have h1 : Good x w (.set 2 (.const 1) : CStm 6 0) (st6 0 n 0 0 0 0 n [])
       (st6 0 n (2 ^ 0) 0 0 0 n []) (2 * NC) := by
-    refine (Good.set (by simp [Ex.Fits]; omega)).of_eq ?_ ?_
+    refine (CStm.Good.set (by simp [Ex.Fits]; omega)).of_eq ?_ ?_
     · refine NSt.ext (funext fun i => ?_) rfl rfl rfl
       fin_cases i <;> simp [st6, Ex.eval]
     · simp only [Ex.size]; have := @unit_le_nc w; omega
@@ -170,11 +170,11 @@ lemma good_phase2 (n : ℕ) (hw2 : 2 ≤ w) (hw : 4 * (n + 4) < 2 ^ w) :
     have hf2 : (Ex.add (.var 3) (.const 1) : Ex 6).Fits w
         ((st6 0 n (2 ^ j) j 0 0 n []).set 2 (2 ^ j + 2 ^ j)).env := by
       simp [Ex.Fits, st6, Ex.eval, Function.update]; omega
-    refine ((Good.set hf1).seq (Good.set hf2)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf1).seq (CStm.Good.set hf2)).of_eq ?_ ?_
     · refine NSt.ext (funext fun i => ?_) rfl rfl rfl
       fin_cases i <;> simp [st6, Ex.eval, Function.update, pow_succ] <;> ring
     · simp only [Ex.size]; have := @unit_le_nc w; omega
-  have hl := Good.loop_const (x := x) (w := w)
+  have hl := CStm.Good.loop_const (x := x) (w := w)
     (e := (.lt (.var 2) (.add (.var 1) (.const 2)) : Ex 6)) (parA n)
     (fun j => st6 0 n (2 ^ j) j 0 0 n []) (8 * NC)
     (fun j hj => by simp [st6, Ex.eval, pow_lt_of_lt_parA hj])
@@ -224,11 +224,11 @@ lemma good_phase3 (c₀ n : ℕ) (hw2 : 2 ≤ w) (hw : 4 * (n + c₀ + 4) < 2 ^ 
         ((st6 0 n (2 ^ parA n) (parA n) (j * parA n) j n []).set 4
           (j * parA n + parA n)).env := by
       simp [Ex.Fits, st6, Ex.eval, Function.update]; omega
-    refine ((Good.set hf1).seq (Good.set hf2)).of_eq ?_ ?_
+    refine ((CStm.Good.set hf1).seq (CStm.Good.set hf2)).of_eq ?_ ?_
     · refine NSt.ext (funext fun i => ?_) rfl rfl rfl
       fin_cases i <;> simp [st6, Ex.eval, Function.update] <;> ring
     · simp only [Ex.size]; have := @unit_le_nc w; omega
-  have hl := Good.loop_const (x := x) (w := w)
+  have hl := CStm.Good.loop_const (x := x) (w := w)
     (e := (Ex.lt (.var 4) (.add (.var 1) (.const (c₀ + 2))))) (parS c₀ n)
     (fun j => st6 0 n (2 ^ parA n) (parA n) (j * parA n) j n []) (8 * NC)
     (fun j hj => by
@@ -251,8 +251,8 @@ lemma good_phase3 (c₀ n : ℕ) (hw2 : 2 ≤ w) (hw : 4 * (n + c₀ + 4) < 2 ^ 
 lemma good_phase4 (c₀ n p a c s : ℕ) (hw : n + c₀ + s < 2 ^ w) :
     Good x w (.seq (.emit (.add (.var 1) (.const c₀))) (.emit (.var 5)) : CStm 6 0)
       (st6 0 n p a c s n []) (st6 0 n p a c s n [n + c₀, s]) (8 * NC) := by
-  refine ((Good.emit (by simp [Ex.Fits, st6, Ex.eval]; omega)).seq
-    (Good.emit (by simp [Ex.Fits, st6]; omega))).of_eq ?_ ?_
+  refine ((CStm.Good.emit (by simp [Ex.Fits, st6, Ex.eval]; omega)).seq
+    (CStm.Good.emit (by simp [Ex.Fits, st6]; omega))).of_eq ?_ ?_
   · simp [st6, Ex.eval]
   · simp only [Ex.size]; have := @unit_le_nc w; omega
 

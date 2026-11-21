@@ -110,7 +110,7 @@ lemma p4S1_costN (N E n m c : ℕ) (hc : c ≤ 4 * N) :
     nlinarith
   omega
 
-lemma entB_all (e : Fin I.schemas.length) : entB I e (cL I e).length = nEnt I e := by
+lemma entB_all_L1d (e : Fin I.schemas.length) : entB I e (cL I e).length = nEnt I e := by
   simp [entB, nEnt]
 
 lemma L1Inv_zero {w : ℕ} (ε : ZMod 2) (e : Fin I.schemas.length) (R : List ℕ) (s0 : NSt CR CQ)
@@ -162,7 +162,7 @@ lemma p4S1_good {w : ℕ} {x : List Bool} (hw : 2 ≤ w) (hk : 2 ≤ k) (hE : I.
   rw [hz] at hEM hA2
   rw [hz'] at hA'
   rw [ht] at hRk hp'
-  rw [entB_all] at eTP'
+  rw [entB_all_L1d] at eTP'
   refine ⟨s', g.mono (p4S1_costN _ _ _ _ _ (p4S1_cond w)), hEM, hRk, by simpa using hA', hA2, hso,
     eK', eD', eH', eSP', eTP', hV', hbd', hp', ho', hfr'⟩
 

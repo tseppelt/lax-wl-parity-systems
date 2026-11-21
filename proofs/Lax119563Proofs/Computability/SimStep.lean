@@ -44,14 +44,14 @@ lemma chain_good {l : List (Key M)} {p₀ : Key M} (hp : p₀ ∈ l) {st st' : N
     rw [chain_cons]
     by_cases hpp : p = p₀
     · subst hpp
-      refine (Good.iteT (hf p) (by rw [hev]; simp) hl).mono ?_
+      refine (CStm.Good.iteT (hf p) (by rw [hev]; simp) hl).mono ?_
       simp only [condCost, matchE_size, List.length_cons]
       rw [add_one_mul]; exact Nat.add_le_add_right (Nat.le_add_left _ _) _
     · have hp' : p₀ ∈ l := by
         rcases List.mem_cons.mp hp with h | h
         · exact absurd h.symm hpp
         · exact h
-      refine (Good.iteF (hf p) (by rw [hev, if_neg hpp]) (ih hp')).mono ?_
+      refine (CStm.Good.iteF (hf p) (by rw [hev, if_neg hpp]) (ih hp')).mono ?_
       simp only [condCost, matchE_size, List.length_cons]
       rw [add_one_mul]; linarith
 
@@ -71,15 +71,15 @@ lemma opT_good (hB : simB M ≤ 2 ^ w) (a : Fin (M.tapes + 1) → Fin (M.symbols
   refine ⟨?_, fun j' v hv => ?_⟩
   · rcases hm : m j with _ | _ | _
     · simp only [opT]
-      refine ((Good.pop _ _).seq ((Good.push ?_).seq (Good.push ?_))).mono ?_
+      refine ((CStm.Good.pop _ _).seq ((CStm.Good.push ?_).seq (CStm.Good.push ?_))).mono ?_
       · simpa [Ex.Fits] using ha
       · simp only [Ex.Fits, NSt.setS_env, NSt.set_env, Function.update_self]
         rcases h : st.stk (κ (.L j)) with _ | ⟨v, l⟩
         · simp
         · have := hb j v (by simp [h]); simp; unfold simB at hB; omega
       · simp only [Ex.size]; omega
-    · exact (Good.push (by simpa [Ex.Fits] using ha)).mono (by simp only [Ex.size]; omega)
-    · exact (Good.push (by simpa [Ex.Fits] using ha)).mono (by simp only [Ex.size]; omega)
+    · exact (CStm.Good.push (by simpa [Ex.Fits] using ha)).mono (by simp only [Ex.size]; omega)
+    · exact (CStm.Good.push (by simpa [Ex.Fits] using ha)).mono (by simp only [Ex.size]; omega)
   · by_cases hj : j' = j
     · subst hj
       have h1 := congrArg Prod.fst o1
@@ -99,7 +99,7 @@ lemma pushT_good (hB : simB M ≤ 2 ^ w) (j : Fin (M.tapes + 1)) (st : NSt R Q)
     Good x w (pushT M ρ κ j) st (exec x (pushT M ρ κ j) st) (2 * Ex.nodeCost w) ∧
       ∀ j, (exec x (pushT M ρ κ j) st).env (ρ (.sc j)) < M.symbols + 3 := by
   have hU := Ex.unitCost_le_nodeCost w
-  refine ⟨(Good.push ?_).mono ?_, fun j' => hb j'⟩
+  refine ⟨(CStm.Good.push ?_).mono ?_, fun j' => hb j'⟩
   · simp only [Ex.Fits]; have := hb j; unfold simB at hB; omega
   · simp only [Ex.size]; omega
 
@@ -128,7 +128,7 @@ lemma iter_step (hB : simB M ≤ 2 ^ w) {st : NSt R Q} {c : Config M} {t B : ℕ
   have g1 : Good x w (seqL ((List.finRange (M.tapes + 1)).map (popT M ρ κ))) st st1
       ((M.tapes + 1) * (unitCost w + 1) + unitCost w) := by
     have := good_seqL (x := x) (w := w) (G := popT M ρ κ) (fun _ => True) (unitCost w + 1)
-      (fun j st _ => ⟨Good.pop _ _, trivial⟩) (List.finRange (M.tapes + 1)) st trivial
+      (fun j st _ => ⟨CStm.Good.pop _ _, trivial⟩) (List.finRange (M.tapes + 1)) st trivial
     simpa using this.1
   -- the key
   set p₀ : Key M := (c.state, fun j => c.tape j (c.head j)) with hp₀
@@ -161,7 +161,7 @@ lemma iter_step (hB : simB M ≤ 2 ^ w) {st : NSt R Q} {c : Config M} {t B : ℕ
         rw [(e1 j).2.2]; exact Fin.isLt _)
     have g2 : Good x w (leaf M ρ κ p₀) st1 st3 ((M.tapes + 3) * (2 * Ex.nodeCost w)) := by
       rw [hleaf]
-      refine ((Good.set (by simp only [Ex.Fits]; omega)).seq hpush.1).mono ?_
+      refine ((CStm.Good.set (by simp only [Ex.Fits]; omega)).seq hpush.1).mono ?_
       simp only [Ex.size, List.length_finRange]; nlinarith
     have g3 := chain_good ρ κ (mem_keys p₀) hev hfits g2
     have hclk3 : st3.env (ρ .clk) = t := by
@@ -169,7 +169,7 @@ lemma iter_step (hB : simB M ≤ 2 ^ w) {st : NSt R Q} {c : Config M} {t B : ℕ
       rw [Function.update_of_ne (by simp)]; exact hclk1
     have g4 : Good x w (.set (ρ .clk) (.add (.var (ρ .clk)) (.const 1))) st3
         (st3.set (ρ .clk) (t + 1)) (3 * Ex.nodeCost w + unitCost w) :=
-      (Good.set (by simp only [Ex.Fits, Ex.eval, hclk3]; omega)).of_eq
+      (CStm.Good.set (by simp only [Ex.Fits, Ex.eval, hclk3]; omega)).of_eq
         (by simp [Ex.eval, hclk3]) (by simp [Ex.size])
     have gb : Good x w (body M ρ κ) st (st3.set (ρ .clk) (t + 1)) _ := g1.seq (g3.seq g4)
     have hex : exec x (body M ρ κ) st = st3.set (ρ .clk) (t + 1) := gb.2.1
@@ -225,7 +225,7 @@ lemma iter_step (hB : simB M ≤ 2 ^ w) {st : NSt R Q} {c : Config M} {t B : ℕ
     have hq' : q'.val < 2 ^ w := by have := q'.isLt; unfold simB at hB; omega
     have g2 : Good x w (leaf M ρ κ p₀) st1 st3 ((M.tapes + 3) * (6 * Ex.nodeCost w)) := by
       rw [hleaf]
-      refine ((Good.set (by simp only [Ex.Fits]; omega)).seq hop.1).mono ?_
+      refine ((CStm.Good.set (by simp only [Ex.Fits]; omega)).seq hop.1).mono ?_
       simp only [Ex.size, List.length_finRange]; nlinarith
     have g3 := chain_good ρ κ (mem_keys p₀) hev hfits g2
     have hclk3 : st3.env (ρ .clk) = t := by
@@ -233,7 +233,7 @@ lemma iter_step (hB : simB M ≤ 2 ^ w) {st : NSt R Q} {c : Config M} {t B : ℕ
       rw [Function.update_of_ne (by simp)]; exact hclk1
     have g4 : Good x w (.set (ρ .clk) (.add (.var (ρ .clk)) (.const 1))) st3
         (st3.set (ρ .clk) (t + 1)) (3 * Ex.nodeCost w + unitCost w) :=
-      (Good.set (by simp only [Ex.Fits, Ex.eval, hclk3]; omega)).of_eq
+      (CStm.Good.set (by simp only [Ex.Fits, Ex.eval, hclk3]; omega)).of_eq
         (by simp [Ex.eval, hclk3]) (by simp [Ex.size])
     have gb : Good x w (body M ρ κ) st (st3.set (ρ .clk) (t + 1)) _ := g1.seq (g3.seq g4)
     have hex : exec x (body M ρ κ) st = st3.set (ρ .clk) (t + 1) := gb.2.1

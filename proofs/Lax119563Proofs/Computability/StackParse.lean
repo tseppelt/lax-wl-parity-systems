@@ -109,7 +109,7 @@ lemma skipZ_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (d a : �
   have hd : l.getD d 0 = a := by
     rw [hl, List.getD_eq_getElem?_getD, List.getElem?_append_right (by simp)]
     simp
-  have hloop := Good.loop_const (x := x) (w := w) (e := .lt (.var t) (.const 1)) (body := .pop q t)
+  have hloop := CStm.Good.loop_const (x := x) (w := w) (e := .lt (.var t) (.const 1)) (body := .pop q t)
     d S (unitCost w + 1)
     (fun j hj => by
       rw [show (Ex.lt (.var t) (.const 1) : Ex R).eval (S j).env =
@@ -124,8 +124,8 @@ lemma skipZ_good (hw : 2 ≤ w) {q : Fin Q} {t : Fin R} (st : NSt R Q) (d a : �
       · rw [hval j h]; omega
       · rw [show j = d by omega, hd]; exact haw)
     (fun j _ => by rw [show S (j + 1) = exec x (.pop q t) (S j) from iter_succ _ _ _];
-                   exact Good.pop _ _)
-  have g : Good x w (skipZ q t) st (S d) _ := (Good.pop q t).seq hloop
+                   exact CStm.Good.pop _ _)
+  have g : Good x w (skipZ q t) st (S d) _ := (CStm.Good.pop q t).seq hloop
   rw [g.2.1]
   refine ⟨g.mono ?_, ?_, by rw [(hSj d le_rfl).2, hd]⟩
   · have : d * (unitCost w + 1 + (3 * Ex.nodeCost w + 1)) ≤ d * (6 * Ex.nodeCost w) :=
@@ -193,7 +193,7 @@ lemma parse_iter (hw : 2 ≤ w) {q : Fin Q} {t o p : Fin R} (hto : t ≠ o) (htp
   -- after the first pop
   set S1 : NSt R Q := (S.setS q (rest1 ++ rest)).set t (symOf ds[j]) with hS1
   have g1 : Good x w (.pop q t : CStm R Q) S S1 (unitCost w + 1) :=
-    (Good.pop q t).of_eq (by rw [hq1]; rfl) le_rfl
+    (CStm.Good.pop q t).of_eq (by rw [hq1]; rfl) le_rfl
   have hS1o : S1.env o = Machines.valBits (ds.take j) := by
     simp [hS1, Function.update_of_ne hto.symm, h3]
   have hS1p : S1.env p = 2 ^ j := by simp [hS1, Function.update_of_ne htp.symm, h4]
@@ -205,10 +205,10 @@ lemma parse_iter (hw : 2 ≤ w) {q : Fin Q} {t o p : Fin R} (hto : t ≠ o) (htp
       (8 * Ex.nodeCost w) := by
     have hf : (isT t).Fits w S1.env := isT_fits hw (by rw [hS1t]; exact symOf_le _)
     cases hd : ds[j]
-    · refine (Good.iteF hf (by rw [isT_eval, hS1t, hd]; simp [symOf]) Good.skip).of_eq
+    · refine (CStm.Good.iteF hf (by rw [isT_eval, hS1t, hd]; simp [symOf]) CStm.Good.skip).of_eq
         (by simp [hS2, hd]) ?_
       simp only [condCost, isT, Ex.size]; omega
-    · refine (Good.iteT hf (by rw [isT_eval, hS1t, hd]; simp [symOf]) (Good.set ?_)).of_eq
+    · refine (CStm.Good.iteT hf (by rw [isT_eval, hS1t, hd]; simp [symOf]) (CStm.Good.set ?_)).of_eq
         (by simp [hS2, hd, Ex.eval, hS1o, hS1p]) ?_
       · simp only [Ex.Fits, Ex.eval, hS1o, hS1p]; refine ⟨by omega, hpj', ?_⟩
         rw [pow_succ] at hpj; omega
@@ -221,12 +221,12 @@ lemma parse_iter (hw : 2 ≤ w) {q : Fin Q} {t o p : Fin R} (hto : t ≠ o) (htp
   -- doubling
   have g3 : Good x w (.set p (.add (.var p) (.var p)) : CStm R Q) S2 (S2.set p (2 ^ (j + 1)))
       (3 * Ex.nodeCost w + unitCost w) := by
-    refine (Good.set ?_).of_eq (by simp [Ex.eval, hS2p, pow_succ, mul_two]) (by simp [Ex.size])
+    refine (CStm.Good.set ?_).of_eq (by simp [Ex.eval, hS2p, pow_succ, mul_two]) (by simp [Ex.size])
     simp only [Ex.Fits, Ex.eval, hS2p]
     refine ⟨hpj', hpj', ?_⟩; rw [pow_succ] at hpj; omega
   -- the second pop
-  have g4 := Good.pop (x := x) (w := w) (st := S2.set p (2 ^ (j + 1))) q t
-  have g := g1.seq (g2.seq (g3.seq (g4.seq (Good.skip (x := x) (w := w)))))
+  have g4 := CStm.Good.pop (x := x) (w := w) (st := S2.set p (2 ^ (j + 1))) q t
+  have g := g1.seq (g2.seq (g3.seq (g4.seq (CStm.Good.skip (x := x) (w := w)))))
   have hex : exec x B S = _ := g.2.1
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [hex]; exact g.mono (by omega)
@@ -272,7 +272,7 @@ lemma parseB_good (hw : 2 ≤ w) {q : Fin Q} {t o p : Fin R} (hto : t ≠ o) (ht
       have := parse_iter (x := x) hw hto htp hop (S j) ds rest hL j (by omega) i1 i3 i4
       rw [show S (j + 1) = exec x B (S j) from iter_succ _ _ _]
       exact ⟨this.2.1, this.2.2.1, this.2.2.2.1, this.2.2.2.2⟩
-  have hloop := Good.loop_const (x := x) (w := w) (e := isT t) (body := B) ds.length S
+  have hloop := CStm.Good.loop_const (x := x) (w := w) (e := isT t) (body := B) ds.length S
     (16 * Ex.nodeCost w)
     (fun j hj => by rw [isT_eval, (hSj j hj.le).2.1, if_pos hj]; simp)
     (by rw [isT_eval, (hSj _ le_rfl).2.1, if_neg (lt_irrefl _)]; simp)
