@@ -1,6 +1,5 @@
-import Lax119563Proofs.RowSpace.PatternTree
-import Lax119563Proofs.RowSpace.Spoiler
-import Lax119563Proofs.RowSpace.Size
+import Lax119563Proofs.RowSpace.Part1
+import Lax119563Proofs.Stabilization.Part1
 
 /-!
 # The row-space compiler

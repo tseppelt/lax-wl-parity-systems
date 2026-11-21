@@ -1,6 +1,6 @@
 import Lax119563.PackedRepresentation
-import Lax119563Proofs.Reduction.PkParse
-import Lax119563Proofs.Machines.ComposeComputes
+import Lax119563Proofs.Hardness.Part1
+import Lax119563Proofs.Hardness.Part2
 
 /-!
 # The packed representation

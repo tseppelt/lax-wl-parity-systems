@@ -1,6 +1,6 @@
+import Lax119563.HomomorphismCharacterization
 import Lax119563.UncoloredWitnessUpperBound
 import Lax119563.WitnessUpperBound
-import Lax119563.HomomorphismCharacterization
 
 /-!
 # The witness size upper bound for uncolored graphs

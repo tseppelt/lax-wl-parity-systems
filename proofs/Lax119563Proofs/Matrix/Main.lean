@@ -1,7 +1,6 @@
-import Lax119563Proofs.Matrix.Edges
-import Lax119563Proofs.Compiler.Prog
-import Lax119563Proofs.Compiler.P4SchSpec2
-import Lax119563Proofs.Compiler.Bound
+import Lax119563Proofs.Compiler.Part2
+import Lax119563Proofs.Compiler.Part6
+import Lax119563Proofs.RowSpace.Part1
 
 /-!
 # The matrix compiler

@@ -1,10 +1,7 @@
-import Lax119563.WitnessLowerBound
 import Lax119563.GameCharacterization
 import Lax119563.RowSpaceCompiler
-import Lax119563Proofs.Witness.Stabilize
-import Lax119563Proofs.Witness.RelayTree
-import Lax119563Proofs.Witness.RelayConflict
-import Lax119563Proofs.Witness.RelaySize
+import Lax119563.WitnessLowerBound
+import Lax119563Proofs.Reduction.Part1
 
 /-!
 # A lower bound on the size of homomorphism witnesses

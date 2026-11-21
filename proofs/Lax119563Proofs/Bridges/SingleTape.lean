@@ -1,6 +1,5 @@
 import Lax119563.MachineTranslations
-import Lax119563Proofs.Machines.Compile
-import Lax119563Proofs.Main.Runs
+import Lax119563Proofs.Machines.Part1
 
 /-!
 # From elementary single-tape machines to the multitape model

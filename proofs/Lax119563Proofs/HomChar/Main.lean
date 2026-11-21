@@ -1,6 +1,6 @@
 import Lax119563.HomomorphismCharacterization
-import Lax119563Proofs.HomChar.Tensor
 import Lax119563.WitnessFromRounds
+import Lax119563Proofs.Stabilization.Part1
 
 /-!
 # The homomorphism characterization of Weisfeiler–Leman

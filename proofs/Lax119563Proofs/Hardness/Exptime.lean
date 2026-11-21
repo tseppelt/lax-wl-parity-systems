@@ -1,7 +1,6 @@
 import Lax119563.EXPTIMEHardness
 import Lax119563.MachineTranslations
-import Lax119563Proofs.Hardness.Pipeline
-import Lax119563Proofs.Hardness.ExpMachine
+import Lax119563Proofs.Hardness.Part1
 import Mathlib.Algebra.Polynomial.Eval.Degree
 
 /-!

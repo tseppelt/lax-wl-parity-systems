@@ -1,5 +1,5 @@
 import Lax119563.TimeHierarchy
-import Lax119563Proofs.Hierarchy.Coarse
+import Lax119563Proofs.Hierarchy.Part1
 
 /-!
 # The deterministic time hierarchy theorem

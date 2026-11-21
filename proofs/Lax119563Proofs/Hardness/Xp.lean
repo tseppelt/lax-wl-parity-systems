@@ -1,9 +1,6 @@
 import Lax119563.XPHardness
-import Lax119563Proofs.Hardness.Pipeline
-import Lax119563Proofs.Hardness.SuffixMachine
-import Lax119563Proofs.Hardness.XpProgram
-import Lax119563Proofs.Hardness.XpMachine
-import Lax119563Proofs.Computability.Closure
+import Lax119563Proofs.Hardness.Part1
+import Lax119563Proofs.Hardness.Part2
 
 /-!
 # WL Distinguishing is XP-hard

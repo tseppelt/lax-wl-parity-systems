@@ -1,10 +1,10 @@
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
-import Lax119563.WitnessUpperBound
-import Lax119563.WitnessFromRounds
 import Lax119563.Stabilization
-import Lax119563Proofs.UpperBound.Rounds
+import Lax119563.WitnessFromRounds
+import Lax119563.WitnessUpperBound
+import Lax119563Proofs.Programs.Part1
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
 
 /-!
 # The witness size upper bound

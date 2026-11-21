@@ -1,8 +1,7 @@
 import Lax119563.ExponentialLowerBound
 import Lax119563.ExponentialTimeHierarchy
-import Lax119563Proofs.Hardness.ParMachine
-import Lax119563Proofs.Hardness.PipelineLen
-import Lax119563Proofs.Hardness.ExpAsymptotics
+import Lax119563Proofs.Hardness.Part1
+import Lax119563Proofs.Hardness.Part2
 
 /-!
 # The exponential time lower bound for WL Distinguishing

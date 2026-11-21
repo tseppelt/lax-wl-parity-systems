@@ -1,7 +1,7 @@
 import Lax119563.RuntimeLowerBound
 import Lax119563.TimeHierarchy
-import Lax119563Proofs.Main.Asymptotics
-import Lax119563Proofs.Main.TimeReduction
+import Lax119563Proofs.Hardness.Part2
+import Lax119563Proofs.Machines.Part1
 
 /-!
 # The unconditional time lower bound for k-WL Distinguishing

@@ -1,5 +1,5 @@
 import Lax119563.Stabilization
-import Lax119563Proofs.Stabilization.HigherDim
+import Lax119563Proofs.Stabilization.Part1
 
 /-!
 # The stabilization bound

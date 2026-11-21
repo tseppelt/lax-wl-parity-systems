@@ -1,6 +1,5 @@
 import Lax119563.WitnessFromRounds
-import Lax119563Proofs.HomTensors.Rounds
-import Lax119563Proofs.HomTensors.Unlabel
+import Lax119563Proofs.HomTensors.Part1
 
 /-!
 # Homomorphism witnesses from rounds

@@ -1,6 +1,5 @@
 import Lax119563.GameCharacterization
-import Lax119563Proofs.Game.Duplicator
-import Lax119563Proofs.Game.Spoiler
+import Lax119563Proofs.HomTensors.Part1
 
 /-!
 # The pebble game characterization of Weisfeiler–Leman

@@ -1,5 +1,5 @@
 import Lax119563.ExponentialTimeHierarchy
-import Lax119563Proofs.Hierarchy.ExpDiag
+import Lax119563Proofs.Programs.Part1
 
 /-!
 # The deterministic time hierarchy theorem for exponential time

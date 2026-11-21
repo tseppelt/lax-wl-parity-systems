@@ -1,7 +1,6 @@
-import Lax119563.IterationNumber
 import Lax119563.GameCharacterization
-import Lax119563Proofs.Counter.Size
-import Lax119563Proofs.Counter.Stabilize
+import Lax119563.IterationNumber
+import Lax119563Proofs.HomTensors.Part1
 
 /-!
 # The iteration number lower bound

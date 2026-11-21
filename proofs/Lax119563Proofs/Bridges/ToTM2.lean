@@ -1,5 +1,5 @@
 import Lax119563.MachineTranslations
-import Lax119563Proofs.Bridges.TM2Sim.Correct
+import Lax119563Proofs.Machines.Part1
 
 /-!
 # Polynomial-time multitape machines give polynomial-time mathlib stack machines
