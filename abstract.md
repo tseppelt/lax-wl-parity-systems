@@ -1,8 +1,8 @@
 The $k$-dimensional Weisfeiler–Leman algorithm ($k$-WL) is a simple combinatorial algorithm that
 was originally designed as a heuristic for the graph isomorphism problem, but which also has
 surprising connections to areas such as logic, homomorphism counts, linear programming, proof
-complexity, (symmetric) algebraic complexity, and machine learning. This submission formalizes
-the lower bounds for WL of Curticapean, Liu, Neuen and Seppelt:
+complexity, (symmetric) algebraic complexity, and machine learning. This submission formalizes 
+the following lower bounds for WL:
 
 - **Time.** For every fixed $k \geq 3$ and $\varepsilon > 0$, no deterministic multitape Turing
   machine decides whether $k$-WL distinguishes two given colored graphs in time
